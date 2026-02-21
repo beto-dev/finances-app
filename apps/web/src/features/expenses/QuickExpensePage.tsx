@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCategories } from '../charges/useCharges'
 import client from '../../shared/api/client'
@@ -30,7 +30,7 @@ export default function QuickExpensePage() {
   const queryClient = useQueryClient()
   const mutation = useCreateManualCharge()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const numAmount = parseFloat(amount)
     if (!numAmount || numAmount <= 0 || !description.trim()) return
