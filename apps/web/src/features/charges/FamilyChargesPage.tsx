@@ -264,80 +264,112 @@ export default function FamilyChargesPage() {
 
       {/* Table */}
       <div className="card p-0 overflow-hidden">
-        {isLoading ? (
-          <table className="w-full">
-            <tbody>
-              {[...Array(8)].map((_, i) => (
-                <tr key={i} className="border-b border-gray-100">
-                  <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
-                  <td className="px-4 py-3 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
-                </tr>
+
+        {/* ── Mobile card list ── */}
+        <div className="md:hidden">
+          {isLoading ? (
+            <div className="divide-y divide-gray-100">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="px-4 py-3.5 space-y-2">
+                  <div className="flex justify-between gap-2">
+                    <Skeleton className="h-4 w-44" />
+                    <Skeleton className="h-4 w-16 shrink-0" />
+                  </div>
+                  <Skeleton className="h-3 w-36" />
+                </div>
               ))}
-            </tbody>
-          </table>
-        ) : charges.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-lg">Sin movimientos confirmados para este período</p>
-            <p className="text-sm mt-1">Los movimientos aparecen aquí cuando un miembro los confirma en "Movimientos"</p>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('date')}>
-                  Fecha <SortIcon field="date" />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('description')}>
-                  Descripción <SortIcon field="description" />
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>
-                  Monto <SortIcon field="amount" />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>
-                  Categoría <SortIcon field="category" />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Miembro
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </div>
+          ) : charges.length === 0 ? (
+            <div className="text-center py-12 text-gray-400 px-4">
+              <p className="text-base">Sin movimientos confirmados para este período</p>
+              <p className="text-sm mt-1">Los movimientos aparecen aquí cuando un miembro los confirma</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
               {charges.map((charge) => {
                 const cat = categories.find((c) => c.id === charge.category_id)
                 const memberName = charge.uploaded_by ? (memberNameById.get(charge.uploaded_by) ?? '—') : '—'
-                const formattedAmount = new Intl.NumberFormat('es-CL', {
-                  style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0,
-                }).format(charge.amount)
-
+                const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(charge.amount)
+                const formattedDate = new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
                 return (
-                  <tr key={charge.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                      {new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES')}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">{charge.description}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">
-                      {formattedAmount}
-                    </td>
-                    <td className="px-4 py-3">
-                      {cat ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  <div key={charge.id} className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
+                      <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formattedAmount}</p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-xs text-gray-400">{formattedDate}</span>
+                      <span className="text-xs text-gray-400">· {memberName}</span>
+                      {cat && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
                           style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>
                           {cat.name}
                         </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{memberName}</td>
-                  </tr>
+                    </div>
+                  </div>
                 )
               })}
-            </tbody>
-          </table>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Desktop table ── */}
+        <div className="hidden md:block">
+          {isLoading ? (
+            <table className="w-full">
+              <tbody>
+                {[...Array(8)].map((_, i) => (
+                  <tr key={i} className="border-b border-gray-100">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
+                    <td className="px-4 py-3 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : charges.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-lg">Sin movimientos confirmados para este período</p>
+              <p className="text-sm mt-1">Los movimientos aparecen aquí cuando un miembro los confirma en "Movimientos"</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('date')}>Fecha <SortIcon field="date" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Miembro</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {charges.map((charge) => {
+                  const cat = categories.find((c) => c.id === charge.category_id)
+                  const memberName = charge.uploaded_by ? (memberNameById.get(charge.uploaded_by) ?? '—') : '—'
+                  const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(charge.amount)
+                  return (
+                    <tr key={charge.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">{charge.description}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">{formattedAmount}</td>
+                      <td className="px-4 py-3">
+                        {cat ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>{cat.name}</span>
+                        ) : <span className="text-xs text-gray-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{memberName}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
       </div>
     </div>
   )

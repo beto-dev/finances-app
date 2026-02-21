@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { useCharges, useCategories, useBulkConfirm, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useUpdateCategory, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
+import Skeleton from '../../shared/components/Skeleton'
 import Toast from '../../shared/components/Toast'
 
 const MONTHS = [
@@ -9,33 +11,90 @@ const MONTHS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
+// ── Mobile card component ────────────────────────────────────────────────────
+function MobileChargeCard({
+  charge, categories, selected, onSelect,
+}: { charge: Charge; categories: Category[]; selected: boolean; onSelect: (id: string, checked: boolean) => void }) {
+  const updateCategory = useUpdateCategory()
+  const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
+  const currentCatId = optimisticCatId ?? charge.category_id
+  const currentCat = categories.find((c) => c.id === currentCatId)
+
+  const handleCategoryChange = async (categoryId: string) => {
+    setOptimisticCatId(categoryId)
+    try {
+      await updateCategory.mutateAsync({ chargeId: charge.id, categoryId })
+    } catch {
+      setOptimisticCatId(null)
+    }
+  }
+
+  const formattedAmount = new Intl.NumberFormat('es-CL', {
+    style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0,
+  }).format(charge.amount)
+
+  const formattedDate = new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES', {
+    day: 'numeric', month: 'short',
+  })
+
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3.5 transition-colors ${selected ? 'bg-brand-50' : ''}`}>
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={(e) => onSelect(charge.id, e.target.checked)}
+        className="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
+          <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formattedAmount}</p>
+        </div>
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span className="text-xs text-gray-400">{formattedDate}</span>
+          <select
+            value={currentCatId ?? ''}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="text-xs border border-gray-200 rounded-md px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-500 max-w-[140px]"
+            style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
+          >
+            <option value="">Sin categoría</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          {charge.is_confirmed ? (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Confirmado</span>
+          ) : charge.ai_suggested ? (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">IA</span>
+          ) : (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">Pendiente</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 export default function ChargesPage() {
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
-  // Date filter
   const [filterMonth, setFilterMonth] = useState<number | undefined>(currentMonth)
   const [filterYear, setFilterYear] = useState<number | undefined>(currentYear)
-
-  // Sorting
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
-
-  // Search and filtering
   const [searchDesc, setSearchDesc] = useState('')
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'pending'>('all')
-
-  // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
-  // Queries
   const { data: allCharges, isLoading } = useCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
   const bulkConfirm = useBulkConfirm()
 
-  // Apply filters and sorts
   let charges = allCharges || []
   charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus)
   charges = sortCharges(charges, sortField, sortOrder)
@@ -66,12 +125,8 @@ export default function ChargesPage() {
   }
 
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortOrder('asc')
-    }
+    if (sortField === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortOrder('asc') }
   }
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -81,153 +136,98 @@ export default function ChargesPage() {
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
 
+  const emptyMessage = (
+    <div className="text-center py-12 text-gray-400 px-4">
+      <p className="text-base">{allCharges?.length === 0 ? 'No hay movimientos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
+      <p className="text-sm mt-1">Sube una cartola en "Subir"</p>
+    </div>
+  )
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Movimientos</h1>
         {selectedIds.size > 0 && (
           <button onClick={handleBulkConfirm} className="btn-primary" disabled={bulkConfirm.isPending}>
-            {bulkConfirm.isPending ? <Spinner size="sm" /> : `Confirmar ${selectedIds.size} seleccionados`}
+            {bulkConfirm.isPending ? <Spinner size="sm" /> : `Confirmar ${selectedIds.size}`}
           </button>
         )}
       </div>
 
       {/* Date filters */}
       <div className="flex gap-3 mb-4">
-        <select
-          className="input w-40"
-          value={filterMonth ?? ''}
-          onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}
-        >
+        <select className="input w-40" value={filterMonth ?? ''} onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}>
           <option value="">Todos los meses</option>
-          {MONTHS.map((m, i) => (
-            <option key={i + 1} value={i + 1}>{m}</option>
-          ))}
+          {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
         </select>
-        <select
-          className="input w-28"
-          value={filterYear ?? ''}
-          onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : undefined)}
-        >
+        <select className="input w-28" value={filterYear ?? ''} onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : undefined)}>
           <option value="">Todos los años</option>
-          {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
+          {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
 
       {/* Search and filter controls */}
       <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Search by description */}
           <div>
             <label className="label text-xs">Buscar descripción</label>
-            <input
-              type="text"
-              placeholder="UBER, JUMBO, Netflix..."
-              className="input"
-              value={searchDesc}
-              onChange={(e) => setSearchDesc(e.target.value)}
-            />
+            <input type="text" placeholder="UBER, JUMBO, Netflix..." className="input" value={searchDesc} onChange={(e) => setSearchDesc(e.target.value)} />
           </div>
-
-          {/* Filter by category */}
           <div>
-            <label className="label text-xs">Filtrar por categoría</label>
-            <select
-              className="input"
-              value={filterCategoryId ?? ''}
-              onChange={(e) => setFilterCategoryId(e.target.value || null)}
-            >
+            <label className="label text-xs">Categoría</label>
+            <select className="input" value={filterCategoryId ?? ''} onChange={(e) => setFilterCategoryId(e.target.value || null)}>
               <option value="">Todas las categorías</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
+              {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
-
-          {/* Filter by status */}
           <div>
             <label className="label text-xs">Estado</label>
-            <select
-              className="input"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-            >
+            <select className="input" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'confirmed' | 'pending')}>
               <option value="all">Todos</option>
               <option value="confirmed">✓ Confirmados</option>
               <option value="pending">⊘ Pendientes</option>
             </select>
           </div>
         </div>
-
-        {/* Active filters display */}
         {(searchDesc || filterCategoryId || filterStatus !== 'all') && (
-          <div className="text-xs text-gray-600 pt-2">
+          <div className="text-xs text-gray-600 pt-1">
             Mostrando {charges.length} de {allCharges?.length || 0} movimientos
-            {searchDesc && ` • Búsqueda: "${searchDesc}"`}
-            {filterCategoryId && ` • Categoría: ${categories.find(c => c.id === filterCategoryId)?.name}`}
-            {filterStatus !== 'all' && ` • Estado: ${filterStatus}`}
           </div>
         )}
       </div>
 
-      {/* Table */}
       <div className="card p-0 overflow-hidden">
-        {isLoading ? (
-          <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-        ) : !charges || charges.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-lg">{allCharges?.length === 0 ? 'No hay movimientos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
-            <p className="text-sm mt-1">Sube una cartola en la sección "Subir Cartola"</p>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left w-12">
-                  <input
-                    type="checkbox"
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    checked={selectedIds.size === charges.length && charges.length > 0}
-                    className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                  />
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('date')}
-                >
-                  Fecha <SortIcon field="date" />
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('description')}
-                >
-                  Descripción <SortIcon field="description" />
-                </th>
-                <th
-                  className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('amount')}
-                >
-                  Monto <SortIcon field="amount" />
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('category')}
-                >
-                  Categoría <SortIcon field="category" />
-                </th>
-                <th
-                  className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('status')}
-                >
-                  Estado <SortIcon field="status" />
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+
+        {/* ── Mobile card list ── */}
+        <div className="md:hidden">
+          {isLoading ? (
+            <div className="divide-y divide-gray-100">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-start gap-3 px-4 py-3.5">
+                  <Skeleton className="w-4 h-4 mt-0.5 rounded shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex justify-between gap-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-16 shrink-0" />
+                    </div>
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !charges.length ? emptyMessage : (
+            <div className="divide-y divide-gray-100">
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                <input
+                  type="checkbox"
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  checked={selectedIds.size === charges.length && charges.length > 0}
+                  className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-xs text-gray-500 font-medium">{charges.length} movimientos</span>
+              </div>
               {charges.map((charge) => (
-                <ChargeRow
+                <MobileChargeCard
                   key={charge.id}
                   charge={charge}
                   categories={categories}
@@ -235,9 +235,37 @@ export default function ChargesPage() {
                   onSelect={handleSelect}
                 />
               ))}
-            </tbody>
-          </table>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Desktop table ── */}
+        <div className="hidden md:block">
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+          ) : !charges.length ? emptyMessage : (
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left w-12">
+                    <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={selectedIds.size === charges.length && charges.length > 0} className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('date')}>Fecha <SortIcon field="date" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('status')}>Estado <SortIcon field="status" /></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {charges.map((charge) => (
+                  <ChargeRow key={charge.id} charge={charge} categories={categories} selected={selectedIds.has(charge.id)} onSelect={handleSelect} />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
