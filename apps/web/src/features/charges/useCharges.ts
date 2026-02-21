@@ -70,8 +70,9 @@ export function useBulkConfirm() {
 // Client-side sorting and filtering utilities
 export function sortCharges(charges: Charge[], field: SortField, order: SortOrder): Charge[] {
   const sorted = [...charges].sort((a, b) => {
-    let aVal: any = a[field === 'status' ? 'is_confirmed' : field]
-    let bVal: any = b[field === 'status' ? 'is_confirmed' : field]
+    const key = field === 'status' ? 'is_confirmed' : field === 'category' ? 'category_id' : field
+    let aVal: any = a[key as keyof Charge]
+    let bVal: any = b[key as keyof Charge]
 
     if (field === 'amount') {
       aVal = Number(aVal) || 0

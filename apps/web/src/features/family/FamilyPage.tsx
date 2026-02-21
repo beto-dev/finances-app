@@ -66,7 +66,7 @@ export default function FamilyPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
-  const { data: family, isLoading: loadingFamily, error: familyError } = useFamilyInfo()
+  const { data: family, isLoading: loadingFamily } = useFamilyInfo()
   const hasFamily = !!family
   const { data: members = [], isLoading: loadingMembers } = useFamilyMembers(hasFamily)
   const createFamily = useCreateFamily()
