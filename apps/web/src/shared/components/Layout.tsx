@@ -1,16 +1,22 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/useAuth'
 
 // ── Sidebar nav (desktop) ────────────────────────────────────────────────────
-const sidebarItems = [
-  { to: '/resumen', label: '📊 Resumen' },
+const topItems = [
+  { to: '/resumen',    label: '📊 Resumen' },
   { to: '/nuevo-gasto', label: '➕ Nuevo Gasto' },
-  { to: '/cargar', label: '📤 Subir Cartola' },
-  { to: '/cargos', label: '📋 Movimientos' },
-  { to: '/cargos-familia', label: '👨‍👩‍👧 Movimientos Familia' },
-  { to: '/aportes', label: '💰 Aportes' },
-  { to: '/familia', label: '👥 Familia' },
+  { to: '/cargar',     label: '📤 Subir Cartola' },
+  { to: '/cargos',     label: '📋 Movimientos' },
 ]
+
+const familyItems = [
+  { to: '/cargos-familia', label: '📋 Movimientos' },
+  { to: '/aportes',        label: '💰 Aportes' },
+  { to: '/familia',        label: '👥 Miembros' },
+]
+
+const familyRoutes = familyItems.map((i) => i.to)
 
 // ── Bottom tab bar (mobile) ──────────────────────────────────────────────────
 function IconChart() {
@@ -66,9 +72,19 @@ const tabItems = [
   { to: '/aportes',        label: 'Aportes',    Icon: IconDollar },
 ]
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+    isActive
+      ? 'bg-brand-50 text-brand-700'
+      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+  }`
+
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  const [familyOpen, setFamilyOpen] = useState(() => familyRoutes.includes(pathname))
 
   const handleLogout = () => {
     logout()
@@ -84,21 +100,38 @@ export default function Layout() {
           <h1 className="text-xl font-bold text-brand-700">Finanzas</h1>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-1">
-          {sidebarItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`
-              }
-            >
+          {topItems.map((item) => (
+            <NavLink key={item.to} to={item.to} className={navLinkClass}>
               {item.label}
             </NavLink>
           ))}
+
+          {/* Familia group */}
+          <div>
+            <button
+              onClick={() => setFamilyOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            >
+              <span>👨‍👩‍👧 Familia</span>
+              <svg
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+                strokeLinecap="round" strokeLinejoin="round"
+                className={`w-3.5 h-3.5 transition-transform ${familyOpen ? 'rotate-180' : ''}`}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {familyOpen && (
+              <div className="mt-1 ml-3 pl-3 border-l border-gray-200 space-y-1">
+                {familyItems.map((item) => (
+                  <NavLink key={item.to} to={item.to} className={navLinkClass}>
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
         <div className="px-4 py-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 truncate mb-2">{user?.email}</p>
