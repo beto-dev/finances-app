@@ -292,7 +292,7 @@ export default function FamilyChargesPage() {
                 const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(charge.amount)
                 const formattedDate = new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
                 return (
-                  <div key={charge.id} className="px-4 py-3.5">
+                  <div key={charge.id} className="px-4 py-3.5 transition-all active:bg-gray-100">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
                       <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formattedAmount}</p>

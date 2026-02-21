@@ -137,7 +137,7 @@ export default function Layout() {
             className={({ isActive }) =>
               fab
                 ? 'flex-1 flex flex-col items-center justify-center pb-2 pt-1'
-                : `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
+                : `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-all active:scale-90 ${
                     isActive ? 'text-brand-700' : 'text-gray-400'
                   }`
             }

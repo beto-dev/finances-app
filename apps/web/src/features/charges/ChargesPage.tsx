@@ -38,7 +38,7 @@ function MobileChargeCard({
   })
 
   return (
-    <div className={`flex items-start gap-3 px-4 py-3.5 transition-colors ${selected ? 'bg-brand-50' : ''}`}>
+    <div className={`flex items-start gap-3 px-4 py-3.5 transition-all active:bg-gray-100 ${selected ? 'bg-brand-50' : ''}`}>
       <input
         type="checkbox"
         checked={selected}
