@@ -1,0 +1,26 @@
+# Environment & secrets
+.env
+.env.*
+.mcp.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.turbo/
+
+# OS
+.DS_Store
+
+# Personal files / debug scripts
+*.pdf
+analyze_pdf.py
+test_parser.py
