@@ -7,11 +7,11 @@ const topItems = [
   { to: '/resumen',    label: '📊 Resumen' },
   { to: '/nuevo-gasto', label: '➕ Nuevo Gasto' },
   { to: '/cargar',     label: '📤 Subir Cartola' },
-  { to: '/cargos',     label: '📋 Movimientos' },
+  { to: '/gastos',     label: '📋 Gastos' },
 ]
 
 const familyItems = [
-  { to: '/cargos-familia', label: '📋 Movimientos' },
+  { to: '/gastos-familia', label: '📋 Gastos' },
   { to: '/aportes',        label: '💰 Aportes' },
   { to: '/familia',        label: '👥 Miembros' },
 ]
@@ -66,7 +66,7 @@ function IconPlus() {
 
 const tabItems = [
   { to: '/resumen',        label: 'Resumen',    Icon: IconChart  },
-  { to: '/cargos-familia', label: 'Familia',    Icon: IconList   },
+  { to: '/gastos-familia', label: 'Familia',    Icon: IconList   },
   { to: '/nuevo-gasto',    label: 'Gasto',      Icon: IconPlus,  fab: true },
   { to: '/cargar',         label: 'Subir',      Icon: IconUpload },
   { to: '/aportes',        label: 'Aportes',    Icon: IconDollar },

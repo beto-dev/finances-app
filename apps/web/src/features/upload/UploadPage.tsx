@@ -173,7 +173,7 @@ export default function UploadPage() {
       {pendingUpload && (
         <ConfirmDialog
           title="Archivo ya cargado"
-          message={`"${pendingUpload.filename}" ya fue subido antes. ¿Quieres subirla de nuevo y duplicar los movimientos?`}
+          message={`"${pendingUpload.filename}" ya fue subido antes. ¿Quieres subirla de nuevo y duplicar los gastos?`}
           confirmLabel="Subir de todas formas"
           onConfirm={async () => {
             const { formData, filename } = pendingUpload

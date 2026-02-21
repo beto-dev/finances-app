@@ -165,7 +165,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Número de movimientos</p>
+          <p className="text-sm text-gray-500">Número de gastos</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{dashboard.charges.length}</p>
         </div>
         <div className="card">
@@ -290,7 +290,7 @@ export default function DashboardPage() {
               <thead>
                 <tr className="text-left text-gray-500 border-b border-gray-100">
                   <th className="pb-2 font-medium">Categoría</th>
-                  <th className="pb-2 font-medium text-right">Movimientos</th>
+                  <th className="pb-2 font-medium text-right">Gastos</th>
                   <th className="pb-2 font-medium text-right">Total</th>
                   <th className="pb-2 font-medium text-right">% del total</th>
                 </tr>

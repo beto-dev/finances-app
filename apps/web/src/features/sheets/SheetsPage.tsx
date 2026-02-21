@@ -54,7 +54,7 @@ export default function SheetsPage() {
     try {
       const result = await sync.mutateAsync()
       setToast({
-        message: `${result.synced} movimientos sincronizados en ${result.months.length} mes(es)`,
+        message: `${result.synced} gastos sincronizados en ${result.months.length} mes(es)`,
         type: 'success',
       })
     } catch {
@@ -114,7 +114,7 @@ export default function SheetsPage() {
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              Conecta tu cuenta de Google para sincronizar tus movimientos confirmados automáticamente
+              Conecta tu cuenta de Google para sincronizar tus gastos confirmados automáticamente
               a una hoja de cálculo compartida.
             </p>
           )}
@@ -125,7 +125,7 @@ export default function SheetsPage() {
           <div className="card space-y-4">
             <h2 className="text-base font-semibold text-gray-800">Sincronizar</h2>
             <p className="text-sm text-gray-500">
-              Sincroniza todos los movimientos confirmados a tu hoja de cálculo de Google. Los datos
+              Sincroniza todos los gastos confirmados a tu hoja de cálculo de Google. Los datos
               se organizan por mes en pestañas separadas. Esta operación es idempotente —
               no se duplican registros.
             </p>

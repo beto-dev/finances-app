@@ -128,11 +128,11 @@ export default function FamilyChargesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Movimientos Familia</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Movimientos confirmados por todos los miembros</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gastos Familia</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Gastos confirmados por todos los miembros</p>
         </div>
         <span className="text-sm text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-          {charges.length} movimientos
+          {charges.length} gastos
         </span>
       </div>
 
@@ -174,7 +174,7 @@ export default function FamilyChargesPage() {
                   <th className="pb-2 font-medium">Miembro</th>
                   <th className="pb-2 font-medium text-right">% aporte</th>
                   <th className="pb-2 font-medium text-right">Debería pagar</th>
-                  <th className="pb-2 font-medium text-right">Pagó (movimientos)</th>
+                  <th className="pb-2 font-medium text-right">Pagó (gastos)</th>
                   <th className="pb-2 font-medium text-right">Diferencia</th>
                 </tr>
               </thead>
@@ -281,8 +281,8 @@ export default function FamilyChargesPage() {
             </div>
           ) : charges.length === 0 ? (
             <div className="text-center py-12 text-gray-400 px-4">
-              <p className="text-base">Sin movimientos confirmados para este período</p>
-              <p className="text-sm mt-1">Los movimientos aparecen aquí cuando un miembro los confirma</p>
+              <p className="text-base">Sin gastos confirmados para este período</p>
+              <p className="text-sm mt-1">Los gastos aparecen aquí cuando un miembro los confirma</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -332,8 +332,8 @@ export default function FamilyChargesPage() {
             </table>
           ) : charges.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
-              <p className="text-lg">Sin movimientos confirmados para este período</p>
-              <p className="text-sm mt-1">Los movimientos aparecen aquí cuando un miembro los confirma en "Movimientos"</p>
+              <p className="text-lg">Sin gastos confirmados para este período</p>
+              <p className="text-sm mt-1">Los gastos aparecen aquí cuando un miembro los confirma en "Gastos"</p>
             </div>
           ) : (
             <table className="w-full">

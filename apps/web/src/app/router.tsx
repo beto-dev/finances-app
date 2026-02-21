@@ -22,8 +22,8 @@ export default function AppRouter() {
           <Route path="/" element={<Navigate to="/resumen" replace />} />
           <Route path="/resumen" element={<DashboardPage />} />
           <Route path="/cargar" element={<UploadPage />} />
-          <Route path="/cargos" element={<ChargesPage />} />
-          <Route path="/cargos-familia" element={<FamilyChargesPage />} />
+          <Route path="/gastos" element={<ChargesPage />} />
+          <Route path="/gastos-familia" element={<FamilyChargesPage />} />
           <Route path="/aportes" element={<ContributionsPage />} />
           <Route path="/familia" element={<FamilyPage />} />
           <Route path="/hojas" element={<SheetsPage />} />

@@ -41,10 +41,10 @@ class ClaudeCategorizer:
 Categorias disponibles (formato: id: nombre):
 {chr(10).join(category_names)}
 
-Cargos a categorizar:
+Gastos a categorizar:
 {charge_list}
 
-Responde UNICAMENTE con un JSON array con el mismo numero de elementos que los cargos, en el mismo orden.
+Responde UNICAMENTE con un JSON array con el mismo numero de elementos que los gastos, en el mismo orden.
 Cada elemento debe tener: {{"index": 0, "category_id": "uuid-de-la-categoria"}}.
 Si no puedes determinar la categoria, usa la categoria "Otros"."""
 

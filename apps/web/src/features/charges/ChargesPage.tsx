@@ -117,10 +117,10 @@ export default function ChargesPage() {
     if (selectedIds.size === 0) return
     try {
       const result = await bulkConfirm.mutateAsync(Array.from(selectedIds))
-      setToast({ message: `${result.confirmed} movimientos confirmados`, type: 'success' })
+      setToast({ message: `${result.confirmed} gastos confirmados`, type: 'success' })
       setSelectedIds(new Set())
     } catch {
-      setToast({ message: 'Error al confirmar movimientos', type: 'error' })
+      setToast({ message: 'Error al confirmar gastos', type: 'error' })
     }
   }
 
@@ -138,7 +138,7 @@ export default function ChargesPage() {
 
   const emptyMessage = (
     <div className="text-center py-12 text-gray-400 px-4">
-      <p className="text-base">{allCharges?.length === 0 ? 'No hay movimientos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
+      <p className="text-base">{allCharges?.length === 0 ? 'No hay gastos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
       <p className="text-sm mt-1">Sube una cartola en "Subir"</p>
     </div>
   )
@@ -146,7 +146,7 @@ export default function ChargesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Movimientos</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Gastos</h1>
         {selectedIds.size > 0 && (
           <button onClick={handleBulkConfirm} className="btn-primary" disabled={bulkConfirm.isPending}>
             {bulkConfirm.isPending ? <Spinner size="sm" /> : `Confirmar ${selectedIds.size}`}
@@ -191,7 +191,7 @@ export default function ChargesPage() {
         </div>
         {(searchDesc || filterCategoryId || filterStatus !== 'all') && (
           <div className="text-xs text-gray-600 pt-1">
-            Mostrando {charges.length} de {allCharges?.length || 0} movimientos
+            Mostrando {charges.length} de {allCharges?.length || 0} gastos
           </div>
         )}
       </div>
@@ -224,7 +224,7 @@ export default function ChargesPage() {
                   checked={selectedIds.size === charges.length && charges.length > 0}
                   className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                 />
-                <span className="text-xs text-gray-500 font-medium">{charges.length} movimientos</span>
+                <span className="text-xs text-gray-500 font-medium">{charges.length} gastos</span>
               </div>
               {charges.map((charge) => (
                 <MobileChargeCard

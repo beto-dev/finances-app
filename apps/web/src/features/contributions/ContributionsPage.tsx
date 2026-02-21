@@ -170,7 +170,7 @@ export default function ContributionsPage() {
 
         {totalFamilyExpense === 0 ? (
           <p className="text-sm text-gray-400 py-4 text-center">
-            Sin movimientos confirmados en {MONTHS[month - 1]} {year}
+            Sin gastos confirmados en {MONTHS[month - 1]} {year}
           </p>
         ) : (
           <>
