@@ -10,6 +10,7 @@ import FamilyPage from '../features/family/FamilyPage'
 import SheetsPage from '../features/sheets/SheetsPage'
 import FamilyChargesPage from '../features/charges/FamilyChargesPage'
 import ContributionsPage from '../features/contributions/ContributionsPage'
+import QuickExpensePage from '../features/expenses/QuickExpensePage'
 
 export default function AppRouter() {
   return (
@@ -26,6 +27,7 @@ export default function AppRouter() {
           <Route path="/aportes" element={<ContributionsPage />} />
           <Route path="/familia" element={<FamilyPage />} />
           <Route path="/hojas" element={<SheetsPage />} />
+          <Route path="/nuevo-gasto" element={<QuickExpensePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

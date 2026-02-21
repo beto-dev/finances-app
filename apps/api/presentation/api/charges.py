@@ -6,7 +6,7 @@ from infrastructure.repositories.sql_charge_repository import SQLChargeRepositor
 from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
 from infrastructure.repositories.sql_user_repository import SQLUserRepository
 from application.use_cases.review_charges import ReviewChargesUseCase
-from presentation.schemas.charge import ChargeResponse, ChargeUpdateCategory, BulkConfirmRequest
+from presentation.schemas.charge import ChargeResponse, ChargeUpdateCategory, BulkConfirmRequest, ManualChargeRequest
 
 router = APIRouter(prefix="/api/charges", tags=["charges"])
 
@@ -91,6 +91,71 @@ async def bulk_confirm(
     uc = ReviewChargesUseCase(charge_repo, category_repo)
     count = await uc.bulk_confirm(body.charge_ids)
     return {"confirmed": count}
+
+
+@router.post("/manual", response_model=ChargeResponse)
+async def create_manual_charge(
+    body: ManualChargeRequest,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+):
+    import uuid as _uuid
+    from sqlalchemy import select
+    from infrastructure.database.models import StatementModel, ChargeModel as DBChargeModel
+
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user or not user.family_id:
+        raise HTTPException(status_code=400, detail="Usuario sin familia")
+
+    result = await db.execute(
+        select(StatementModel)
+        .where(StatementModel.family_id == user.family_id)
+        .where(StatementModel.bank_hint == "manual")
+    )
+    statement = result.scalar_one_or_none()
+
+    if not statement:
+        statement = StatementModel(
+            id=_uuid.uuid4(),
+            family_id=user.family_id,
+            uploaded_by=current_user_id,
+            filename="Gastos Manuales",
+            bank_hint="manual",
+            type="checking",
+            status="parsed",
+        )
+        db.add(statement)
+        await db.flush()
+
+    charge = DBChargeModel(
+        id=_uuid.uuid4(),
+        statement_id=statement.id,
+        date=body.date,
+        description=body.description,
+        amount=body.amount,
+        currency=body.currency,
+        category_id=body.category_id,
+        is_confirmed=True,
+        ai_suggested=False,
+    )
+    db.add(charge)
+    await db.commit()
+    await db.refresh(charge)
+
+    return ChargeResponse(
+        id=charge.id,
+        statement_id=charge.statement_id,
+        date=charge.date,
+        description=charge.description,
+        amount=charge.amount,
+        currency=charge.currency,
+        category_id=charge.category_id,
+        is_confirmed=charge.is_confirmed,
+        ai_suggested=charge.ai_suggested,
+        created_at=charge.created_at,
+        statement_type="manual",
+        uploaded_by=current_user_id,
+    )
 
 
 @router.get("/categories", response_model=list[dict])

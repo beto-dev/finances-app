@@ -35,3 +35,11 @@ class ChargeUpdateCategory(BaseModel):
 
 class BulkConfirmRequest(BaseModel):
     charge_ids: list[UUID]
+
+
+class ManualChargeRequest(BaseModel):
+    amount: Decimal
+    description: str
+    category_id: UUID | None = None
+    date: date
+    currency: str = "CLP"
