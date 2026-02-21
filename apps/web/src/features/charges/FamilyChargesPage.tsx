@@ -4,7 +4,7 @@ import { useFamilyCharges, useCategories, sortCharges, filterCharges, SortField,
 import { FamilyMember } from '../../shared/types'
 import { NAME_BY_EMAIL } from '../../shared/utils/memberNames'
 import client from '../../shared/api/client'
-import Spinner from '../../shared/components/Spinner'
+import Skeleton from '../../shared/components/Skeleton'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -265,7 +265,19 @@ export default function FamilyChargesPage() {
       {/* Table */}
       <div className="card p-0 overflow-hidden">
         {isLoading ? (
-          <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+          <table className="w-full">
+            <tbody>
+              {[...Array(8)].map((_, i) => (
+                <tr key={i} className="border-b border-gray-100">
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
+                  <td className="px-4 py-3 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : charges.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <p className="text-lg">Sin movimientos confirmados para este período</p>

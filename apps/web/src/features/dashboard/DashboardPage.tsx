@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import { useDashboard } from './useDashboard'
+import Skeleton from '../../shared/components/Skeleton'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   const [year, setYear] = useState(now.getFullYear())
 
   const activeMonth = view === 'mensual' ? month : undefined
-  const dashboard = useDashboard(activeMonth, year)
+  const { isLoading, ...dashboard } = useDashboard(activeMonth, year)
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('es-CL', { style: 'currency', currency: dashboard.currency, maximumFractionDigits: 0 }).format(v)
@@ -134,7 +135,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
+      {/* ── Skeleton loading state ── */}
+      {isLoading && (
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="card space-y-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-9 w-36" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card"><Skeleton className="h-5 w-32 mb-4" /><Skeleton className="h-64 w-full" /></div>
+            <div className="card"><Skeleton className="h-5 w-28 mb-4" /><Skeleton className="h-64 w-full" /></div>
+          </div>
+        </div>
+      )}
+
+      {/* Summary cards + charts */}
+      {!isLoading && (<>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="card">
           <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gasto total' : 'Gasto total del año'}</p>
@@ -300,6 +321,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      </>)}
     </div>
   )
 }

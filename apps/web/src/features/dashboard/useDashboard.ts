@@ -25,8 +25,8 @@ interface DashboardData {
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
-export function useDashboard(month: number | undefined, year: number): DashboardData {
-  const { data: charges } = useQuery<Charge[]>({
+export function useDashboard(month: number | undefined, year: number): DashboardData & { isLoading: boolean } {
+  const { data: charges, isLoading } = useQuery<Charge[]>({
     queryKey: ['charges', month ?? 'all', year],
     queryFn: async () => {
       const res = await client.get('/api/charges/', { params: { month, year } })
@@ -50,7 +50,7 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     charges: charges ?? [],
   }
 
-  if (!charges || charges.length === 0) return dashboard
+  if (!charges || charges.length === 0) return { ...dashboard, isLoading }
 
   const catMap = new Map(categories.map((c) => [c.id, c]))
   const byCat = new Map<string, { amount: number; count: number }>()
@@ -85,5 +85,5 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     return { month: m, label: MONTH_LABELS[i], ...data }
   })
 
-  return dashboard
+  return { ...dashboard, isLoading }
 }
