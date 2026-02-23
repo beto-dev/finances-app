@@ -5,6 +5,7 @@ import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
 import Skeleton from '../../shared/components/Skeleton'
 import Toast from '../../shared/components/Toast'
+import CategorySheet from '../../shared/components/CategorySheet'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -19,13 +20,15 @@ function MobileChargeCard({
   const bulkConfirm = useBulkConfirm()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const isConfirmed = optimisticConfirmed ?? charge.is_confirmed
   const currentCatId = optimisticCatId ?? charge.category_id
   const currentCat = categories.find((c) => c.id === currentCatId)
 
   const handleCategoryChange = async (categoryId: string) => {
-    setOptimisticCatId(categoryId)
+    setOptimisticCatId(categoryId || null)
+    if (!categoryId) return
     try {
       await updateCategory.mutateAsync({ chargeId: charge.id, categoryId })
     } catch {
@@ -58,24 +61,39 @@ function MobileChargeCard({
           <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
           <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formattedAmount}</p>
         </div>
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
           <span className="text-xs text-gray-400">{formattedDate}</span>
-          <select
-            value={currentCatId ?? ''}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 max-w-[150px] min-h-[32px]"
+
+          {/* Category trigger — opens bottom sheet */}
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 border border-gray-200 active:bg-gray-50 transition-colors"
             style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
           >
-            <option value="">Sin categoría</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+            {currentCat?.color && (
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: currentCat.color }} />
+            )}
+            <span className="max-w-[110px] truncate">{currentCat?.name ?? 'Sin categoría'}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+              strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 shrink-0 text-gray-400">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
           {!isConfirmed && charge.ai_suggested && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">IA</span>
           )}
         </div>
       </div>
+
+      {sheetOpen && (
+        <CategorySheet
+          categories={categories}
+          value={currentCatId ?? null}
+          onChange={handleCategoryChange}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
 
       {/* Tap-to-confirm button — 44px touch target */}
       <button

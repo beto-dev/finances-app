@@ -4,6 +4,7 @@ import { useCategories } from '../charges/useCharges'
 import client from '../../shared/api/client'
 import Toast from '../../shared/components/Toast'
 import Spinner from '../../shared/components/Spinner'
+import CategorySheet from '../../shared/components/CategorySheet'
 
 function useCreateManualCharge() {
   return useMutation({
@@ -23,6 +24,7 @@ export default function QuickExpensePage() {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [catSheetOpen, setCatSheetOpen] = useState(false)
   const [date, setDate] = useState(today)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
@@ -101,18 +103,32 @@ export default function QuickExpensePage() {
 
           <div>
             <label className="label">Categoría</label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="input"
-            >
-              <option value="">Sin categoría</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+            {(() => {
+              const currentCat = categories.find((c) => c.id === categoryId)
+              return (
+                <button
+                  type="button"
+                  onClick={() => setCatSheetOpen(true)}
+                  className="input flex items-center gap-2 text-left"
+                >
+                  {currentCat ? (
+                    <>
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: currentCat.color ?? '#9ca3af' }}
+                      />
+                      <span className="flex-1 text-gray-900">{currentCat.name}</span>
+                    </>
+                  ) : (
+                    <span className="flex-1 text-gray-400">Sin categoría</span>
+                  )}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+                    strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0 text-gray-400">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              )
+            })()}
           </div>
 
           <div>
@@ -134,6 +150,15 @@ export default function QuickExpensePage() {
           {mutation.isPending ? <Spinner size="sm" /> : 'Registrar Gasto'}
         </button>
       </form>
+
+      {catSheetOpen && (
+        <CategorySheet
+          categories={categories}
+          value={categoryId || null}
+          onChange={(id) => setCategoryId(id)}
+          onClose={() => setCatSheetOpen(false)}
+        />
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
