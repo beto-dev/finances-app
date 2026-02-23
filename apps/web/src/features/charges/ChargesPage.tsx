@@ -13,10 +13,14 @@ const MONTHS = [
 
 // ── Mobile card component ────────────────────────────────────────────────────
 function MobileChargeCard({
-  charge, categories, selected, onSelect,
-}: { charge: Charge; categories: Category[]; selected: boolean; onSelect: (id: string, checked: boolean) => void }) {
+  charge, categories,
+}: { charge: Charge; categories: Category[] }) {
   const updateCategory = useUpdateCategory()
+  const bulkConfirm = useBulkConfirm()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
+  const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
+
+  const isConfirmed = optimisticConfirmed ?? charge.is_confirmed
   const currentCatId = optimisticCatId ?? charge.category_id
   const currentCat = categories.find((c) => c.id === currentCatId)
 
@@ -29,6 +33,16 @@ function MobileChargeCard({
     }
   }
 
+  const handleConfirm = async () => {
+    if (isConfirmed || bulkConfirm.isPending) return
+    setOptimisticConfirmed(true)
+    try {
+      await bulkConfirm.mutateAsync([charge.id])
+    } catch {
+      setOptimisticConfirmed(null)
+    }
+  }
+
   const formattedAmount = new Intl.NumberFormat('es-CL', {
     style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0,
   }).format(charge.amount)
@@ -38,13 +52,7 @@ function MobileChargeCard({
   })
 
   return (
-    <div className={`flex items-start gap-3 px-4 py-3.5 transition-all active:bg-gray-100 ${selected ? 'bg-brand-50' : ''}`}>
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={(e) => onSelect(charge.id, e.target.checked)}
-        className="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
-      />
+    <div className="flex items-center gap-3 px-4 py-3.5">
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
@@ -63,15 +71,28 @@ function MobileChargeCard({
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
-          {charge.is_confirmed ? (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Confirmado</span>
-          ) : charge.ai_suggested ? (
+          {!isConfirmed && charge.ai_suggested && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">IA</span>
-          ) : (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">Pendiente</span>
           )}
         </div>
       </div>
+
+      {/* Tap-to-confirm button */}
+      <button
+        onClick={handleConfirm}
+        disabled={isConfirmed}
+        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 ${
+          isConfirmed
+            ? 'bg-green-500 text-white'
+            : 'border-2 border-gray-300 text-gray-300 hover:border-green-400 hover:text-green-400'
+        }`}
+        aria-label={isConfirmed ? 'Confirmado' : 'Confirmar'}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+          strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </button>
     </div>
   )
 }
@@ -148,7 +169,7 @@ export default function ChargesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Gastos</h1>
         {selectedIds.size > 0 && (
-          <button onClick={handleBulkConfirm} className="btn-primary" disabled={bulkConfirm.isPending}>
+          <button onClick={handleBulkConfirm} className="btn-primary hidden md:inline-flex" disabled={bulkConfirm.isPending}>
             {bulkConfirm.isPending ? <Spinner size="sm" /> : `Confirmar ${selectedIds.size}`}
           </button>
         )}
@@ -203,8 +224,7 @@ export default function ChargesPage() {
           {isLoading ? (
             <div className="divide-y divide-gray-100">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex items-start gap-3 px-4 py-3.5">
-                  <Skeleton className="w-4 h-4 mt-0.5 rounded shrink-0" />
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="flex-1 space-y-2">
                     <div className="flex justify-between gap-2">
                       <Skeleton className="h-4 w-40" />
@@ -212,18 +232,13 @@ export default function ChargesPage() {
                     </div>
                     <Skeleton className="h-3 w-32" />
                   </div>
+                  <Skeleton className="w-8 h-8 rounded-full shrink-0" />
                 </div>
               ))}
             </div>
           ) : !charges.length ? emptyMessage : (
             <div className="divide-y divide-gray-100">
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-                <input
-                  type="checkbox"
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  checked={selectedIds.size === charges.length && charges.length > 0}
-                  className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                />
+              <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
                 <span className="text-xs text-gray-500 font-medium">{charges.length} gastos</span>
               </div>
               {charges.map((charge) => (
@@ -231,8 +246,6 @@ export default function ChargesPage() {
                   key={charge.id}
                   charge={charge}
                   categories={categories}
-                  selected={selectedIds.has(charge.id)}
-                  onSelect={handleSelect}
                 />
               ))}
             </div>
