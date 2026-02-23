@@ -63,7 +63,7 @@ function MobileChargeCard({
           <select
             value={currentCatId ?? ''}
             onChange={(e) => handleCategoryChange(e.target.value)}
-            className="text-xs border border-gray-200 rounded-md px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-500 max-w-[140px]"
+            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 max-w-[150px] min-h-[32px]"
             style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
           >
             <option value="">Sin categoría</option>
@@ -77,11 +77,11 @@ function MobileChargeCard({
         </div>
       </div>
 
-      {/* Tap-to-confirm button */}
+      {/* Tap-to-confirm button — 44px touch target */}
       <button
         onClick={handleConfirm}
         disabled={isConfirmed}
-        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 ${
+        className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90 ${
           isConfirmed
             ? 'bg-green-500 text-white'
             : 'border-2 border-gray-300 text-gray-300 hover:border-green-400 hover:text-green-400'
@@ -89,7 +89,7 @@ function MobileChargeCard({
         aria-label={isConfirmed ? 'Confirmado' : 'Confirmar'}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
-          strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+          strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </button>

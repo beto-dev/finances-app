@@ -68,21 +68,22 @@ export default function QuickExpensePage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Amount — large display */}
         <div className="card p-6 text-center">
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Monto (CLP)</p>
+          <p className="text-xs text-gray-500 uppercase tracking-widest font-medium mb-4">Monto (CLP)</p>
           <div className="flex items-center justify-center gap-1">
-            <span className="text-3xl font-light text-gray-400">$</span>
+            <span className={`text-4xl font-light transition-colors ${amount ? 'text-gray-400' : 'text-gray-200'}`}>$</span>
             <input
               type="number"
               inputMode="numeric"
               placeholder="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="text-5xl font-bold text-gray-900 bg-transparent border-none outline-none w-full text-center focus:ring-0 placeholder-gray-200"
+              className="text-5xl font-bold text-gray-900 bg-transparent border-none outline-none w-full text-center focus:ring-0 placeholder-gray-300"
               min="1"
               step="1"
               autoFocus
             />
           </div>
+          <div className="mt-4 h-px bg-gray-200" />
         </div>
 
         <div className="card p-4 space-y-4">

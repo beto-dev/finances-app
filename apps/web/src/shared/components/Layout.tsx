@@ -106,7 +106,7 @@ export default function Layout() {
           </button>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 pb-[calc(80px+env(safe-area-inset-bottom))] md:pb-8">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 pb-[calc(90px+env(safe-area-inset-bottom))] md:pb-8">
           <Outlet />
         </div>
       </main>
@@ -122,23 +122,23 @@ export default function Layout() {
             to={to}
             className={({ isActive }) =>
               fab
-                ? 'flex-1 flex flex-col items-center justify-center pb-2 pt-1'
-                : `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-all active:scale-90 ${
-                    isActive ? 'opacity-100' : 'opacity-40'
+                ? 'flex-1 flex flex-col items-center justify-center pb-3 pt-1'
+                : `flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-all active:scale-90 ${
+                    isActive ? 'opacity-100' : 'opacity-50'
                   }`
             }
           >
             {({ isActive }) =>
               fab ? (
-                <span className={`flex items-center justify-center w-12 h-12 rounded-2xl shadow-lg transition-transform active:scale-95 text-2xl ${
+                <span className={`flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg transition-transform active:scale-95 text-2xl ${
                   isActive ? 'bg-brand-700' : 'bg-brand-600'
                 }`}>
                   {emoji}
                 </span>
               ) : (
                 <>
-                  <span className="text-2xl leading-none">{emoji}</span>
-                  <span className={`text-[10px] font-medium leading-none ${isActive ? 'text-brand-700' : 'text-gray-400'}`}>
+                  <span className="text-[22px] leading-none">{emoji}</span>
+                  <span className={`text-[11px] font-medium leading-none ${isActive ? 'text-brand-700' : 'text-gray-500'}`}>
                     {label}
                   </span>
                 </>
