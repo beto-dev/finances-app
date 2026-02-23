@@ -82,15 +82,15 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">
           {view === 'mensual' ? 'Resumen Mensual' : 'Resumen Anual'}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
-              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'mensual'
                   ? 'bg-green-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -100,7 +100,7 @@ export default function DashboardPage() {
               Mensual
             </button>
             <button
-              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'anual'
                   ? 'bg-green-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -114,7 +114,7 @@ export default function DashboardPage() {
           {/* Month picker — only in monthly view */}
           {view === 'mensual' && (
             <select
-              className="input w-36"
+              className="input flex-1 min-w-[130px]"
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
             >

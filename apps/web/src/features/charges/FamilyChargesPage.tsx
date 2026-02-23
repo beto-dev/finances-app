@@ -126,20 +126,15 @@ export default function FamilyChargesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gastos Familia</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Gastos confirmados por todos los miembros</p>
-        </div>
-        <span className="text-sm text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-          {charges.length} gastos
-        </span>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Gastos Familia</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Gastos confirmados por todos los miembros</p>
       </div>
 
       {/* Date filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-2 mb-4">
         <select
-          className="input w-40"
+          className="input flex-1"
           value={filterMonth ?? ''}
           onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}
         >
@@ -149,7 +144,7 @@ export default function FamilyChargesPage() {
           ))}
         </select>
         <select
-          className="input w-28"
+          className="input w-24"
           value={filterYear ?? ''}
           onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : undefined)}
         >

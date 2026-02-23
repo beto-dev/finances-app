@@ -176,12 +176,12 @@ export default function ChargesPage() {
       </div>
 
       {/* Date filters */}
-      <div className="flex gap-3 mb-4">
-        <select className="input w-40" value={filterMonth ?? ''} onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}>
+      <div className="flex gap-2 mb-4">
+        <select className="input flex-1" value={filterMonth ?? ''} onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}>
           <option value="">Todos los meses</option>
           {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
         </select>
-        <select className="input w-28" value={filterYear ?? ''} onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : undefined)}>
+        <select className="input w-24" value={filterYear ?? ''} onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : undefined)}>
           <option value="">Todos los años</option>
           {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
