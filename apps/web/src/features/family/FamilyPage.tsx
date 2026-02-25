@@ -38,6 +38,7 @@ function useCreateFamily() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['family'] })
       queryClient.invalidateQueries({ queryKey: ['family-members'] })
+      queryClient.invalidateQueries({ queryKey: ['my-role'] })
     },
   })
 }
