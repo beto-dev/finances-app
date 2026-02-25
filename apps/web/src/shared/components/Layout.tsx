@@ -86,8 +86,10 @@ export default function Layout() {
                     {item.label}
                   </NavLink>
                 ))}
-                {isAdmin && (
-                  <NavLink to="/familia" className={navLinkClass}>👥 Miembros</NavLink>
+                {roleData?.role !== 'member' && (
+                  <NavLink to="/familia" className={navLinkClass}>
+                    {isAdmin ? '👥 Miembros' : '🏠 Crear familia'}
+                  </NavLink>
                 )}
               </div>
             )}
