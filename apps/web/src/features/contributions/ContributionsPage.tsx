@@ -154,8 +154,8 @@ export default function ContributionsPage() {
           <div className="mt-4">
             <button
               onClick={handleSave}
-              disabled={save.isPending}
-              className="btn-primary"
+              disabled={save.isPending || totalOff}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {save.isPending ? <Spinner size="sm" /> : 'Guardar aportes'}
             </button>
