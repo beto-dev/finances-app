@@ -29,7 +29,8 @@ app.include_router(statements.router)
 app.include_router(charges.router)
 app.include_router(families.router)
 app.include_router(google.router)
-app.include_router(debug.router)
+if os.environ.get("ENABLE_DEBUG_ENDPOINTS") == "true":
+    app.include_router(debug.router)
 
 
 @app.on_event("startup")
