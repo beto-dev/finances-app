@@ -45,6 +45,7 @@ class FamilyMemberModel(Base):
     family_id = Column(UUID(as_uuid=True), ForeignKey("families.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role = Column(String(50), nullable=False, default="member")
+    is_active = Column(Boolean, nullable=False, default=True)
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (UniqueConstraint("family_id", "user_id", name="uq_family_member"),)

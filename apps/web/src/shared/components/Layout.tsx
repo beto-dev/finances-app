@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/useAuth'
+import { useMyRole } from '../../features/family/useMyRole'
 
 // ── Sidebar nav (desktop) ────────────────────────────────────────────────────
 const topItems = [
@@ -13,10 +14,9 @@ const topItems = [
 const familyItems = [
   { to: '/gastos-familia', label: '📋 Gastos' },
   { to: '/aportes',        label: '💰 Aportes' },
-  { to: '/familia',        label: '👥 Miembros' },
 ]
 
-const familyRoutes = familyItems.map((i) => i.to)
+const familyRoutes = [...familyItems.map((i) => i.to), '/familia']
 
 // ── Bottom tab bar (mobile) ──────────────────────────────────────────────────
 const tabItems = [
@@ -36,6 +36,8 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Layout() {
   const { user, logout } = useAuth()
+  const { data: roleData } = useMyRole()
+  const isAdmin = roleData?.role === 'admin'
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -84,6 +86,9 @@ export default function Layout() {
                     {item.label}
                   </NavLink>
                 ))}
+                {isAdmin && (
+                  <NavLink to="/familia" className={navLinkClass}>👥 Miembros</NavLink>
+                )}
               </div>
             )}
           </div>

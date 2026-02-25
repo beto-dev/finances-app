@@ -44,6 +44,7 @@ export interface FamilyMember {
   user_id: string
   email: string
   role: string
+  is_active: boolean
   joined_at: string
 }
 

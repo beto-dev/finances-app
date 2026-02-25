@@ -18,4 +18,5 @@ class FamilyMember:
     family_id: UUID
     user_id: UUID
     role: str  # 'owner' | 'member'
+    is_active: bool
     joined_at: datetime

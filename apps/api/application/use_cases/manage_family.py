@@ -11,7 +11,7 @@ class ManageFamilyUseCase:
 
     async def create_family(self, name: str, owner_id: UUID) -> Family:
         family = await self._families.create(name, owner_id)
-        await self._families.add_member(family.id, owner_id, "owner")
+        await self._families.add_member(family.id, owner_id, "admin")
         await self._users.update_family(owner_id, family.id)
         return family
 
