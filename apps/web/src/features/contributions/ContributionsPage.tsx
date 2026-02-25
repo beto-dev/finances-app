@@ -5,6 +5,7 @@ import { FamilyMember } from '../../shared/types'
 import { NAME_BY_EMAIL } from '../../shared/utils/memberNames'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
+import { useMyRole } from '../family/useMyRole'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -33,6 +34,8 @@ export default function ContributionsPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const queryClient = useQueryClient()
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i)
+  const { data: roleData } = useMyRole()
+  const isAdmin = roleData?.role === 'admin'
 
   const { data: members = [], isLoading: loadingMembers } = useQuery<FamilyMember[]>({
     queryKey: ['family-members'],
@@ -100,6 +103,9 @@ export default function ContributionsPage() {
       {/* Percentage config */}
       <div className="card mb-6">
         <h2 className="text-base font-semibold text-gray-800 mb-4">Porcentaje de aporte</h2>
+        {!isAdmin && (
+          <p className="text-xs text-gray-400 mb-4">Solo el administrador puede editar los aportes.</p>
+        )}
         <div className="space-y-3">
           {members.map((m) => {
             const name = NAME_BY_EMAIL[m.email.toLowerCase()] ?? m.email
@@ -118,7 +124,8 @@ export default function ContributionsPage() {
                     step="0.01"
                     value={localPcts[m.user_id] ?? '0'}
                     onChange={(e) => setLocalPcts((prev) => ({ ...prev, [m.user_id]: e.target.value }))}
-                    className="input w-24 text-right"
+                    className="input w-24 text-right disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-default"
+                    disabled={!isAdmin}
                   />
                   <span className="text-sm text-gray-500 w-4">%</span>
                 </div>
@@ -143,15 +150,17 @@ export default function ContributionsPage() {
           </span>
         </div>
 
-        <div className="mt-4">
-          <button
-            onClick={handleSave}
-            disabled={save.isPending}
-            className="btn-primary"
-          >
-            {save.isPending ? <Spinner size="sm" /> : 'Guardar aportes'}
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="mt-4">
+            <button
+              onClick={handleSave}
+              disabled={save.isPending}
+              className="btn-primary"
+            >
+              {save.isPending ? <Spinner size="sm" /> : 'Guardar aportes'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Monthly calculation */}
