@@ -115,6 +115,32 @@ function MobileChargeCard({
   )
 }
 
+// ── Date grouping helper ──────────────────────────────────────────────────────
+function groupChargesByDate(charges: Charge[]) {
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+  const groups: { label: string; date: string; charges: Charge[]; total: number }[] = []
+  const seen = new Map<string, number>()
+
+  for (const charge of charges) {
+    const d = charge.date
+    if (!seen.has(d)) {
+      let label: string
+      if (d === today) label = 'Hoy'
+      else if (d === yesterday) label = 'Ayer'
+      else label = new Date(d + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })
+      seen.set(d, groups.length)
+      groups.push({ label, date: d, charges: [], total: 0 })
+    }
+    const idx = seen.get(d)!
+    groups[idx].charges.push(charge)
+    groups[idx].total += charge.amount
+  }
+
+  return groups
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function ChargesPage() {
   const currentYear = new Date().getFullYear()
@@ -255,16 +281,24 @@ export default function ChargesPage() {
               ))}
             </div>
           ) : !charges.length ? emptyMessage : (
-            <div className="divide-y divide-gray-100">
+            <div>
               <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
                 <span className="text-xs text-gray-500 font-medium">{charges.length} gastos</span>
               </div>
-              {charges.map((charge) => (
-                <MobileChargeCard
-                  key={charge.id}
-                  charge={charge}
-                  categories={categories}
-                />
+              {groupChargesByDate(charges).map((group) => (
+                <div key={group.date}>
+                  <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{group.label}</span>
+                    <span className="text-xs font-medium text-gray-400">
+                      {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(group.total)}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {group.charges.map((charge) => (
+                      <MobileChargeCard key={charge.id} charge={charge} categories={categories} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}

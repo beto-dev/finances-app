@@ -20,7 +20,7 @@ function AdminRoute() {
   const { data, isLoading } = useMyRole()
   if (!user) return <Navigate to="/login" replace />
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-  if (data?.role !== 'admin') return <Navigate to="/resumen" replace />
+  if (data?.role === 'member') return <Navigate to="/resumen" replace />
   return <Outlet />
 }
 
