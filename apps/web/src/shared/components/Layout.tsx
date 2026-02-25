@@ -38,6 +38,7 @@ export default function Layout() {
   const { user, logout } = useAuth()
   const { data: roleData } = useMyRole()
   const isAdmin = roleData?.role === 'admin'
+  const hasFamily = roleData?.role != null
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -81,7 +82,7 @@ export default function Layout() {
 
             {familyOpen && (
               <div className="mt-1 ml-3 pl-3 border-l border-gray-200 space-y-1">
-                {familyItems.map((item) => (
+                {hasFamily && familyItems.map((item) => (
                   <NavLink key={item.to} to={item.to} className={navLinkClass}>
                     {item.label}
                   </NavLink>
