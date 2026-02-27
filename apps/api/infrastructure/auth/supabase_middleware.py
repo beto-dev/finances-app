@@ -2,9 +2,10 @@ import os
 from datetime import UTC, datetime
 from uuid import UUID
 
+import jwt
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jwt import PyJWTError as JWTError
 
 security = HTTPBearer()
 
