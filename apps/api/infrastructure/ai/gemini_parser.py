@@ -85,6 +85,8 @@ Bank statement (file: {filename or "unknown"}):
 {content}"""
 
         try:
+            if self._client is None:
+                raise RuntimeError("Gemini client not initialized — set GEMINI_API_KEY")
             response = await asyncio.to_thread(
                 self._client.models.generate_content,
                 model=_MODEL,

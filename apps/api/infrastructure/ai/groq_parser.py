@@ -86,6 +86,8 @@ Bank statement (file: {filename or "unknown"}):
 {content}"""
 
         try:
+            if self._client is None:
+                raise RuntimeError("Groq client not initialized — set GROQ_API_KEY")
             # groq SDK is synchronous; run in thread to avoid blocking FastAPI's event loop
             response = await asyncio.to_thread(
                 self._client.chat.completions.create,

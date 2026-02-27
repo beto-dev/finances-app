@@ -124,7 +124,7 @@ class SQLChargeRepository(ChargeRepository):
             delete(ChargeModel).where(ChargeModel.statement_id == statement_id)
         )
         await self._session.commit()
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined]
 
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int:
         result = await self._session.execute(

@@ -45,8 +45,10 @@ async def google_callback(
 
     user_id = UUID(user_id_str)
     tokens = await oauth.exchange_code(code)
-    access_token = tokens.get("access_token")
-    refresh_token = tokens.get("refresh_token")
+    access_token: str = tokens.get("access_token") or ""
+    refresh_token: str | None = tokens.get("refresh_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="No se recibió access_token de Google")
 
     user = await SQLUserRepository(db).get_by_id(user_id)
     if not user or not user.family_id:

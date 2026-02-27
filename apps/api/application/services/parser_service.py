@@ -17,6 +17,7 @@ class ParserService:
         gemini = GeminiParser()
         claude = ClaudeParser()
 
+        llm: GroqParser | GeminiParser | ClaudeParser
         if groq.is_available:
             llm = groq
             log.info("parser_backend", backend="groq")
