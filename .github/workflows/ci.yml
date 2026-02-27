@@ -133,10 +133,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: apps/web/package-lock.json
-      - name: Install pip-audit
-        run: pip install pip-audit
+      - name: Install pip-audit and bandit
+        run: pip install pip-audit bandit
       - name: Python dependency scan
         run: pip-audit -r apps/api/requirements.txt
+      - name: Python SAST (bandit)
+        run: bandit -r apps/api/ -ll --skip B105,B106 --exclude apps/api/tests,apps/api/alembic
       - name: Install web dependencies
         run: npm ci
         working-directory: apps/web

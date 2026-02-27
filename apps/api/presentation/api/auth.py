@@ -4,12 +4,13 @@ from typing import Annotated
 from urllib.parse import urlencode
 
 import bcrypt
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 
 from infrastructure.auth.supabase_middleware import create_access_token
 from infrastructure.repositories.sql_user_repository import SQLUserRepository
 from presentation.dependencies import DbSession, get_user_repo
+from presentation.middleware.rate_limit import limiter
 from presentation.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -45,7 +46,9 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     body: LoginRequest,
     user_repo: Annotated[SQLUserRepository, Depends(get_user_repo)],
 ):
@@ -77,7 +80,9 @@ async def google_login():
 
 
 @router.get("/google/callback")
+@limiter.limit("10/minute")
 async def google_callback(
+    request: Request,
     db: DbSession,
     code: str = Query(...),
     state: str = Query(...),

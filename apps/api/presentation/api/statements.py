@@ -7,6 +7,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     UploadFile,
     status,
 )
@@ -18,7 +19,31 @@ from infrastructure.repositories.sql_charge_repository import SQLChargeRepositor
 from infrastructure.repositories.sql_statement_repository import SQLStatementRepository
 from infrastructure.storage.supabase_storage import SupabaseStorage
 from presentation.dependencies import CurrentUserId, DbSession, get_statement_repo, get_storage
+from presentation.middleware.rate_limit import limiter
 from presentation.schemas.statement import StatementResponse
+
+_MAX_SIZE_MB = 10
+_ALLOWED_MAGIC: list[tuple[bytes, str]] = [
+    (b"%PDF", "application/pdf"),
+    (b"PK\x03\x04", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+]
+
+
+def _validate_file(filename: str, file_bytes: bytes, content_type: str) -> None:
+    if len(file_bytes) > _MAX_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"El archivo supera {_MAX_SIZE_MB} MB")
+
+    header = file_bytes[:8]
+    ext = (filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
+
+    if ext == "csv" and content_type in ("text/csv", "text/plain", "application/octet-stream"):
+        return  # CSV es texto plano, no tiene magic bytes
+
+    for magic, _ in _ALLOWED_MAGIC:
+        if header[: len(magic)] == magic:
+            return
+
+    raise HTTPException(status_code=400, detail="Tipo de archivo no permitido (PDF, XLSX o CSV)")
 
 router = APIRouter(prefix="/api/statements", tags=["statements"])
 
@@ -41,7 +66,9 @@ async def _parse_statement_only(
 
 
 @router.post("/", response_model=StatementResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/hour")
 async def upload_statement(
+    request: Request,
     background_tasks: BackgroundTasks,
     current_user_id: CurrentUserId,
     db: DbSession,
@@ -57,6 +84,7 @@ async def upload_statement(
         raise HTTPException(status_code=400, detail="El usuario no pertenece a ninguna familia")
 
     file_bytes = await file.read()
+    _validate_file(file.filename or "", file_bytes, file.content_type or "")
     upload_uc = UploadStatementUseCase(statement_repo, storage)
     statement = await upload_uc.execute(
         family_id=user.family_id,
