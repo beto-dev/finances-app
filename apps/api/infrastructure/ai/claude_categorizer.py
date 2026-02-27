@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 
 from domain.entities.category import Category
 from domain.entities.charge import Charge
@@ -9,11 +10,12 @@ class ClaudeCategorizer:
     BATCH_SIZE = 50
 
     def __init__(self) -> None:
+        self._client: Any = None
         try:
             import anthropic
             self._client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         except ImportError:
-            self._client = None
+            pass
 
     async def categorize_batch(self, charges: list[Charge], categories: list[Category]) -> list[Charge]:
         if self._client is None:
@@ -56,7 +58,11 @@ Si no puedes determinar la categoria, usa la categoria "Otros"."""
         )
 
         try:
-            text = message.content[0].text
+            from anthropic.types import TextBlock
+            text_block = next((b for b in message.content if isinstance(b, TextBlock)), None)
+            if text_block is None:
+                return charges
+            text = text_block.text
             start = text.find("[")
             end = text.rfind("]") + 1
             data = json.loads(text[start:end])

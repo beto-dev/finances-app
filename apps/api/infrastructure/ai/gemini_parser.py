@@ -92,7 +92,7 @@ Bank statement (file: {filename or "unknown"}):
                 model=_MODEL,
                 contents=prompt,
             )
-            return self._parse_response(response.text)
+            return self._parse_response(response.text or "")
         except Exception as exc:
             log.warning(
                 "gemini_parser_error",

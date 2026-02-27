@@ -2,6 +2,7 @@ import json
 import os
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 import structlog
 
@@ -21,13 +22,14 @@ class ClaudeParser:
     """
 
     def __init__(self) -> None:
+        self._client: Any = None
         try:
             import anthropic
             self._client = anthropic.AsyncAnthropic(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", "")
             )
         except ImportError:
-            self._client = None
+            pass
 
     @property
     def is_available(self) -> bool:
@@ -84,12 +86,16 @@ Bank statement (file: {filename or "unknown"}):
 {content}"""
 
         try:
+            from anthropic.types import TextBlock
             message = await self._client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return self._parse_response(message.content[0].text)
+            text_block = next((b for b in message.content if isinstance(b, TextBlock)), None)
+            if text_block is None:
+                return []
+            return self._parse_response(text_block.text)
         except Exception as exc:
             log.warning(
                 "claude_parser_error",

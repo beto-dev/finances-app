@@ -90,12 +90,13 @@ Bank statement (file: {filename or "unknown"}):
                 raise RuntimeError("Groq client not initialized — set GROQ_API_KEY")
             # groq SDK is synchronous; run in thread to avoid blocking FastAPI's event loop
             response = await asyncio.to_thread(
-                self._client.chat.completions.create,
-                model=_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=32768,
+                lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
+                    model=_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=32768,
+                )
             )
-            return self._parse_response(response.choices[0].message.content)
+            return self._parse_response(response.choices[0].message.content or "")
         except Exception as exc:
             log.warning(
                 "groq_parser_error",
