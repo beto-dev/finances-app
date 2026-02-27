@@ -1,4 +1,5 @@
 from uuid import UUID
+
 from domain.entities.statement import Statement
 from domain.repositories.statement_repository import StatementRepository
 from infrastructure.storage.supabase_storage import SupabaseStorage

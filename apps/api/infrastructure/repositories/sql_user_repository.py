@@ -1,6 +1,8 @@
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from domain.entities.user import User
 from domain.repositories.user_repository import UserRepository
 from infrastructure.database.models import UserModel

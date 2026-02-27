@@ -1,4 +1,5 @@
 import io
+
 from domain.entities.charge import ParsedCharge
 from infrastructure.parsers.base_parser import BaseParser
 

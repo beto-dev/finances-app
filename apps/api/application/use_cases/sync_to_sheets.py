@@ -1,6 +1,7 @@
 from uuid import UUID
-from domain.repositories.charge_repository import ChargeRepository
+
 from domain.repositories.category_repository import CategoryRepository
+from domain.repositories.charge_repository import ChargeRepository
 from infrastructure.google.sheets_client import SheetsClient
 
 

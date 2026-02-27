@@ -1,11 +1,12 @@
 import structlog
+
 from domain.entities.charge import ParsedCharge
 from infrastructure.ai.claude_parser import ClaudeParser
 from infrastructure.ai.gemini_parser import GeminiParser
 from infrastructure.ai.groq_parser import GroqParser
-from infrastructure.parsers.pdf_parser import PDFParser
 from infrastructure.parsers.csv_parser import CSVParser
 from infrastructure.parsers.excel_parser import ExcelParser
+from infrastructure.parsers.pdf_parser import PDFParser
 
 log = structlog.get_logger()
 

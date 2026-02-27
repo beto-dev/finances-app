@@ -1,8 +1,10 @@
 import os
+
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from presentation.api import health, auth, statements, charges, families, google, debug
+
+from presentation.api import auth, charges, debug, families, google, health, statements
 
 log = structlog.get_logger()
 

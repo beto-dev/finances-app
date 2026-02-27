@@ -1,7 +1,8 @@
 import io
-from fastapi import APIRouter, UploadFile, File
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+
+from fastapi import APIRouter, File, UploadFile
 
 router = APIRouter(prefix="/api/debug", tags=["debug"])
 
@@ -370,7 +371,6 @@ async def parse_preview_all_rows(file: UploadFile = File(...)):
     import pdfplumber
 
     data = await file.read()
-    result = []
 
     def try_parse_date(date_str: str) -> bool:
         """Check if a string looks like a date"""

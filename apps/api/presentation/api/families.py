@@ -1,15 +1,22 @@
-from typing import Annotated
-from uuid import UUID
 from decimal import Decimal
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, delete as sql_delete
 from pydantic import BaseModel
-from presentation.dependencies import CurrentUserId, DbSession, get_family_repo, get_user_repo
+from sqlalchemy import delete as sql_delete
+from sqlalchemy import select
+
+from application.use_cases.manage_family import ManageFamilyUseCase
+from infrastructure.database.models import FamilyContributionModel, StatementModel, UserModel
 from infrastructure.repositories.sql_family_repository import SQLFamilyRepository
 from infrastructure.repositories.sql_user_repository import SQLUserRepository
-from infrastructure.database.models import FamilyContributionModel, StatementModel, UserModel
-from application.use_cases.manage_family import ManageFamilyUseCase
-from presentation.schemas.family import FamilyCreate, FamilyResponse, FamilyMemberResponse, InviteMemberRequest
+from presentation.dependencies import CurrentUserId, DbSession, get_family_repo, get_user_repo
+from presentation.schemas.family import (
+    FamilyCreate,
+    FamilyMemberResponse,
+    FamilyResponse,
+    InviteMemberRequest,
+)
 
 
 class ContributionItem(BaseModel):
@@ -119,7 +126,10 @@ async def invite_member(
         member = await uc.invite_member(family.id, body.email)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    return FamilyMemberResponse(user_id=member.user_id, email="", role=member.role, is_active=member.is_active, joined_at=member.joined_at)
+    return FamilyMemberResponse(
+        user_id=member.user_id, email="", role=member.role,
+        is_active=member.is_active, joined_at=member.joined_at,
+    )
 
 
 @router.patch("/me/members/{user_id}/active", response_model=FamilyMemberResponse)

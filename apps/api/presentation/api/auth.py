@@ -1,14 +1,16 @@
 import os
 import secrets
-import bcrypt
 from typing import Annotated
+from urllib.parse import urlencode
+
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
-from urllib.parse import urlencode
-from presentation.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
-from presentation.dependencies import get_user_repo, DbSession
-from infrastructure.repositories.sql_user_repository import SQLUserRepository
+
 from infrastructure.auth.supabase_middleware import create_access_token
+from infrastructure.repositories.sql_user_repository import SQLUserRepository
+from presentation.dependencies import DbSession, get_user_repo
+from presentation.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

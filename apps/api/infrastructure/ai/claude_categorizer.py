@@ -1,5 +1,6 @@
 import json
 import os
+
 from domain.entities.category import Category
 from domain.entities.charge import Charge
 
@@ -48,7 +49,6 @@ Responde UNICAMENTE con un JSON array con el mismo numero de elementos que los g
 Cada elemento debe tener: {{"index": 0, "category_id": "uuid-de-la-categoria"}}.
 Si no puedes determinar la categoria, usa la categoria "Otros"."""
 
-        import anthropic
         message = await self._client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=1024,

@@ -1,16 +1,17 @@
 import os
 import secrets
-from typing import Annotated
+from datetime import UTC
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from presentation.dependencies import CurrentUserId, DbSession, get_sheets_client, get_google_oauth
-from infrastructure.repositories.sql_user_repository import SQLUserRepository
+
+from infrastructure.database.models import GoogleSheetConfigModel
 from infrastructure.google.oauth_client import GoogleOAuthClient
 from infrastructure.google.sheets_client import SheetsClient
-from infrastructure.database.models import GoogleSheetConfigModel
+from infrastructure.repositories.sql_user_repository import SQLUserRepository
+from presentation.dependencies import CurrentUserId, DbSession, get_google_oauth, get_sheets_client
 from presentation.schemas.google import GoogleAuthStatusResponse, SyncResponse
 
 router = APIRouter(prefix="/api/google", tags=["google"])
@@ -108,9 +109,9 @@ async def sync_to_sheets(
     db: DbSession,
     sheets: SheetsClient = Depends(get_sheets_client),
 ):
-    from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
-    from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
     from application.use_cases.sync_to_sheets import SyncToSheetsUseCase
+    from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
+    from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
 
     user = await SQLUserRepository(db).get_by_id(current_user_id)
     if not user or not user.family_id:
@@ -129,8 +130,8 @@ async def sync_to_sheets(
     sync_result = await uc.execute(user.family_id, config.spreadsheet_id, config.access_token)
 
     # Update last sync timestamp
-    from datetime import datetime, timezone
-    config.last_sync_at = datetime.now(timezone.utc)
+    from datetime import datetime
+    config.last_sync_at = datetime.now(UTC)
     await db.commit()
 
     return SyncResponse(synced=sync_result["synced"], months=sync_result["months"])

@@ -1,9 +1,11 @@
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from domain.entities.family import Family, FamilyMember
 from domain.repositories.family_repository import FamilyRepository
-from infrastructure.database.models import FamilyModel, FamilyMemberModel
+from infrastructure.database.models import FamilyMemberModel, FamilyModel
 
 
 def _to_family(m: FamilyModel) -> Family:
@@ -11,7 +13,10 @@ def _to_family(m: FamilyModel) -> Family:
 
 
 def _to_member(m: FamilyMemberModel) -> FamilyMember:
-    return FamilyMember(id=m.id, family_id=m.family_id, user_id=m.user_id, role=m.role, is_active=m.is_active, joined_at=m.joined_at)
+    return FamilyMember(
+        id=m.id, family_id=m.family_id, user_id=m.user_id,
+        role=m.role, is_active=m.is_active, joined_at=m.joined_at,
+    )
 
 
 class SQLFamilyRepository(FamilyRepository):

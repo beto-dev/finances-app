@@ -1,4 +1,5 @@
 from uuid import UUID
+
 from domain.entities.category import Category
 from domain.entities.charge import Charge
 from domain.repositories.category_repository import CategoryRepository

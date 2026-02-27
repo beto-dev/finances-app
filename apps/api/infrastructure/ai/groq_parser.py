@@ -1,9 +1,11 @@
 import asyncio
 import json
 import os
-import structlog
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+
+import structlog
+
 from domain.entities.charge import ParsedCharge
 
 log = structlog.get_logger()

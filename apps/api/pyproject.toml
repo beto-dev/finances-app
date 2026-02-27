@@ -44,11 +44,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py312"
+exclude = ["alembic/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"infrastructure/ai/*.py" = ["E501"]
+"presentation/api/debug.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

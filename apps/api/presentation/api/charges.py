@@ -1,12 +1,18 @@
 from uuid import UUID
-from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from presentation.dependencies import CurrentUserId, DbSession, get_charge_repo, get_category_repo
-from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
-from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
-from infrastructure.repositories.sql_user_repository import SQLUserRepository
+
 from application.use_cases.review_charges import ReviewChargesUseCase
-from presentation.schemas.charge import ChargeResponse, ChargeUpdateCategory, BulkConfirmRequest, ManualChargeRequest
+from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
+from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
+from infrastructure.repositories.sql_user_repository import SQLUserRepository
+from presentation.dependencies import CurrentUserId, DbSession, get_category_repo, get_charge_repo
+from presentation.schemas.charge import (
+    BulkConfirmRequest,
+    ChargeResponse,
+    ChargeUpdateCategory,
+    ManualChargeRequest,
+)
 
 router = APIRouter(prefix="/api/charges", tags=["charges"])
 
@@ -100,8 +106,11 @@ async def create_manual_charge(
     db: DbSession,
 ):
     import uuid as _uuid
+
     from sqlalchemy import select
-    from infrastructure.database.models import StatementModel, ChargeModel as DBChargeModel
+
+    from infrastructure.database.models import ChargeModel as DBChargeModel
+    from infrastructure.database.models import StatementModel
 
     user = await SQLUserRepository(db).get_by_id(current_user_id)
     if not user or not user.family_id:

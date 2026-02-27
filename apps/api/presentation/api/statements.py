@@ -1,15 +1,23 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
-from presentation.dependencies import CurrentUserId, DbSession, get_statement_repo, get_storage
-from infrastructure.repositories.sql_statement_repository import SQLStatementRepository
-from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
-from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
-from infrastructure.storage.supabase_storage import SupabaseStorage
+
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    status,
+)
+
 from application.services.parser_service import ParserService
-from application.services.categorization_service import CategorizationService
-from application.use_cases.upload_statement import UploadStatementUseCase
 from application.use_cases.parse_statement import ParseStatementUseCase
-from application.use_cases.categorize_charges import CategorizeChargesUseCase
+from application.use_cases.upload_statement import UploadStatementUseCase
+from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
+from infrastructure.repositories.sql_statement_repository import SQLStatementRepository
+from infrastructure.storage.supabase_storage import SupabaseStorage
+from presentation.dependencies import CurrentUserId, DbSession, get_statement_repo, get_storage
 from presentation.schemas.statement import StatementResponse
 
 router = APIRouter(prefix="/api/statements", tags=["statements"])

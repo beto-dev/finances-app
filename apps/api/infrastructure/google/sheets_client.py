@@ -1,13 +1,11 @@
-from datetime import date
-from decimal import Decimal
 from domain.entities.charge import Charge
 
 
 class SheetsClient:
     async def sync_charges(self, spreadsheet_id: str, charges: list[Charge], access_token: str) -> dict:
         try:
-            from googleapiclient.discovery import build
             from google.oauth2.credentials import Credentials
+            from googleapiclient.discovery import build
         except ImportError:
             raise ImportError("google-api-python-client and google-auth are required.")
 
@@ -68,8 +66,8 @@ class SheetsClient:
         ).execute()
 
     async def create_spreadsheet(self, title: str, access_token: str) -> dict:
-        from googleapiclient.discovery import build
         from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
 
         creds = Credentials(token=access_token)
         service = build("sheets", "v4", credentials=creds)

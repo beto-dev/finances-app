@@ -1,7 +1,9 @@
-from uuid import UUID
 from decimal import Decimal
-from sqlalchemy import select, and_
+from uuid import UUID
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from domain.entities.charge import Charge, ParsedCharge
 from domain.repositories.charge_repository import ChargeRepository
 from infrastructure.database.models import ChargeModel, StatementModel
@@ -33,7 +35,9 @@ class SQLChargeRepository(ChargeRepository):
         )
         return [_to_entity(m) for m in result.scalars().all()]
 
-    async def get_by_family(self, family_id: UUID, month: int | None, year: int | None, uploaded_by_filter: UUID | None = None) -> list[Charge]:
+    async def get_by_family(
+        self, family_id: UUID, month: int | None, year: int | None, uploaded_by_filter: UUID | None = None
+    ) -> list[Charge]:
         from sqlalchemy import extract
         stmt = (
             select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)

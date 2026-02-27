@@ -1,8 +1,10 @@
 import json
 import os
-import structlog
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+
+import structlog
+
 from domain.entities.charge import ParsedCharge
 
 log = structlog.get_logger()
@@ -82,7 +84,6 @@ Bank statement (file: {filename or "unknown"}):
 {content}"""
 
         try:
-            import anthropic
             message = await self._client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=4096,

@@ -1,8 +1,9 @@
 from uuid import UUID
-from domain.entities.charge import Charge
-from domain.repositories.charge_repository import ChargeRepository
-from domain.repositories.category_repository import CategoryRepository
+
 from application.services.categorization_service import CategorizationService
+from domain.entities.charge import Charge
+from domain.repositories.category_repository import CategoryRepository
+from domain.repositories.charge_repository import ChargeRepository
 
 
 class CategorizeChargesUseCase:

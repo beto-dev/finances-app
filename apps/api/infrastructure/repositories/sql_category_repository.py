@@ -1,17 +1,25 @@
 from uuid import UUID
-from sqlalchemy import select, or_
+
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from domain.entities.category import Category, CategoryRule
 from domain.repositories.category_repository import CategoryRepository
 from infrastructure.database.models import CategoryModel, CategoryRuleModel
 
 
 def _to_cat(m: CategoryModel) -> Category:
-    return Category(id=m.id, name=m.name, family_id=m.family_id, is_system=m.is_system, color=m.color, created_at=m.created_at)
+    return Category(
+        id=m.id, name=m.name, family_id=m.family_id,
+        is_system=m.is_system, color=m.color, created_at=m.created_at,
+    )
 
 
 def _to_rule(m: CategoryRuleModel) -> CategoryRule:
-    return CategoryRule(id=m.id, family_id=m.family_id, pattern=m.pattern, category_id=m.category_id, created_at=m.created_at)
+    return CategoryRule(
+        id=m.id, family_id=m.family_id, pattern=m.pattern,
+        category_id=m.category_id, created_at=m.created_at,
+    )
 
 
 class SQLCategoryRepository(CategoryRepository):
@@ -19,9 +27,9 @@ class SQLCategoryRepository(CategoryRepository):
         self._session = session
 
     async def get_all(self, family_id: UUID | None) -> list[Category]:
-        cond = or_(CategoryModel.is_system == True)
+        cond = or_(CategoryModel.is_system.is_(True))
         if family_id:
-            cond = or_(CategoryModel.is_system == True, CategoryModel.family_id == family_id)
+            cond = or_(CategoryModel.is_system.is_(True), CategoryModel.family_id == family_id)
         result = await self._session.execute(select(CategoryModel).where(cond))
         return [_to_cat(m) for m in result.scalars().all()]
 

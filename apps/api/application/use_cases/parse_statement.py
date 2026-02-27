@@ -1,9 +1,9 @@
 from uuid import UUID
+
+from application.services.parser_service import ParserService
 from domain.entities.charge import ParsedCharge
-from domain.entities.statement import Statement
 from domain.repositories.charge_repository import ChargeRepository
 from domain.repositories.statement_repository import StatementRepository
-from application.services.parser_service import ParserService
 
 
 class ParseStatementUseCase:

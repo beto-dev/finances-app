@@ -1,6 +1,8 @@
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from domain.entities.statement import Statement
 from domain.repositories.statement_repository import StatementRepository
 from infrastructure.database.models import StatementModel
@@ -30,7 +32,10 @@ class SQLStatementRepository(StatementRepository):
         result = await self._session.execute(stmt.order_by(StatementModel.uploaded_at.desc()))
         return [_to_entity(m) for m in result.scalars().all()]
 
-    async def create(self, family_id: UUID, uploaded_by: UUID, filename: str, statement_type: str, storage_path: str | None, bank_hint: str | None) -> Statement:
+    async def create(
+        self, family_id: UUID, uploaded_by: UUID, filename: str,
+        statement_type: str, storage_path: str | None, bank_hint: str | None,
+    ) -> Statement:
         m = StatementModel(
             family_id=family_id, uploaded_by=uploaded_by, filename=filename,
             type=statement_type, storage_path=storage_path, bank_hint=bank_hint,
