@@ -1,6 +1,7 @@
 from fastapi import Request
 from fastapi.responses import Response
-from slowapi import _rate_limit_exceeded_handler as _slowapi_handler, Limiter
+from slowapi import Limiter
+from slowapi import _rate_limit_exceeded_handler as _slowapi_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
