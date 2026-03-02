@@ -7,7 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from presentation.api import auth, charges, debug, families, google, health, statements
-from presentation.middleware.rate_limit import _rate_limit_exceeded_handler, limiter
+from presentation.middleware.rate_limit import limiter, on_rate_limit_exceeded
 from presentation.middleware.security_headers import SecurityHeadersMiddleware
 
 log = structlog.get_logger()
@@ -31,7 +31,7 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, on_rate_limit_exceeded)
 
 app.include_router(health.router)
 app.include_router(auth.router)
