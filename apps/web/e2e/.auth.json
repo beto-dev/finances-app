@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "ff_email",
+          "value": "alb.tejos@gmail.com"
+        },
+        {
+          "name": "ff_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5OWEzYzdlMS0yOWFiLTQ5NjAtYjc2ZC0zN2U2MTEyZjJmNGEiLCJpYXQiOjE3NzI2NTUyNDAsImV4cCI6MTc3MzI2MDA0MH0.AM2pCf_19DfkyqnfdD7z_4Vtu50DR9TIGlZAt73KBgo"
+        },
+        {
+          "name": "ff_id",
+          "value": "99a3c7e1-29ab-4960-b76d-37e6112f2f4a"
+        }
+      ]
+    }
+  ]
+}

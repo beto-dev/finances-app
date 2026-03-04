@@ -18,21 +18,27 @@ test.describe('Quick expense — /nuevo-gasto', () => {
   })
 
   test('registers a manual charge and shows success overlay', async ({ page }) => {
-    // Fill amount
     await page.getByPlaceholder('0').fill('5000')
-
-    // Fill description
     await page.getByPlaceholder('¿En qué gastaste?').fill('Test Playwright charge')
-
-    // Submit
     await page.getByRole('button', { name: 'Registrar Gasto' }).click()
 
-    // Success overlay appears
     await expect(page.getByText('¡Gasto registrado!')).toBeVisible({ timeout: 5000 })
-
-    // Overlay disappears and form resets
     await expect(page.getByText('¡Gasto registrado!')).not.toBeVisible({ timeout: 3000 })
     await expect(page.getByPlaceholder('0')).toHaveValue('')
     await expect(page.getByPlaceholder('¿En qué gastaste?')).toHaveValue('')
+  })
+
+  test('registered charge appears in /gastos', async ({ page }) => {
+    const description = `PW-${Date.now()}`
+
+    // Register the charge
+    await page.getByPlaceholder('0').fill('3500')
+    await page.getByPlaceholder('¿En qué gastaste?').fill(description)
+    await page.getByRole('button', { name: 'Registrar Gasto' }).click()
+    await expect(page.getByText('¡Gasto registrado!')).toBeVisible({ timeout: 5000 })
+
+    // Navigate to /gastos and verify it appears
+    await page.goto('/gastos')
+    await expect(page.getByRole('cell', { name: description })).toBeVisible({ timeout: 5000 })
   })
 })
