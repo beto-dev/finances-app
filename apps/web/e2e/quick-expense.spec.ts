@@ -9,7 +9,7 @@ test.describe('Quick expense — /nuevo-gasto', () => {
   })
 
   test('page renders the expense form', async ({ page }) => {
-    await expect(page.getByText('Nuevo Gasto')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Nuevo Gasto' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Registrar Gasto' })).toBeVisible()
   })
 

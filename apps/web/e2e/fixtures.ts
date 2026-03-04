@@ -16,8 +16,11 @@ export async function loginViaApi(page: Page): Promise<void> {
     data: { email: TEST_USER.email, password: TEST_USER.password },
   })
   const body = await response.json() as { access_token: string }
+  const payload = JSON.parse(Buffer.from(body.access_token.split('.')[1], 'base64').toString())
   await page.goto('/')
-  await page.evaluate((token: string) => {
+  await page.evaluate(({ token, email, id }: { token: string; email: string; id: string }) => {
     localStorage.setItem('ff_token', token)
-  }, body.access_token)
+    localStorage.setItem('ff_email', email)
+    localStorage.setItem('ff_id', id)
+  }, { token: body.access_token, email: TEST_USER.email, id: payload.sub })
 }
