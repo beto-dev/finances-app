@@ -129,8 +129,8 @@ class StatementModel(Base):
     __tablename__ = "statements"
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    family_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("families.id", ondelete="CASCADE"), nullable=False
+    family_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("families.id", ondelete="CASCADE"), nullable=True
     )
     uploaded_by: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -140,7 +140,7 @@ class StatementModel(Base):
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="statements")
+    family: Mapped["FamilyModel | None"] = relationship("FamilyModel", back_populates="statements")
     uploader: Mapped["UserModel"] = relationship("UserModel", back_populates="statements")
     charges: Mapped[list["ChargeModel"]] = relationship("ChargeModel", back_populates="statement")
 

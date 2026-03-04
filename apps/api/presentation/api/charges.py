@@ -26,9 +26,13 @@ async def list_charges(
     charge_repo: SQLChargeRepository = Depends(get_charge_repo),
 ):
     user = await SQLUserRepository(db).get_by_id(current_user_id)
-    if not user or not user.family_id:
-        return []
-    charges = await charge_repo.get_by_family(user.family_id, month, year, uploaded_by_filter=current_user_id)
+    personal = await charge_repo.get_personal(current_user_id, month, year)
+    family_charges = (
+        await charge_repo.get_by_family(user.family_id, month, year, uploaded_by_filter=current_user_id)
+        if user and user.family_id
+        else []
+    )
+    charges = personal + family_charges
     return [
         ChargeResponse(
             id=c.id, statement_id=c.statement_id, date=c.date, description=c.description,
@@ -112,21 +116,18 @@ async def create_manual_charge(
     from infrastructure.database.models import ChargeModel as DBChargeModel
     from infrastructure.database.models import StatementModel
 
-    user = await SQLUserRepository(db).get_by_id(current_user_id)
-    if not user or not user.family_id:
-        raise HTTPException(status_code=400, detail="Usuario sin familia")
-
     result = await db.execute(
         select(StatementModel)
-        .where(StatementModel.family_id == user.family_id)
+        .where(StatementModel.uploaded_by == current_user_id)
         .where(StatementModel.bank_hint == "manual")
+        .where(StatementModel.family_id.is_(None))
     )
     statement = result.scalar_one_or_none()
 
     if not statement:
         statement = StatementModel(
             id=_uuid.uuid4(),
-            family_id=user.family_id,
+            family_id=None,
             uploaded_by=current_user_id,
             filename="Gastos Manuales",
             bank_hint="manual",

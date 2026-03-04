@@ -15,6 +15,9 @@ class ChargeRepository(ABC):
     async def get_by_family(self, family_id: UUID, month: int | None, year: int | None) -> list[Charge]: ...
 
     @abstractmethod
+    async def get_personal(self, user_id: UUID, month: int | None, year: int | None) -> list[Charge]: ...
+
+    @abstractmethod
     async def bulk_create(self, statement_id: UUID, charges: list[ParsedCharge]) -> list[Charge]: ...
 
     @abstractmethod
