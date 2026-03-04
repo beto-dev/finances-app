@@ -14,7 +14,7 @@ def _to_entity(m: ChargeModel) -> Charge:
         id=m.id, statement_id=m.statement_id, date=m.date,
         description=m.description, amount=Decimal(str(m.amount)),
         currency=m.currency, category_id=m.category_id,
-        is_confirmed=m.is_confirmed, ai_suggested=m.ai_suggested,
+        is_shared=m.is_shared, ai_suggested=m.ai_suggested,
         created_at=m.created_at,
     )
 
@@ -86,7 +86,7 @@ class SQLChargeRepository(ChargeRepository):
             select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
             .where(StatementModel.family_id == family_id)
-            .where(ChargeModel.is_confirmed == True)  # noqa: E712
+            .where(ChargeModel.is_shared == True)  # noqa: E712
         )
         if month is not None:
             stmt = stmt.where(extract("month", ChargeModel.date) == month)
@@ -118,11 +118,11 @@ class SQLChargeRepository(ChargeRepository):
             await self._session.refresh(m)
         return [_to_entity(m) for m in models]
 
-    async def update_category(self, charge_id: UUID, category_id: UUID, is_confirmed: bool) -> Charge:
+    async def update_category(self, charge_id: UUID, category_id: UUID, is_shared: bool) -> Charge:
         result = await self._session.execute(select(ChargeModel).where(ChargeModel.id == charge_id))
         m = result.scalar_one()
         m.category_id = category_id
-        m.is_confirmed = is_confirmed
+        m.is_shared = is_shared
         await self._session.commit()
         await self._session.refresh(m)
         return _to_entity(m)
@@ -153,6 +153,6 @@ class SQLChargeRepository(ChargeRepository):
         )
         models = result.scalars().all()
         for m in models:
-            m.is_confirmed = True
+            m.is_shared = True
         await self._session.commit()
         return len(models)

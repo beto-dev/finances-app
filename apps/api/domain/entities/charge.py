@@ -12,7 +12,7 @@ class Charge:
     description: str
     amount: Decimal
     currency: str
-    is_confirmed: bool
+    is_shared: bool
     ai_suggested: bool
     created_at: datetime
     category_id: UUID | None = None

@@ -21,7 +21,7 @@ class ChargeResponse(BaseModel):
     amount: Decimal
     currency: str
     category_id: UUID | None
-    is_confirmed: bool
+    is_shared: bool
     ai_suggested: bool
     created_at: datetime
     statement_type: str = ""

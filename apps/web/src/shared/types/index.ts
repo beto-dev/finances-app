@@ -26,7 +26,7 @@ export interface Charge {
   amount: number
   currency: string
   category_id: string | null
-  is_confirmed: boolean
+  is_shared: boolean
   ai_suggested: boolean
   created_at: string
   statement_type: string

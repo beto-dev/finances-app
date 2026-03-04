@@ -62,12 +62,12 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
         </select>
       </td>
       <td className="px-4 py-3 text-center">
-        {charge.is_confirmed ? (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">Confirmado</span>
+        {charge.is_shared ? (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">Compartido</span>
         ) : charge.ai_suggested ? (
           <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium">IA</span>
         ) : (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Pendiente</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Solo mío</span>
         )}
       </td>
     </tr>

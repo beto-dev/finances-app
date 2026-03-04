@@ -70,7 +70,7 @@ export function useBulkConfirm() {
 // Client-side sorting and filtering utilities
 export function sortCharges(charges: Charge[], field: SortField, order: SortOrder): Charge[] {
   const sorted = [...charges].sort((a, b) => {
-    const key = field === 'status' ? 'is_confirmed' : field === 'category' ? 'category_id' : field
+    const key = field === 'status' ? 'is_shared' : field === 'category' ? 'category_id' : field
     let aVal: any = a[key as keyof Charge]
     let bVal: any = b[key as keyof Charge]
 
@@ -96,13 +96,13 @@ export function filterCharges(
   charges: Charge[],
   searchDesc: string,
   categoryId: string | null,
-  status: 'all' | 'confirmed' | 'pending',
+  status: 'all' | 'shared' | 'personal',
 ): Charge[] {
   return charges.filter((c) => {
     if (searchDesc && !c.description.toLowerCase().includes(searchDesc.toLowerCase())) return false
     if (categoryId && c.category_id !== categoryId) return false
-    if (status === 'confirmed' && !c.is_confirmed) return false
-    if (status === 'pending' && c.is_confirmed) return false
+    if (status === 'shared' && !c.is_shared) return false
+    if (status === 'personal' && c.is_shared) return false
     return true
   })
 }

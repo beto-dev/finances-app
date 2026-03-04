@@ -37,7 +37,7 @@ async def list_charges(
         ChargeResponse(
             id=c.id, statement_id=c.statement_id, date=c.date, description=c.description,
             amount=c.amount, currency=c.currency, category_id=c.category_id,
-            is_confirmed=c.is_confirmed, ai_suggested=c.ai_suggested, created_at=c.created_at,
+            is_shared=c.is_shared, ai_suggested=c.ai_suggested, created_at=c.created_at,
             statement_type=c.statement_type, uploaded_by=c.uploaded_by,
         )
         for c in charges
@@ -61,7 +61,7 @@ async def list_family_charges(
         ChargeResponse(
             id=c.id, statement_id=c.statement_id, date=c.date, description=c.description,
             amount=c.amount, currency=c.currency, category_id=c.category_id,
-            is_confirmed=c.is_confirmed, ai_suggested=c.ai_suggested, created_at=c.created_at,
+            is_shared=c.is_shared, ai_suggested=c.ai_suggested, created_at=c.created_at,
             statement_type=c.statement_type, uploaded_by=c.uploaded_by,
         )
         for c in charges
@@ -85,7 +85,7 @@ async def update_charge_category(
     return ChargeResponse(
         id=charge.id, statement_id=charge.statement_id, date=charge.date,
         description=charge.description, amount=charge.amount, currency=charge.currency,
-        category_id=charge.category_id, is_confirmed=charge.is_confirmed,
+        category_id=charge.category_id, is_shared=charge.is_shared,
         ai_suggested=charge.ai_suggested, created_at=charge.created_at,
     )
 
@@ -145,7 +145,7 @@ async def create_manual_charge(
         amount=body.amount,
         currency=body.currency,
         category_id=body.category_id,
-        is_confirmed=True,
+        is_shared=True,
         ai_suggested=False,
     )
     db.add(charge)
@@ -160,7 +160,7 @@ async def create_manual_charge(
         amount=charge.amount,
         currency=charge.currency,
         category_id=charge.category_id,
-        is_confirmed=charge.is_confirmed,
+        is_shared=charge.is_shared,
         ai_suggested=charge.ai_suggested,
         created_at=charge.created_at,
         statement_type="manual",

@@ -14,7 +14,7 @@ class ReviewChargesUseCase:
         category = await self._categories.get_by_id(category_id)
         if category is None:
             raise ValueError(f"Category {category_id} not found")
-        return await self._charges.update_category(charge_id, category_id, is_confirmed=True)
+        return await self._charges.update_category(charge_id, category_id, is_shared=True)
 
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int:
         return await self._charges.bulk_confirm(charge_ids)

@@ -157,7 +157,7 @@ class ChargeModel(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="CLP")
     category_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("categories.id"))
-    is_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     ai_suggested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
