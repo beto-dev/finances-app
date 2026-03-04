@@ -45,7 +45,9 @@ class SQLStatementRepository(StatementRepository):
         await self._session.refresh(m)
         return _to_entity(m)
 
-    async def get_by_family_and_filename(self, family_id: UUID | None, filename: str, exclude_id: UUID) -> list[Statement]:
+    async def get_by_family_and_filename(
+        self, family_id: UUID | None, filename: str, exclude_id: UUID
+    ) -> list[Statement]:
         result = await self._session.execute(
             select(StatementModel).where(
                 StatementModel.family_id == family_id,
