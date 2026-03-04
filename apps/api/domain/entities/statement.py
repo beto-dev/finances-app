@@ -6,7 +6,7 @@ from uuid import UUID
 @dataclass
 class Statement:
     id: UUID
-    family_id: UUID
+    family_id: UUID | None
     uploaded_by: UUID
     filename: str
     type: str  # 'checking' | 'credit_card' | 'credit_line'
