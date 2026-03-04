@@ -27,6 +27,9 @@ class ChargeRepository(ABC):
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int: ...
 
     @abstractmethod
+    async def bulk_unshare(self, charge_ids: list[UUID]) -> int: ...
+
+    @abstractmethod
     async def bulk_update_categories(self, charges: list[Charge]) -> None: ...
 
     @abstractmethod

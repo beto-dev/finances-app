@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useCharges, useCategories, useBulkConfirm, useUpdateCategory, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
@@ -18,6 +18,7 @@ function MobileChargeCard({
 }: { charge: Charge; categories: Category[] }) {
   const updateCategory = useUpdateCategory()
   const bulkConfirm = useBulkConfirm()
+  const bulkUnshare = useBulkUnshare()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -36,11 +37,12 @@ function MobileChargeCard({
     }
   }
 
-  const handleConfirm = async () => {
-    if (isShared || bulkConfirm.isPending) return
-    setOptimisticConfirmed(true)
+  const handleToggleShare = async () => {
+    if (bulkConfirm.isPending || bulkUnshare.isPending) return
+    setOptimisticConfirmed(!isShared)
     try {
-      await bulkConfirm.mutateAsync([charge.id])
+      if (isShared) await bulkUnshare.mutateAsync([charge.id])
+      else await bulkConfirm.mutateAsync([charge.id])
     } catch {
       setOptimisticConfirmed(null)
     }
@@ -97,8 +99,8 @@ function MobileChargeCard({
 
       {/* Tap-to-confirm button — 44px touch target */}
       <button
-        onClick={handleConfirm}
-        disabled={isShared}
+        onClick={handleToggleShare}
+        disabled={false}
         className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90 ${
           isShared
             ? 'bg-green-500 text-white'
@@ -160,6 +162,7 @@ export default function ChargesPage() {
   const { data: allCharges, isLoading } = useCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
   const bulkConfirm = useBulkConfirm()
+  const bulkUnshare = useBulkUnshare()
 
   let charges = allCharges || []
   charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus)
@@ -190,6 +193,17 @@ export default function ChargesPage() {
     }
   }
 
+  const handleBulkUnshare = async () => {
+    if (selectedIds.size === 0) return
+    try {
+      const result = await bulkUnshare.mutateAsync(Array.from(selectedIds))
+      setToast({ message: `${result.unshared} gastos dejaron de compartirse`, type: 'success' })
+      setSelectedIds(new Set())
+    } catch {
+      setToast({ message: 'Error al dejar de compartir gastos', type: 'error' })
+    }
+  }
+
   const handleSort = (field: SortField) => {
     if (sortField === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     else { setSortField(field); setSortOrder('asc') }
@@ -214,9 +228,14 @@ export default function ChargesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Gastos</h1>
         {selectedIds.size > 0 && (
-          <button onClick={handleBulkConfirm} className="btn-primary hidden md:inline-flex" disabled={bulkConfirm.isPending}>
-            {bulkConfirm.isPending ? <Spinner size="sm" /> : `Compartir ${selectedIds.size}`}
-          </button>
+          <div className="hidden md:flex gap-2">
+            <button onClick={handleBulkConfirm} className="btn-primary" disabled={bulkConfirm.isPending}>
+              {bulkConfirm.isPending ? <Spinner size="sm" /> : `Compartir ${selectedIds.size}`}
+            </button>
+            <button onClick={handleBulkUnshare} className="btn-secondary" disabled={bulkUnshare.isPending}>
+              {bulkUnshare.isPending ? <Spinner size="sm" /> : `Dejar de compartir ${selectedIds.size}`}
+            </button>
+          </div>
         )}
       </div>
 

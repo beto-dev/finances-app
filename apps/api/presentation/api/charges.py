@@ -103,6 +103,17 @@ async def bulk_confirm(
     return {"confirmed": count}
 
 
+@router.post("/bulk-unshare", response_model=dict)
+async def bulk_unshare(
+    body: BulkConfirmRequest,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    charge_repo: SQLChargeRepository = Depends(get_charge_repo),
+):
+    count = await charge_repo.bulk_unshare(body.charge_ids)
+    return {"unshared": count}
+
+
 @router.post("/manual", response_model=ChargeResponse)
 async def create_manual_charge(
     body: ManualChargeRequest,

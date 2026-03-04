@@ -67,6 +67,19 @@ export function useBulkConfirm() {
   })
 }
 
+export function useBulkUnshare() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (chargeIds: string[]) => {
+      const res = await client.post('/api/charges/bulk-unshare', { charge_ids: chargeIds })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
 // Client-side sorting and filtering utilities
 export function sortCharges(charges: Charge[], field: SortField, order: SortOrder): Charge[] {
   const sorted = [...charges].sort((a, b) => {

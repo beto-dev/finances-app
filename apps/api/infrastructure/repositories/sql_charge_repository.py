@@ -156,3 +156,13 @@ class SQLChargeRepository(ChargeRepository):
             m.is_shared = True
         await self._session.commit()
         return len(models)
+
+    async def bulk_unshare(self, charge_ids: list[UUID]) -> int:
+        result = await self._session.execute(
+            select(ChargeModel).where(ChargeModel.id.in_(charge_ids))
+        )
+        models = result.scalars().all()
+        for m in models:
+            m.is_shared = False
+        await self._session.commit()
+        return len(models)
