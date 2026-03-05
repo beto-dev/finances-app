@@ -18,6 +18,6 @@ class SyncToSheetsUseCase:
 
     async def execute(self, family_id: UUID, spreadsheet_id: str, access_token: str) -> dict:
         charges = await self._charges.get_by_family(family_id, month=None, year=None)
-        confirmed = [c for c in charges if c.is_confirmed]
+        confirmed = [c for c in charges if c.is_shared]
         result = await self._sheets.sync_charges(spreadsheet_id, confirmed, access_token)
         return result

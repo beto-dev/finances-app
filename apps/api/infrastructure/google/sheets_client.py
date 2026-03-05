@@ -53,7 +53,7 @@ class SheetsClient:
                 float(c.amount),
                 c.currency,
                 str(c.category_id) if c.category_id else "",
-                "Si" if c.is_confirmed else "No",
+                "Si" if c.is_shared else "No",
             ]
             for c in charges
         ]
