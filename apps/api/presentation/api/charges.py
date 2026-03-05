@@ -156,7 +156,7 @@ async def create_manual_charge(
         amount=body.amount,
         currency=body.currency,
         category_id=body.category_id,
-        is_shared=True,
+        is_shared=False,
         ai_suggested=False,
     )
     db.add(charge)

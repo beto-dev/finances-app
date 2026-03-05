@@ -21,6 +21,11 @@ dist/
 # OS
 .DS_Store
 
+# Test artifacts
+playwright-report/
+test-results/
+apps/web/e2e/.auth.json
+
 # Personal files / debug scripts
 *.pdf
 analyze_pdf.py
