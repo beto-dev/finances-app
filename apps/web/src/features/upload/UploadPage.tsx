@@ -70,8 +70,10 @@ export default function UploadPage() {
       try {
         await upload.mutateAsync(formData)
         updateFileStatus(i, 'done')
-      } catch {
-        updateFileStatus(i, 'error', 'Error al subir')
+      } catch (err: unknown) {
+        const e = err as { response?: { status: number; data?: { detail?: string } }; message?: string }
+        const msg = e.response?.data?.detail ?? (e.response ? `HTTP ${e.response.status}` : (e.message ?? 'Error'))
+        updateFileStatus(i, 'error', msg)
       }
     }
     setIsUploading(false)
