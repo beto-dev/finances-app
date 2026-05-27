@@ -6,24 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Finances** — A family personal finance organizer. Users upload bank statements (PDF/Excel/CSV), the app parses and AI-categorizes charges, and syncs results to a shared Google Spreadsheet. Web-first, then React Native mobile.
+**Finances** — A family personal finance organizer. Users upload bank statements (PDF/Excel/CSV), the app parses and AI-categorizes charges, and syncs results to a shared Google Spreadsheet. Currently in **private beta**.
 
 ---
 
-## Recommended Stack
+## Stack
 
 | Layer | Choice |
 |---|---|
-| Backend | Python + FastAPI |
-| Frontend (Web) | React + TypeScript + Vite |
-| Mobile (later) | React Native + Expo |
+| Backend | Python + FastAPI (Clean Architecture) |
+| Frontend | React + TypeScript + Vite + Tailwind CSS |
 | Database | PostgreSQL + Alembic migrations |
 | Auth + Storage | Supabase (Auth + Storage) |
-| AI Agent | Claude API + MCP (custom MCP server) |
-| Monorepo | Turborepo |
-| Infra | Docker + docker-compose |
+| AI | Claude API (charge categorization) |
+| Infra | Docker + docker-compose (dev) |
+| Deploy | Vercel (frontend) + Koyeb (API) |
+| CI | GitHub Actions |
 
-Architecture: **Clean Architecture** — `domain/` → `application/` → `infrastructure/` → `presentation/`, applied to both the Python backend and the React frontend (feature-based folders).
+Architecture: **Clean Architecture** — `domain/` → `application/` → `infrastructure/` → `presentation/`
 
 ---
 
@@ -32,84 +32,156 @@ Architecture: **Clean Architecture** — `domain/` → `application/` → `infra
 ```
 apps/
   api/        # Python FastAPI backend
+    domain/          # entities + repository interfaces (ABCs)
+    application/     # use cases
+    infrastructure/  # SQLAlchemy repos, AI, parsers, Google, Supabase
+    presentation/    # FastAPI routes + dependencies
+    tests/           # pytest unit + integration tests
   web/        # React + TypeScript frontend
-  mobile/     # React Native + Expo (Phase 4)
-packages/
-  shared-types/  # TypeScript types shared between web and mobile
+    src/
+      features/
+        auth/        # login, register, OAuth callback
+        charges/     # personal charges + family charges views
+        contributions/ # contributions view
+        dashboard/   # monthly summary
+        expenses/    # quick expense entry
+        family/      # family management (owner only)
+        sheets/      # Google Sheets sync UI
+        upload/      # file upload
+      app/           # router, App.tsx
+      shared/        # Layout, ProtectedRoute, Spinner, etc.
+  e2e/        # Playwright E2E tests
 ```
 
 ---
 
-## Development Plan
+## API Endpoints
 
-### Phase 1 — Setup
-
-| # | Task | Description | Complexity |
-|---|---|---|---|
-| 1.1 | **Monorepo scaffold** | Init Turborepo with `apps/web`, `apps/api`, `packages/shared-types`. Configure workspaces, TypeScript paths, shared ESLint/Prettier. | S |
-| 1.2 | **Backend skeleton** | FastAPI app with Clean Architecture folder structure: `domain/`, `application/`, `infrastructure/`, `presentation/`. Add Alembic for migrations. | M |
-| 1.3 | **Frontend skeleton** | React + TypeScript + Vite app. Feature-based folder structure (`features/upload`, `features/charges`, `features/sheets`). Add React Router, Tanstack Query. | M |
-| 1.4 | **Database setup** | PostgreSQL via Docker. Define initial schema: `users`, `families`, `statements`, `charges`, `categories`, `google_sheet_configs`. | M |
-| 1.5 | **Auth integration** | Supabase Auth in both backend (JWT middleware) and frontend. Support email/password + Google OAuth. Family invite system via shared `family_id`. | M |
-| 1.6 | **Dev environment** | `docker-compose.yml` for Postgres + Redis + API + Web. `.env.example` with all required keys. One-command `make dev` startup. | S |
-| 1.7 | **CI pipeline** | GitHub Actions: lint, type-check, and test on every PR for both `apps/api` and `apps/web`. | S |
+| Route | File | Description |
+|---|---|---|
+| `/api/health` | health.py | Health check |
+| `/api/auth/*` | auth.py | Login, register, Google OAuth |
+| `/api/charges/*` | charges.py | Charges CRUD, bulk confirm/unshare, categories |
+| `/api/statements/*` | statements.py | Upload + parse bank statements |
+| `/api/families/*` | families.py | Family management |
+| `/api/google/*` | google.py | Google Sheets OAuth + sync |
+| `/api/debug/*` | debug.py | Debug endpoints (disabled in prod — 404 without `ENABLE_DEBUG_ENDPOINTS`) |
 
 ---
 
-### Phase 2 — Core Features
+## Frontend Routes
 
-| # | Task | Description | Complexity |
-|---|---|---|---|
-| 2.1 | **File upload API** | Endpoint to receive PDF/Excel/CSV files. Store in Supabase Storage. Track upload metadata in DB (source bank hint, upload date, family, uploader). | M |
-| 2.2 | **Bank statement parser — PDF** | Use `pdfplumber` + `camelot` to extract tables from PDF bank statements. Since every bank formats PDFs differently, build a parser pipeline with pluggable bank adapters (strategy pattern). Output: normalized list of `{date, description, amount, currency}`. | L |
-| 2.3 | **Bank statement parser — Excel/CSV** | Use `openpyxl`/`pandas` to parse Excel and CSV exports. Same adapter pattern as PDF. Handle different column orderings, date formats, decimal separators (important for Spanish-language banks). | M |
-| 2.4 | **AI-powered charge categorization** | Use Claude API to classify each charge into categories (e.g., Food, Transport, Subscriptions, Health). Send batch of charges with context. Store category suggestions; user confirms or overrides. Learn from corrections per family. | L |
-| 2.5 | **MCP server for AI agent** | Build a custom MCP server that exposes tools: `parse_statement`, `categorize_charges`, `get_monthly_summary`, `update_spreadsheet`. This lets Claude act as a financial agent — users can chat with it to query and manipulate their data. | L |
-| 2.6 | **Charge review UI** | Web screen showing parsed charges in a table. User can: confirm category, edit category, merge duplicates, flag as unknown. Bulk actions. Real-time save via optimistic updates. | M |
-| 2.7 | **Google Sheets integration** | OAuth2 flow to connect user's Google account. On first use, create a new spreadsheet with monthly tabs. On each sync, append/update that month's categorized charges. Idempotent — re-running doesn't duplicate rows. | L |
-| 2.8 | **Family workspace** | One family = one shared data space. Invite members by email. All members see the same statements, charges, and spreadsheet. Role: Owner can manage members and Google Sheet config. | M |
-| 2.9 | **Monthly dashboard** | Summary view: total spent by category per month, comparison vs previous month, breakdown by account type (checking, credit card, credit line). Recharts-based. | M |
-
----
-
-### Phase 3 — Polish
-
-| # | Task | Description | Complexity |
-|---|---|---|---|
-| 3.1 | **Persistent category memory** | Store user-confirmed charge→category mappings per family. Auto-apply them on future uploads (e.g., "Apple" → always "Subscriptions" for this family). | S |
-| 3.2 | **Chat agent UI** | Conversational interface backed by MCP. User asks: "What did we spend on restaurants in January?" or "Add this charge to Food". Claude uses MCP tools to answer. | M |
-| 3.3 | **Email ingestion (optional input)** | Allow user to forward bank emails to a unique inbox address. Backend parses the email body/attachments automatically, skipping the manual upload step. | L |
-| 3.4 | **Multi-currency support** | Detect currency per charge. Convert to base family currency using historical exchange rates (e.g., Open Exchange Rates API). Display in both original and base currency. | M |
-| 3.5 | **Export & reports** | Export monthly summary as PDF or Excel directly from the app (in addition to Google Sheets). | S |
-| 3.6 | **Audit log** | Track who uploaded what, who changed which category, when Google Sheets was last synced. Visible to family owner. | S |
+| Path | Component | Notes |
+|---|---|---|
+| `/` | → `/resumen` | Redirect |
+| `/resumen` | DashboardPage | Monthly summary |
+| `/cargar` | UploadPage | Upload bank statement |
+| `/gastos` | ChargesPage | Personal charges |
+| `/gastos-familia` | FamilyChargesPage | Shared family charges |
+| `/aportes` | ContributionsPage | Contributions view |
+| `/familia` | FamilyPage | Family management (owner only, redirects members) |
+| `/hojas` | SheetsPage | Google Sheets sync |
+| `/nuevo-gasto` | QuickExpensePage | Quick manual charge entry |
+| `/login` | LoginPage | Auth |
+| `/auth/callback` | AuthCallbackPage | OAuth callback |
 
 ---
 
-### Phase 4 — Deploy & Mobile
+## Use Cases
 
-| # | Task | Description | Complexity |
-|---|---|---|---|
-| 4.1 | **Production deployment** | Deploy API to Railway or Fly.io (containerized). Deploy frontend to Vercel. Managed PostgreSQL (Supabase or Neon). Set up secrets, SSL, domain. | M |
-| 4.2 | **Monitoring & error tracking** | Integrate Sentry (both frontend and backend). Add structured logging (structlog). Health check endpoint. | S |
-| 4.3 | **React Native app scaffold** | New `apps/mobile` in monorepo using Expo. Reuse `packages/shared-types` and API client. Auth via Supabase native SDK. | M |
-| 4.4 | **Mobile core screens** | Port Upload, Charge Review, Dashboard, and Chat Agent screens to React Native. Use Expo Camera for scanning receipts as a bonus input method. | L |
-| 4.5 | **App store prep** | App signing, privacy policy, app store listings for Google Play and Apple App Store. | M |
-
----
-
-## Critical Path
-
-`1.2 → 2.2/2.3 → 2.4 → 2.5 → 2.7`
-
-The bank statement parser + AI categorization + MCP server + Google Sheets sync chain is the heart of the product. Everything else feeds into or depends on that pipeline.
+| File | Purpose |
+|---|---|
+| `upload_statement.py` | Receive file, store in Supabase, create Statement record |
+| `parse_statement.py` | Parse PDF/Excel/CSV → list of Charge records |
+| `categorize_charges.py` | Claude API categorization |
+| `review_charges.py` | Update category, bulk confirm, learn rules |
+| `sync_to_sheets.py` | Push confirmed charges to Google Sheets |
+| `manage_family.py` | Invite members, manage roles |
 
 ---
 
 ## Key Domain Concepts
 
-- **Family**: The top-level grouping. All data is scoped to a family. One Google Sheet per family.
-- **Statement**: An uploaded file from a bank. Has a type (checking account / credit card / credit line).
-- **Charge**: A single line item parsed from a statement. Has date, description, amount, currency, and a category.
-- **Category**: User-confirmed or AI-suggested label (e.g., Food, Transport, Subscriptions).
-- **Category Rule**: A persisted mapping from charge description pattern → category, scoped per family.
-- **MCP Server**: Exposes financial data and actions as tools for Claude to use as an AI agent.
+- **Family**: Top-level grouping. All data is family-scoped. One Google Sheet per family.
+- **Statement**: An uploaded file. Has type (checking / credit_card / credit_line / manual).
+- **Charge**: A single line item. Fields: date, description, amount, currency, category_id, `is_shared` (was `is_confirmed` — renamed).
+- **is_shared**: Whether a charge is visible to the whole family in the family view and Google Sheets sync. Manual charges default to `is_shared=False`.
+- **Category**: AI-suggested or user-confirmed label.
+- **CategoryRule**: Persisted description→category mapping per family (auto-apply on future uploads).
+
+---
+
+## Development Plan Status
+
+### Phase 1 — Setup ✅ COMPLETE
+
+All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, dev environment, CI.
+
+### Phase 2 — Core Features ✅ MOSTLY COMPLETE
+
+| # | Task | Status |
+|---|---|---|
+| 2.1 | File upload API | ✅ Done |
+| 2.2 | PDF parser | ✅ Done |
+| 2.3 | Excel/CSV parser | ✅ Done |
+| 2.4 | AI categorization | ✅ Done |
+| 2.5 | MCP server | ⏳ Pending |
+| 2.6 | Charge review UI | ✅ Done |
+| 2.7 | Google Sheets integration | ✅ Done |
+| 2.8 | Family workspace | ✅ Done |
+| 2.9 | Monthly dashboard | ✅ Done |
+
+### Phase 3 — Polish
+
+| # | Task | Status |
+|---|---|---|
+| 3.1 | Persistent category memory | ✅ Done (CategoryRule) |
+| 3.2 | Chat agent UI | ⏳ Pending |
+| 3.3 | Email ingestion | ⏳ Pending |
+| 3.4 | Multi-currency | ⏳ Pending |
+| 3.5 | Export & reports | ⏳ Pending |
+| 3.6 | Audit log | ⏳ Pending |
+
+### Phase 4 — Deploy & Mobile
+
+| # | Task | Status |
+|---|---|---|
+| 4.1 | Production deployment | ✅ Done (Vercel + Koyeb) |
+| 4.2 | Monitoring | ⏳ Pending |
+| 4.3–4.5 | Mobile (React Native) | ⏳ Pending |
+
+---
+
+## CI / Quality
+
+- **GitHub Actions** runs on every push to `main`
+- Jobs: API lint (ruff), API type check (mypy), API tests (pytest), Web build, Web type check + lint, E2E tests (Playwright), Security audit
+- **Ruff** config: `line-length = 120`, rules E/F/I/N/W/UP, `known-first-party` includes all local packages
+- **Mypy**: `check_untyped_defs = true`, `warn_unused_ignores = true` — this means any unnecessary `# type: ignore` will cause CI to fail
+- Mock repos in tests inherit from the ABC interfaces — do not add untyped mocks
+
+---
+
+## Deployment
+
+- **Frontend**: Vercel, auto-deploy on push to `main`
+- **API**: Koyeb, Docker-based, auto-deploy on push to `main`
+- **`ALLOWED_EMAILS`** in Koyeb env controls who can log in during beta
+- **`ENABLE_DEBUG_ENDPOINTS`** must NOT be set in production (debug routes return 404 without it)
+
+See `BETA_LAUNCH.md` for full deployment guide and ops runbook.
+
+---
+
+## Environment Variables
+
+| Variable | Where |
+|---|---|
+| `VITE_API_URL` | Vercel |
+| `APP_ANTHROPIC_API_KEY` | Koyeb |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | Koyeb |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Koyeb |
+| `GOOGLE_LOGIN_REDIRECT_URI`, `GOOGLE_REDIRECT_URI` | Koyeb |
+| `JWT_SECRET` | Koyeb |
+| `FRONTEND_URL` | Koyeb |
+| `ALLOWED_EMAILS` | Koyeb |
