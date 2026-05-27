@@ -25,6 +25,7 @@ export function useUploadStatement() {
     mutationFn: async (formData: FormData) => {
       const res = await client.post('/api/statements/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
       })
       return res.data as Statement
     },
