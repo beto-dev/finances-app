@@ -25,21 +25,14 @@ interface DashboardData {
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
-export function useDashboard(month: number | undefined, year: number): DashboardData & { isLoading: boolean; isError: boolean; errorDetail: string | null } {
-  const { data: charges, isLoading, isError, error } = useQuery<Charge[]>({
+export function useDashboard(month: number | undefined, year: number): DashboardData & { isLoading: boolean; isError: boolean } {
+  const { data: charges, isLoading, isError } = useQuery<Charge[]>({
     queryKey: ['charges', month ?? 'all', year],
     queryFn: async () => {
       const res = await client.get('/api/charges/', { params: { month, year } })
       return res.data
     },
   })
-
-  const errorDetail = (() => {
-    if (!error) return null
-    const e = error as { response?: { status: number; data?: { detail?: string } }; message?: string }
-    if (e.response) return `HTTP ${e.response.status}: ${e.response.data?.detail ?? JSON.stringify(e.response.data)}`
-    return e.message ?? String(error)
-  })()
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
@@ -57,7 +50,7 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     charges: charges ?? [],
   }
 
-  if (!charges || charges.length === 0) return { ...dashboard, isLoading, isError, errorDetail }
+  if (!charges || charges.length === 0) return { ...dashboard, isLoading, isError }
 
   const catMap = new Map(categories.map((c) => [c.id, c]))
   const byCat = new Map<string, { amount: number; count: number }>()
@@ -92,5 +85,5 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     return { month: m, label: MONTH_LABELS[i], ...data }
   })
 
-  return { ...dashboard, isLoading, isError, errorDetail }
+  return { ...dashboard, isLoading, isError }
 }

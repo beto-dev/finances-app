@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const [year, setYear] = useState(now.getFullYear())
 
   const activeMonth = view === 'mensual' ? month : undefined
-  const { isLoading, isError, errorDetail, ...dashboard } = useDashboard(activeMonth, year)
+  const { isLoading, isError, ...dashboard } = useDashboard(activeMonth, year)
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('es-CL', { style: 'currency', currency: dashboard.currency, maximumFractionDigits: 0 }).format(v)
@@ -140,10 +140,6 @@ export default function DashboardPage() {
         <div className="card text-center py-12">
           <p className="text-lg font-medium text-red-600">No se pudo conectar con el servidor</p>
           <p className="text-sm text-gray-500 mt-1">Verifica tu conexión o intenta nuevamente en unos segundos</p>
-          {errorDetail && (
-            <p className="text-xs text-gray-400 mt-2 font-mono break-all px-4">{errorDetail}</p>
-          )}
-          <p className="text-xs text-gray-300 mt-1 font-mono">API: {import.meta.env.VITE_API_URL ?? '(not set)'}</p>
           <button
             className="mt-4 btn-primary"
             onClick={() => window.location.reload()}
