@@ -11,6 +11,7 @@ from uuid import UUID
 import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
+
 from domain.entities.category import Category, CategoryRule
 from domain.entities.charge import Charge, ParsedCharge
 from domain.entities.user import User
