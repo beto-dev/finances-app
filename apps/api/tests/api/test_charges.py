@@ -7,7 +7,6 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from httpx import ASGITransport, AsyncClient
-
 from infrastructure.auth.supabase_middleware import get_current_user_id
 from infrastructure.database.connection import get_db
 from presentation.dependencies import get_category_repo, get_charge_repo
