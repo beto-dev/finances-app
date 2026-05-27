@@ -91,7 +91,7 @@ export default function UploadPage() {
         invalidCount++
         continue
       }
-      const isDuplicate = statements?.some((s) => s.filename === file.name)
+      const isDuplicate = statements?.some((s) => s.filename === file.name && s.status !== 'error')
       newItems.push({ file, status: isDuplicate ? 'duplicate' : 'waiting' })
     }
 
