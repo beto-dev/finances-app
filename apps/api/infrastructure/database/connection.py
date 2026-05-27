@@ -8,9 +8,11 @@ from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://finances:finances@db:5432/finances")
 
-# asyncpg does not support sslmode= in the URL — strip it and pass ssl via connect_args instead
+# asyncpg does not support sslmode= in the URL — strip it and pass ssl via connect_args.
+# Always use SSL for Supabase hosts; otherwise only if sslmode=require is in the URL.
 _async_url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-_needs_ssl = bool(re.search(r"sslmode=require", _async_url))
+_is_supabase = "supabase.co" in _async_url or "supabase.com" in _async_url
+_needs_ssl = _is_supabase or bool(re.search(r"sslmode=require", _async_url))
 _async_url = re.sub(r"[?&]sslmode=\w+", "", _async_url)
 
 _connect_args: dict = {"ssl": "require"} if _needs_ssl else {}
