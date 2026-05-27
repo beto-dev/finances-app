@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncGenerator
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -30,8 +30,8 @@ JWT_ALGORITHM = "HS256"
 def make_token(user_id: UUID = TEST_USER_ID) -> str:
     payload = {
         "sub": str(user_id),
-        "iat": datetime.now(datetime.UTC),
-        "exp": datetime.now(datetime.UTC).replace(year=2099),
+        "iat": datetime.now(UTC),
+        "exp": datetime.now(UTC).replace(year=2099),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -57,7 +57,7 @@ def make_charge(
         is_shared=is_shared,
         ai_suggested=ai_suggested,
         category_id=category_id,
-        created_at=datetime.now(datetime.UTC),
+        created_at=datetime.now(UTC),
     )
 
 
@@ -66,12 +66,12 @@ def make_category(*, name: str = "Food", is_system: bool = True) -> Category:
         id=uuid.uuid4(),
         name=name,
         is_system=is_system,
-        created_at=datetime.now(datetime.UTC),
+        created_at=datetime.now(UTC),
     )
 
 
 def make_user(*, family_id: UUID | None = None) -> User:
-    now = datetime.now(datetime.UTC)
+    now = datetime.now(UTC)
     return User(
         id=TEST_USER_ID,
         email="test@example.com",
@@ -159,7 +159,7 @@ class MockCategoryRepo(CategoryRepository):
             id=uuid.uuid4(),
             name=name,
             is_system=False,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
             family_id=family_id,
             color=color,
         )
@@ -179,7 +179,7 @@ class MockCategoryRepo(CategoryRepository):
             family_id=family_id,
             pattern=pattern,
             category_id=category_id,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
         )
 
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,13 +13,13 @@ from infrastructure.database.connection import get_db
 from presentation.dependencies import get_category_repo, get_charge_repo
 from presentation.main import app
 from tests.conftest import (
-    MockCategoryRepo,
-    MockChargeRepo,
-    TEST_USER_ID,
     make_category,
     make_charge,
     make_token,
     make_user,
+    MockCategoryRepo,
+    MockChargeRepo,
+    TEST_USER_ID,
 )
 
 
@@ -37,7 +37,7 @@ def _mock_db_dependency():
 
         async def _refresh(obj: object) -> None:
             if not getattr(obj, "created_at", None):
-                object.__setattr__(obj, "created_at", datetime.now(datetime.UTC))
+                object.__setattr__(obj, "created_at", datetime.now(UTC))
 
         db.refresh = _refresh
         yield db
@@ -67,8 +67,8 @@ class TestListCharges:
         charge.uploaded_by = TEST_USER_ID
         repo = MockChargeRepo([charge])
 
-        with patch("presentation.api.charges.SQLUserRepository") as MockRepo:
-            MockRepo.return_value.get_by_id = AsyncMock(return_value=make_user())
+        with patch("presentation.api.charges.SQLUserRepository") as mock_repo:
+            mock_repo.return_value.get_by_id = AsyncMock(return_value=make_user())
             async with _client_with_mocks(repo) as c:
                 resp = await c.get("/api/charges/", headers=_headers())
         _clear_overrides()
@@ -85,8 +85,8 @@ class TestListCharges:
 
     async def test_empty_when_no_charges(self):
         repo = MockChargeRepo([])
-        with patch("presentation.api.charges.SQLUserRepository") as MockRepo:
-            MockRepo.return_value.get_by_id = AsyncMock(return_value=make_user())
+        with patch("presentation.api.charges.SQLUserRepository") as mock_repo:
+            mock_repo.return_value.get_by_id = AsyncMock(return_value=make_user())
             async with _client_with_mocks(repo) as c:
                 resp = await c.get("/api/charges/", headers=_headers())
         _clear_overrides()
@@ -211,8 +211,8 @@ class TestListCategories:
         cat = make_category(name="Transporte")
         cat_repo = MockCategoryRepo([cat])
 
-        with patch("presentation.api.charges.SQLUserRepository") as MockRepo:
-            MockRepo.return_value.get_by_id = AsyncMock(return_value=make_user())
+        with patch("presentation.api.charges.SQLUserRepository") as mock_repo:
+            mock_repo.return_value.get_by_id = AsyncMock(return_value=make_user())
             async with _client_with_mocks(MockChargeRepo(), cat_repo) as c:
                 resp = await c.get("/api/charges/categories", headers=_headers())
         _clear_overrides()

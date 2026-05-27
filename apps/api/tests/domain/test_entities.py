@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from domain.entities.category import Category
@@ -21,7 +21,7 @@ class TestCharge:
             currency="CLP",
             is_shared=False,
             ai_suggested=False,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
         )
         assert charge.category_id is None
         assert charge.statement_type == ""
@@ -37,7 +37,7 @@ class TestCharge:
             currency="CLP",
             is_shared=False,
             ai_suggested=False,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
         )
         assert charge.is_shared is False
 
@@ -53,7 +53,7 @@ class TestCharge:
             is_shared=True,
             ai_suggested=True,
             category_id=cat_id,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
         )
         assert charge.category_id == cat_id
         assert charge.is_shared is True
@@ -85,7 +85,7 @@ class TestCategory:
             id=uuid.uuid4(),
             name="Alimentación",
             is_system=True,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
         )
         assert cat.is_system is True
         assert cat.family_id is None
@@ -99,7 +99,7 @@ class TestCategory:
             is_system=False,
             family_id=fam_id,
             color="#FF5733",
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(UTC),
         )
         assert cat.family_id == fam_id
         assert cat.color == "#FF5733"
@@ -114,7 +114,7 @@ class TestStatement:
             filename="Gastos Manuales",
             type="checking",
             status="parsed",
-            uploaded_at=datetime.now(datetime.UTC),
+            uploaded_at=datetime.now(UTC),
             bank_hint="manual",
         )
         assert stmt.family_id is None
@@ -129,7 +129,7 @@ class TestStatement:
             filename="cartola_enero.pdf",
             type="credit_card",
             status="pending",
-            uploaded_at=datetime.now(datetime.UTC),
+            uploaded_at=datetime.now(UTC),
         )
         assert stmt.family_id == fam_id
         assert stmt.type == "credit_card"
