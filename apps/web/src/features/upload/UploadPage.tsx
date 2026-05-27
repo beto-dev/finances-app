@@ -2,7 +2,6 @@ import { useState, DragEvent, ChangeEvent, useRef } from 'react'
 import { useStatements, useUploadStatement } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
-import ConfirmDialog from '../../shared/components/ConfirmDialog'
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -24,47 +23,85 @@ const TYPE_LABELS: Record<string, string> = {
   credit_line: 'Línea de crédito',
 }
 
+type FileStatus = 'waiting' | 'uploading' | 'done' | 'duplicate' | 'error'
+
+interface FileItem {
+  file: File
+  status: FileStatus
+  error?: string
+}
+
+const ALLOWED_EXTENSIONS = ['pdf', 'csv', 'xlsx', 'xls']
+
+function isAllowed(file: File): boolean {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return ALLOWED_EXTENSIONS.includes(ext)
+}
+
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [statementType, setStatementType] = useState('checking')
   const [bankHint, setBankHint] = useState('')
+  const [queue, setQueue] = useState<FileItem[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [pendingUpload, setPendingUpload] = useState<{ formData: FormData; filename: string } | null>(null)
 
   const { data: statements, isLoading } = useStatements()
   const upload = useUploadStatement()
 
-  const doUpload = async (formData: FormData, filename: string) => {
-    try {
-      await upload.mutateAsync(formData)
-      setToast({ message: `Archivo "${filename}" subido. Procesando en segundo plano...`, type: 'success' })
-    } catch {
-      setToast({ message: 'Error al subir el archivo', type: 'error' })
-    }
+  const updateFileStatus = (index: number, status: FileStatus, error?: string) => {
+    setQueue((prev) => prev.map((item, i) => i === index ? { ...item, status, error } : item))
   }
 
-  const handleFiles = async (files: FileList | null) => {
+  const uploadQueue = async (items: FileItem[], startIndex: number) => {
+    setIsUploading(true)
+    for (let i = startIndex; i < items.length; i++) {
+      const item = items[i]
+      if (item.status === 'duplicate') continue
+
+      updateFileStatus(i, 'uploading')
+
+      const formData = new FormData()
+      formData.append('file', item.file)
+      formData.append('statement_type', statementType)
+      if (bankHint) formData.append('bank_hint', bankHint)
+
+      try {
+        await upload.mutateAsync(formData)
+        updateFileStatus(i, 'done')
+      } catch {
+        updateFileStatus(i, 'error', 'Error al subir')
+      }
+    }
+    setIsUploading(false)
+    setToast({ message: 'Subida completada. Los archivos se están procesando en segundo plano.', type: 'success' })
+  }
+
+  const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return
-    const file = files[0]
-    const allowed = ['application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']
-    if (!allowed.some((t) => file.type.startsWith(t.split('/')[0])) && !['pdf', 'csv', 'xlsx', 'xls'].some((e) => file.name.endsWith(e))) {
-      setToast({ message: 'Formato no soportado. Usa PDF, CSV o Excel.', type: 'error' })
-      return
+
+    const newItems: FileItem[] = []
+    let invalidCount = 0
+
+    for (const file of Array.from(files)) {
+      if (!isAllowed(file)) {
+        invalidCount++
+        continue
+      }
+      const isDuplicate = statements?.some((s) => s.filename === file.name)
+      newItems.push({ file, status: isDuplicate ? 'duplicate' : 'waiting' })
     }
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('statement_type', statementType)
-    if (bankHint) formData.append('bank_hint', bankHint)
-
-    const isDuplicate = statements?.some((s) => s.filename === file.name)
-    if (isDuplicate) {
-      setPendingUpload({ formData, filename: file.name })
-      return
+    if (invalidCount > 0) {
+      setToast({ message: `${invalidCount} archivo(s) ignorado(s): solo se permiten PDF, CSV o Excel.`, type: 'error' })
     }
+    if (newItems.length === 0) return
 
-    await doUpload(formData, file.name)
+    const startIndex = queue.length
+    const combined = [...queue, ...newItems]
+    setQueue(combined)
+    uploadQueue(combined, startIndex)
   }
 
   const onDrop = (e: DragEvent) => {
@@ -75,6 +112,10 @@ export default function UploadPage() {
 
   const onDragOver = (e: DragEvent) => { e.preventDefault(); setIsDragging(true) }
   const onDragLeave = () => setIsDragging(false)
+
+  const clearQueue = () => setQueue([])
+
+  const duplicates = queue.filter((i) => i.status === 'duplicate')
 
   return (
     <div>
@@ -92,6 +133,7 @@ export default function UploadPage() {
                   className="input"
                   value={statementType}
                   onChange={(e) => setStatementType(e.target.value)}
+                  disabled={isUploading}
                 >
                   {Object.entries(TYPE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
@@ -103,9 +145,10 @@ export default function UploadPage() {
                 <input
                   type="text"
                   className="input"
-                  placeholder="ej. BBVA, Santander"
+                  placeholder="ej. BancoEstado, Santander"
                   value={bankHint}
                   onChange={(e) => setBankHint(e.target.value)}
+                  disabled={isUploading}
                 />
               </div>
             </div>
@@ -116,33 +159,79 @@ export default function UploadPage() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
-            onClick={() => fileInputRef.current?.click()}
-            className={`rounded-xl border-2 border-dashed p-12 text-center cursor-pointer transition-colors ${
-              isDragging ? 'border-brand-500 bg-brand-50' : 'border-gray-300 hover:border-brand-400 hover:bg-gray-50'
+            onClick={() => !isUploading && fileInputRef.current?.click()}
+            className={`rounded-xl border-2 border-dashed p-12 text-center transition-colors ${
+              isUploading
+                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                : isDragging
+                ? 'border-brand-500 bg-brand-50 cursor-pointer'
+                : 'border-gray-300 hover:border-brand-400 hover:bg-gray-50 cursor-pointer'
             }`}
           >
             <input
               ref={fileInputRef}
               type="file"
               accept=".pdf,.csv,.xlsx,.xls"
+              multiple
               className="hidden"
               onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
             />
             <div className="text-4xl mb-3">📁</div>
-            {upload.isPending ? (
+            {isUploading ? (
               <div className="flex items-center justify-center gap-2">
                 <Spinner size="sm" />
-                <span className="text-sm text-gray-600">Subiendo...</span>
+                <span className="text-sm text-gray-600">Subiendo archivos...</span>
               </div>
             ) : (
               <>
                 <p className="text-base font-medium text-gray-700">
-                  Arrastra tu archivo aquí o haz clic para seleccionar
+                  Arrastra uno o más archivos aquí, o haz clic para seleccionar
                 </p>
-                <p className="text-sm text-gray-400 mt-1">PDF, CSV, Excel (.xlsx, .xls)</p>
+                <p className="text-sm text-gray-400 mt-1">PDF, CSV, Excel (.xlsx, .xls) · Múltiples archivos permitidos</p>
               </>
             )}
           </div>
+
+          {/* Upload queue */}
+          {queue.length > 0 && (
+            <div className="card">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-700">
+                  Cola de subida ({queue.filter((i) => i.status === 'done').length}/{queue.length})
+                </h2>
+                {!isUploading && (
+                  <button onClick={clearQueue} className="text-xs text-gray-400 hover:text-gray-600">
+                    Limpiar
+                  </button>
+                )}
+              </div>
+              <ul className="space-y-2">
+                {queue.map((item, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate text-gray-700 min-w-0">{item.file.name}</span>
+                    <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                      item.status === 'done' ? 'bg-green-100 text-green-700' :
+                      item.status === 'uploading' ? 'bg-blue-100 text-blue-700' :
+                      item.status === 'error' ? 'bg-red-100 text-red-700' :
+                      item.status === 'duplicate' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {item.status === 'done' ? 'Subido' :
+                       item.status === 'uploading' ? 'Subiendo...' :
+                       item.status === 'error' ? (item.error ?? 'Error') :
+                       item.status === 'duplicate' ? 'Duplicado (omitido)' :
+                       'En cola'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {duplicates.length > 0 && !isUploading && (
+                <p className="text-xs text-yellow-600 mt-3">
+                  {duplicates.length} archivo(s) omitido(s) por ser duplicados. Elimínalos primero si quieres subirlos de nuevo.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Recent uploads */}
@@ -169,20 +258,6 @@ export default function UploadPage() {
           )}
         </div>
       </div>
-
-      {pendingUpload && (
-        <ConfirmDialog
-          title="Archivo ya cargado"
-          message={`"${pendingUpload.filename}" ya fue subido antes. ¿Quieres subirla de nuevo y duplicar los gastos?`}
-          confirmLabel="Subir de todas formas"
-          onConfirm={async () => {
-            const { formData, filename } = pendingUpload
-            setPendingUpload(null)
-            await doUpload(formData, filename)
-          }}
-          onCancel={() => setPendingUpload(null)}
-        />
-      )}
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
