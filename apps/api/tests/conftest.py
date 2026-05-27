@@ -2,19 +2,21 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from collections.abc import AsyncGenerator
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
-from unittest.mock import AsyncMock
 from uuid import UUID
 
 import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from domain.entities.category import Category
-from domain.entities.charge import Charge
+from domain.entities.category import Category, CategoryRule
+from domain.entities.charge import Charge, ParsedCharge
 from domain.entities.user import User
+from domain.repositories.category_repository import CategoryRepository
+from domain.repositories.charge_repository import ChargeRepository
 from presentation.main import app
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -28,8 +30,8 @@ JWT_ALGORITHM = "HS256"
 def make_token(user_id: UUID = TEST_USER_ID) -> str:
     payload = {
         "sub": str(user_id),
-        "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc).replace(year=2099),
+        "iat": datetime.now(datetime.UTC),
+        "exp": datetime.now(datetime.UTC).replace(year=2099),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -55,7 +57,7 @@ def make_charge(
         is_shared=is_shared,
         ai_suggested=ai_suggested,
         category_id=category_id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(datetime.UTC),
     )
 
 
@@ -64,12 +66,12 @@ def make_category(*, name: str = "Food", is_system: bool = True) -> Category:
         id=uuid.uuid4(),
         name=name,
         is_system=is_system,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(datetime.UTC),
     )
 
 
 def make_user(*, family_id: UUID | None = None) -> User:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(datetime.UTC)
     return User(
         id=TEST_USER_ID,
         email="test@example.com",
@@ -80,16 +82,24 @@ def make_user(*, family_id: UUID | None = None) -> User:
 
 
 # ── Mock repositories ──────────────────────────────────────────────────────────
-class MockChargeRepo:
+class MockChargeRepo(ChargeRepository):
     def __init__(self, charges: list[Charge] | None = None) -> None:
         self.charges = charges or []
         self.confirmed: list[list[UUID]] = []
         self.unshared: list[list[UUID]] = []
 
-    async def get_personal(self, user_id: UUID, month: int | None = None, year: int | None = None) -> list[Charge]:
+    async def get_personal(
+        self, user_id: UUID, month: int | None = None, year: int | None = None
+    ) -> list[Charge]:
         return self.charges
 
-    async def get_by_family(self, family_id: UUID, month: int | None, year: int | None, uploaded_by_filter: UUID | None = None) -> list[Charge]:
+    async def get_by_family(
+        self,
+        family_id: UUID,
+        month: int | None,
+        year: int | None,
+        uploaded_by_filter: UUID | None = None,
+    ) -> list[Charge]:
         return []
 
     async def get_by_id(self, charge_id: UUID) -> Charge | None:
@@ -98,7 +108,9 @@ class MockChargeRepo:
     async def get_by_statement(self, statement_id: UUID) -> list[Charge]:
         return [c for c in self.charges if c.statement_id == statement_id]
 
-    async def get_confirmed_by_family(self, family_id: UUID, month: int | None, year: int | None) -> list[Charge]:
+    async def get_confirmed_by_family(
+        self, family_id: UUID, month: int | None, year: int | None
+    ) -> list[Charge]:
         return [c for c in self.charges if c.is_shared]
 
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int:
@@ -121,7 +133,7 @@ class MockChargeRepo:
         charge.is_shared = is_shared
         return charge
 
-    async def bulk_create(self, statement_id: UUID, charges: Any) -> list[Charge]:
+    async def bulk_create(self, statement_id: UUID, charges: list[ParsedCharge]) -> list[Charge]:
         return []
 
     async def bulk_update_categories(self, charges: list[Charge]) -> None:
@@ -131,9 +143,10 @@ class MockChargeRepo:
         return 0
 
 
-class MockCategoryRepo:
+class MockCategoryRepo(CategoryRepository):
     def __init__(self, categories: list[Category] | None = None) -> None:
         self.categories = categories or [make_category()]
+        self.rule_calls: list[tuple[Any, ...]] = []
 
     async def get_by_id(self, category_id: UUID) -> Category | None:
         return next((c for c in self.categories if c.id == category_id), None)
@@ -141,8 +154,33 @@ class MockCategoryRepo:
     async def get_all(self, family_id: UUID | None = None) -> list[Category]:
         return self.categories
 
-    async def create_rule(self, family_id: UUID, description: str, category_id: UUID) -> None:
-        pass
+    async def create(self, name: str, family_id: UUID | None, color: str | None) -> Category:
+        cat = Category(
+            id=uuid.uuid4(),
+            name=name,
+            is_system=False,
+            created_at=datetime.now(datetime.UTC),
+            family_id=family_id,
+            color=color,
+        )
+        self.categories.append(cat)
+        return cat
+
+    async def get_rules(self, family_id: UUID) -> list[CategoryRule]:
+        return []
+
+    async def find_matching_rule(self, family_id: UUID, description: str) -> CategoryRule | None:
+        return None
+
+    async def create_rule(self, family_id: UUID, pattern: str, category_id: UUID) -> CategoryRule:
+        self.rule_calls.append((family_id, pattern, category_id))
+        return CategoryRule(
+            id=uuid.uuid4(),
+            family_id=family_id,
+            pattern=pattern,
+            category_id=category_id,
+            created_at=datetime.now(datetime.UTC),
+        )
 
 
 class MockUserRepo:
@@ -166,6 +204,6 @@ def auth_headers() -> dict[str, str]:
 
 
 @pytest.fixture
-async def client() -> AsyncClient:
+async def client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c

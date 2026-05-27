@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -37,7 +37,7 @@ def _mock_db_dependency():
 
         async def _refresh(obj: object) -> None:
             if not getattr(obj, "created_at", None):
-                object.__setattr__(obj, "created_at", datetime.now(timezone.utc))
+                object.__setattr__(obj, "created_at", datetime.now(datetime.UTC))
 
         db.refresh = _refresh
         yield db

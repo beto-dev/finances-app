@@ -64,16 +64,8 @@ class TestLearnRule:
     async def test_delegates_to_category_repo(self):
         cat = make_category()
         cat_repo = MockCategoryRepo([cat])
-        called_with: list = []
-
-        original = cat_repo.create_rule
-        async def spy(family_id, description, category_id):  # type: ignore[override]
-            called_with.append((family_id, description, category_id))
-        cat_repo.create_rule = spy  # type: ignore[method-assign]
-
         uc = ReviewChargesUseCase(MockChargeRepo(), cat_repo)
         fam_id = uuid.uuid4()
         await uc.learn_rule(fam_id, "Netflix", cat.id)
-
-        assert len(called_with) == 1
-        assert called_with[0] == (fam_id, "Netflix", cat.id)
+        assert len(cat_repo.rule_calls) == 1
+        assert cat_repo.rule_calls[0] == (fam_id, "Netflix", cat.id)
