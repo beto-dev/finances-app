@@ -77,6 +77,17 @@ function useSetRole() {
   })
 }
 
+function useRenameFamily() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const res = await client.patch('/api/families/me', { name })
+      return res.data as Family
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['family'] }),
+  })
+}
+
 function useRemoveMember() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -140,6 +151,8 @@ export default function FamilyPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [confirmMember, setConfirmMember] = useState<FamilyMember | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [editName, setEditName] = useState('')
 
   const { data: family, isLoading: loadingFamily } = useFamilyInfo()
   const hasFamily = !!family
@@ -149,6 +162,19 @@ export default function FamilyPage() {
   const toggleActive = useToggleActive()
   const setRole = useSetRole()
   const removeMember = useRemoveMember()
+  const renameFamily = useRenameFamily()
+
+  const handleRename = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!editName.trim()) return
+    try {
+      await renameFamily.mutateAsync(editName.trim())
+      setEditingName(false)
+      setToast({ message: 'Nombre actualizado', type: 'success' })
+    } catch {
+      setToast({ message: 'Error al renombrar la familia', type: 'error' })
+    }
+  }
 
   const handleCreateFamily = async (e: FormEvent) => {
     e.preventDefault()
@@ -245,10 +271,39 @@ export default function FamilyPage() {
         <div className="space-y-6">
           {/* Family info */}
           <div className="card">
-            <h2 className="text-base font-semibold text-gray-800 mb-1">{family.name}</h2>
-            <p className="text-xs text-gray-400">
-              Creada el {new Date(family.created_at).toLocaleDateString('es-ES')}
-            </p>
+            {editingName ? (
+              <form onSubmit={handleRename} className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  className="input flex-1"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                />
+                <button type="submit" className="btn-primary shrink-0" disabled={renameFamily.isPending}>
+                  {renameFamily.isPending ? <Spinner size="sm" /> : 'Guardar'}
+                </button>
+                <button type="button" onClick={() => setEditingName(false)} className="text-sm text-gray-500 hover:text-gray-700 shrink-0">
+                  Cancelar
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-800">{family.name}</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Creada el {new Date(family.created_at).toLocaleDateString('es-ES')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setEditName(family.name); setEditingName(true) }}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50"
+                >
+                  Renombrar
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Members list */}

@@ -99,3 +99,13 @@ class SQLFamilyRepository(FamilyRepository):
         if m:
             await self._session.delete(m)
             await self._session.commit()
+
+    async def update_name(self, family_id: UUID, name: str) -> Family | None:
+        result = await self._session.execute(select(FamilyModel).where(FamilyModel.id == family_id))
+        m = result.scalar_one_or_none()
+        if not m:
+            return None
+        m.name = name
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_family(m)

@@ -88,6 +88,21 @@ async def get_my_family(
     return FamilyResponse(id=family.id, name=family.name, owner_id=family.owner_id, created_at=family.created_at)
 
 
+@router.patch("/me", response_model=FamilyResponse)
+async def rename_family(
+    body: FamilyCreate,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    family_repo: SQLFamilyRepository = Depends(get_family_repo),
+    user_repo: SQLUserRepository = Depends(get_user_repo),
+):
+    _, family = await _assert_admin(current_user_id, user_repo, family_repo)
+    updated = await family_repo.update_name(family.id, body.name.strip())
+    if not updated:
+        raise HTTPException(status_code=404, detail="Familia no encontrada")
+    return FamilyResponse(id=updated.id, name=updated.name, owner_id=updated.owner_id, created_at=updated.created_at)
+
+
 @router.get("/me/members", response_model=list[FamilyMemberResponse])
 async def get_family_members(
     current_user_id: CurrentUserId,
