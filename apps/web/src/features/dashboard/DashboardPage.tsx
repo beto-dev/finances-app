@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const [year, setYear] = useState(now.getFullYear())
 
   const activeMonth = view === 'mensual' ? month : undefined
-  const { isLoading, ...dashboard } = useDashboard(activeMonth, year)
+  const { isLoading, isError, ...dashboard } = useDashboard(activeMonth, year)
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('es-CL', { style: 'currency', currency: dashboard.currency, maximumFractionDigits: 0 }).format(v)
@@ -135,6 +135,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Error state ── */}
+      {isError && !isLoading && (
+        <div className="card text-center py-12">
+          <p className="text-lg font-medium text-red-600">No se pudo conectar con el servidor</p>
+          <p className="text-sm text-gray-500 mt-1">Verifica tu conexión o intenta nuevamente en unos segundos</p>
+          <button
+            className="mt-4 btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* ── Skeleton loading state ── */}
       {isLoading && (
         <div>
@@ -155,7 +169,7 @@ export default function DashboardPage() {
       )}
 
       {/* Summary cards + charts */}
-      {!isLoading && (<>
+      {!isLoading && !isError && (<>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="card">
           <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gasto total' : 'Gasto total del año'}</p>
