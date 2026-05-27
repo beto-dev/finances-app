@@ -143,6 +143,7 @@ export default function DashboardPage() {
           {errorDetail && (
             <p className="text-xs text-gray-400 mt-2 font-mono break-all px-4">{errorDetail}</p>
           )}
+          <p className="text-xs text-gray-300 mt-1 font-mono">API: {import.meta.env.VITE_API_URL ?? '(not set)'}</p>
           <button
             className="mt-4 btn-primary"
             onClick={() => window.location.reload()}
