@@ -16,23 +16,54 @@ function normalizeDesc(desc: string): string {
 
 function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup[] {
   if (!charges) return []
-  // Group by normalized description + cuota_total, keep the highest cuota_numero (most recent month)
-  const map = new Map<string, CuotaGroup>()
+
+  // Bucket by normalized description + cuota_total
+  type C = NonNullable<typeof charges>[number]
+  const buckets = new Map<string, C[]>()
   for (const c of charges) {
     if (c.cuota_numero == null || c.cuota_total == null) continue
     const key = `${normalizeDesc(c.description)}|${c.cuota_total}`
-    const existing = map.get(key)
-    if (!existing || c.cuota_numero > existing.cuota_numero) {
-      map.set(key, {
+    if (!buckets.has(key)) buckets.set(key, [])
+    buckets.get(key)!.push(c)
+  }
+
+  const groups: CuotaGroup[] = []
+
+  for (const list of buckets.values()) {
+    // Sort by cuota_numero ascending so we can build increasing sequences
+    const sorted = [...list].sort((a, b) => a.cuota_numero! - b.cuota_numero!)
+
+    // Patience-sort-like: assign each charge to a "run" whose last value is strictly less.
+    // Each run represents one distinct purchase series.
+    // We track only the last charge added to each run (we only need the max at the end).
+    const runs: { last: number; charge: C }[] = []
+
+    for (const c of sorted) {
+      // Find runs where last < current cuota_numero — prefer the one closest to current
+      let best: { last: number; charge: C } | null = null
+      for (const r of runs) {
+        if (r.last < c.cuota_numero! && (!best || r.last > best.last)) best = r
+      }
+      if (best) {
+        best.last = c.cuota_numero!
+        best.charge = c
+      } else {
+        runs.push({ last: c.cuota_numero!, charge: c })
+      }
+    }
+
+    for (const run of runs) {
+      const c = run.charge
+      groups.push({
         description: c.description,
-        cuota_numero: c.cuota_numero,
-        cuota_total: c.cuota_total,
+        cuota_numero: c.cuota_numero!,
+        cuota_total: c.cuota_total!,
         cuota_monto: c.cuota_monto ?? c.amount,
         date: c.date,
       })
     }
   }
-  const groups = Array.from(map.values())
+
   // Sort: active first, then by remaining installments desc
   return groups.sort((a, b) => {
     const aDone = a.cuota_numero >= a.cuota_total
