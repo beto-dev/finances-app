@@ -30,6 +30,27 @@ async def health_check():
     }
 
 
+@router.get("/health/openrouter-models")
+async def openrouter_models():
+    """List available free OpenRouter models."""
+    import httpx
+    key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not key:
+        return {"error": "OPENROUTER_API_KEY not set"}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                "https://openrouter.ai/api/v1/models",
+                headers={"Authorization": f"Bearer {key}"},
+            )
+            r.raise_for_status()
+            models = r.json().get("data", [])
+            free = [m["id"] for m in models if ":free" in m.get("id", "")]
+            return {"free_models": free[:30]}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.get("/health/gemini-models")
 async def gemini_models():
     """List available Gemini models that support generateContent."""
