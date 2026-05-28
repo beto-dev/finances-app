@@ -5,12 +5,6 @@ import { Category } from '../../shared/types'
 import Toast from '../../shared/components/Toast'
 import Spinner from '../../shared/components/Spinner'
 
-const COLORS = [
-  '#22c55e', '#3b82f6', '#8b5cf6', '#ef4444', '#f97316',
-  '#eab308', '#ec4899', '#06b6d4', '#14b8a6', '#6b7280',
-  '#f43f5e', '#a855f7', '#0ea5e9', '#10b981', '#84cc16',
-]
-
 function useCategories() {
   return useQuery<Category[]>({
     queryKey: ['categories'],
@@ -45,6 +39,18 @@ function useDeleteCategory() {
 
 interface FormState { name: string; color: string }
 
+function validate(form: FormState, categories: Category[], excludeId?: string): string | null {
+  const name = form.name.trim().toLowerCase()
+  const color = form.color.toLowerCase()
+  if (!name) return 'El nombre es obligatorio'
+  const others = categories.filter((c) => c.id !== excludeId)
+  if (others.some((c) => c.name.toLowerCase() === name))
+    return 'Ya existe una categoría con ese nombre'
+  if (others.some((c) => (c.color ?? '').toLowerCase() === color))
+    return 'Ya existe una categoría con ese color'
+  return null
+}
+
 export default function CategoriesPage() {
   const { data: categories = [], isLoading } = useCategories()
   const create = useCreateCategory()
@@ -54,12 +60,15 @@ export default function CategoriesPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>({ name: '', color: '#3b82f6' })
   const [showNew, setShowNew] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') =>
     setToast({ message, type })
 
   const handleCreate = async () => {
-    if (!form.name.trim()) return
+    const err = validate(form, categories)
+    if (err) { setFormError(err); return }
+    setFormError(null)
     try {
       await create.mutateAsync({ name: form.name.trim(), color: form.color })
       setForm({ name: '', color: '#3b82f6' })
@@ -71,7 +80,9 @@ export default function CategoriesPage() {
   }
 
   const handleUpdate = async (id: string) => {
-    if (!form.name.trim()) return
+    const err = validate(form, categories, id)
+    if (err) { setFormError(err); return }
+    setFormError(null)
     try {
       await update.mutateAsync({ id, name: form.name.trim(), color: form.color })
       setEditId(null)
@@ -96,7 +107,14 @@ export default function CategoriesPage() {
   const startEdit = (cat: Category) => {
     setEditId(cat.id)
     setForm({ name: cat.name, color: cat.color ?? '#6b7280' })
+    setFormError(null)
     setShowNew(false)
+  }
+
+  const cancelForm = () => {
+    setShowNew(false)
+    setEditId(null)
+    setFormError(null)
   }
 
   const system = categories.filter((c) => c.is_system)
@@ -106,9 +124,9 @@ export default function CategoriesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
-        {!showNew && (
+        {!showNew && !editId && (
           <button
-            onClick={() => { setShowNew(true); setEditId(null); setForm({ name: '', color: '#3b82f6' }) }}
+            onClick={() => { setShowNew(true); setForm({ name: '', color: '#3b82f6' }); setFormError(null) }}
             className="btn-primary text-sm"
           >
             + Nueva categoría
@@ -124,12 +142,12 @@ export default function CategoriesPage() {
           {showNew && (
             <div className="card">
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Nueva categoría</h2>
-              <CategoryForm form={form} onChange={setForm} />
+              <CategoryForm form={form} onChange={(f) => { setForm(f); setFormError(null) }} error={formError} />
               <div className="flex gap-2 mt-4">
                 <button onClick={handleCreate} disabled={create.isPending} className="btn-primary text-sm">
                   {create.isPending ? 'Guardando...' : 'Guardar'}
                 </button>
-                <button onClick={() => setShowNew(false)} className="btn-secondary text-sm">Cancelar</button>
+                <button onClick={cancelForm} className="btn-secondary text-sm">Cancelar</button>
               </div>
             </div>
           )}
@@ -137,20 +155,20 @@ export default function CategoriesPage() {
           {/* Custom categories */}
           <div className="card">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Categorías personalizadas</h2>
-            {custom.length === 0 ? (
+            {custom.length === 0 && !showNew ? (
               <p className="text-sm text-gray-400 py-2">Sin categorías personalizadas aún.</p>
             ) : (
               <ul className="space-y-2">
                 {custom.map((cat) => (
                   <li key={cat.id}>
                     {editId === cat.id ? (
-                      <div className="space-y-3">
-                        <CategoryForm form={form} onChange={setForm} />
+                      <div className="space-y-3 py-1">
+                        <CategoryForm form={form} onChange={(f) => { setForm(f); setFormError(null) }} error={formError} />
                         <div className="flex gap-2">
                           <button onClick={() => handleUpdate(cat.id)} disabled={update.isPending} className="btn-primary text-sm">
                             {update.isPending ? 'Guardando...' : 'Guardar'}
                           </button>
-                          <button onClick={() => setEditId(null)} className="btn-secondary text-sm">Cancelar</button>
+                          <button onClick={cancelForm} className="btn-secondary text-sm">Cancelar</button>
                         </div>
                       </div>
                     ) : (
@@ -192,14 +210,22 @@ export default function CategoriesPage() {
   )
 }
 
-function CategoryForm({ form, onChange }: { form: FormState; onChange: (f: FormState) => void }) {
+function CategoryForm({
+  form,
+  onChange,
+  error,
+}: {
+  form: FormState
+  onChange: (f: FormState) => void
+  error: string | null
+}) {
   return (
     <div className="space-y-3">
       <div>
         <label className="label">Nombre</label>
         <input
           type="text"
-          className="input"
+          className={`input ${error?.includes('nombre') ? 'border-red-400' : ''}`}
           placeholder="ej. Mascotas, Gimnasio..."
           value={form.name}
           onChange={(e) => onChange({ ...form, name: e.target.value })}
@@ -207,18 +233,18 @@ function CategoryForm({ form, onChange }: { form: FormState; onChange: (f: FormS
       </div>
       <div>
         <label className="label">Color</label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => onChange({ ...form, color: c })}
-              className={`w-7 h-7 rounded-full border-2 transition-all ${form.color === c ? 'border-gray-800 scale-110' : 'border-transparent'}`}
-              style={{ backgroundColor: c }}
-            />
-          ))}
+        <div className="flex items-center gap-3 mt-1">
+          <input
+            type="color"
+            value={form.color}
+            onChange={(e) => onChange({ ...form, color: e.target.value })}
+            className={`w-10 h-10 rounded-lg cursor-pointer border-2 p-0.5 ${error?.includes('color') ? 'border-red-400' : 'border-gray-200'}`}
+          />
+          <span className="text-sm text-gray-500 font-mono">{form.color}</span>
+          <span className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: form.color }} />
         </div>
       </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   )
 }
