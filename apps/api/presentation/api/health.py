@@ -68,6 +68,28 @@ async def gemini_models():
         return {"error": str(e)}
 
 
+@router.get("/health/claude-credits")
+async def claude_credits():
+    """Check remaining Anthropic credits via the billing API."""
+    import httpx
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {"error": "ANTHROPIC_API_KEY not configured"}
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get("https://api.anthropic.com/v1/organizations/me", headers=headers)
+            if r.status_code == 200:
+                data = r.json()
+                return {"ok": True, "data": data}
+            return {"ok": False, "status": r.status_code, "body": r.text}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @router.get("/health/parser-test")
 async def parser_test():
     """Smoke-test the active AI parser with a real API call."""
