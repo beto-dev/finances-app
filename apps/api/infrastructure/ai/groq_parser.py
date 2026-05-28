@@ -85,8 +85,6 @@ Rules:
 Bank statement (file: {filename or "unknown"}):
 {content}"""
 
-        from infrastructure.ai._groq_semaphore import get as groq_sem
-
         last_exc: Exception | None = None
         for attempt in range(4):
             try:
@@ -94,23 +92,21 @@ Bank statement (file: {filename or "unknown"}):
                     raise RuntimeError("Groq client not initialized — set GROQ_API_KEY")
                 if attempt > 0:
                     await asyncio.sleep(2 ** attempt)  # 2s, 4s, 8s
-                async with groq_sem():
-                    response = await asyncio.to_thread(
-                        lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
-                            model=_MODEL,
-                            messages=[{"role": "user", "content": prompt}],
-                            max_tokens=32768,
-                        )
+                response = await asyncio.to_thread(
+                    lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
+                        model=_MODEL,
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=32768,
                     )
+                )
                 return self._parse_response(response.choices[0].message.content or "")
             except Exception as exc:
                 last_exc = exc
-                # retry on rate-limit (429) only
+                log.warning("groq_parser_attempt_failed", attempt=attempt + 1, error=str(exc), error_type=type(exc).__name__, filename=filename)
                 if "429" not in str(exc) and "rate" not in str(exc).lower():
                     break
-                log.warning("groq_rate_limit_retry", attempt=attempt + 1, filename=filename)
 
-        log.warning("groq_parser_error", error=str(last_exc), filename=filename)
+        log.error("groq_parser_error", error=str(last_exc), error_type=type(last_exc).__name__ if last_exc else "None", filename=filename)
         raise RuntimeError(f"Groq parsing failed: {last_exc}") from last_exc
 
     def _parse_response(self, text: str) -> list[ParsedCharge]:

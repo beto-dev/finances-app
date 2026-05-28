@@ -73,7 +73,7 @@ async def _parse_and_categorize(
         try:
             await parse_uc.execute(statement_id, file_bytes, filename)
         except Exception as exc:
-            log.warning("parse_failed", error=str(exc), filename=filename)
+            log.error("parse_failed", error=str(exc), error_type=type(exc).__name__, filename=filename, statement_id=str(statement_id))
             return  # status already set to 'error' by ParseStatementUseCase
 
     # Phase 2: Categorize — fresh session, parse result is already committed and safe
