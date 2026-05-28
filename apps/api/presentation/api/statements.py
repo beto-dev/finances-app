@@ -48,13 +48,21 @@ def _validate_file(filename: str, file_bytes: bytes, content_type: str) -> None:
 router = APIRouter(prefix="/api/statements", tags=["statements"])
 
 
-async def _parse_statement_only(
+async def _parse_and_categorize(
     statement_id: UUID,
     file_bytes: bytes,
     filename: str,
 ) -> None:
-    """Background task — Parse only, no AI categorization (skips if ANTHROPIC_API_KEY missing)."""
+    """Background task — parse then auto-categorize with AI."""
+    import structlog
+    from application.services.categorization_service import CategorizationService
+    from application.use_cases.categorize_charges import CategorizeChargesUseCase
+    from infrastructure.ai.groq_categorizer import GroqCategorizer
+    from infrastructure.ai.claude_categorizer import ClaudeCategorizer
     from infrastructure.database.connection import AsyncSessionLocal
+    from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
+
+    log = structlog.get_logger()
 
     async with AsyncSessionLocal() as session:
         statement_repo = SQLStatementRepository(session)
@@ -62,7 +70,25 @@ async def _parse_statement_only(
         parser_service = ParserService()
 
         parse_uc = ParseStatementUseCase(statement_repo, charge_repo, parser_service)
-        await parse_uc.execute(statement_id, file_bytes, filename)
+        try:
+            await parse_uc.execute(statement_id, file_bytes, filename)
+        except Exception:
+            return  # status already set to 'error' by ParseStatementUseCase
+
+        stmt = await statement_repo.get_by_id(statement_id)
+        if not stmt:
+            return
+
+        groq = GroqCategorizer()
+        categorizer = groq if groq.is_available else ClaudeCategorizer()
+        category_repo = SQLCategoryRepository(session)
+        categorization_service = CategorizationService(category_repo, categorizer)
+        categorize_uc = CategorizeChargesUseCase(charge_repo, category_repo, categorization_service)
+
+        try:
+            await categorize_uc.execute(statement_id, stmt.family_id)
+        except Exception as exc:
+            log.warning("auto_categorization_failed", error=str(exc), statement_id=str(statement_id))
 
 
 @router.post("/", response_model=StatementResponse, status_code=status.HTTP_201_CREATED)
@@ -97,7 +123,7 @@ async def upload_statement(
     )
 
     background_tasks.add_task(
-        _parse_statement_only,
+        _parse_and_categorize,
         statement.id, file_bytes, file.filename or "upload",
     )
 

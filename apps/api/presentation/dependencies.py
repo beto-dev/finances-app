@@ -4,9 +4,10 @@ from uuid import UUID
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from application.services.categorization_service import CategorizationService
+from application.services.categorization_service import CategorizationService, ChargeCategorizerProtocol
 from application.services.parser_service import ParserService
 from infrastructure.ai.claude_categorizer import ClaudeCategorizer
+from infrastructure.ai.groq_categorizer import GroqCategorizer
 from infrastructure.auth.supabase_middleware import get_current_user_id
 from infrastructure.database.connection import get_db
 from infrastructure.google.oauth_client import GoogleOAuthClient
@@ -41,7 +42,10 @@ def get_category_repo(db: DbSession) -> SQLCategoryRepository:
 def get_storage() -> SupabaseStorage:
     return SupabaseStorage()
 
-def get_claude() -> ClaudeCategorizer:
+def get_categorizer() -> ChargeCategorizerProtocol:
+    groq = GroqCategorizer()
+    if groq.is_available:
+        return groq
     return ClaudeCategorizer()
 
 def get_google_oauth() -> GoogleOAuthClient:
@@ -55,6 +59,6 @@ def get_parser_service() -> ParserService:
 
 def get_categorization_service(
     category_repo: Annotated[SQLCategoryRepository, Depends(get_category_repo)],
-    claude: Annotated[ClaudeCategorizer, Depends(get_claude)],
+    categorizer: Annotated[ChargeCategorizerProtocol, Depends(get_categorizer)],
 ) -> CategorizationService:
-    return CategorizationService(category_repo, claude)
+    return CategorizationService(category_repo, categorizer)
