@@ -1,6 +1,7 @@
+import io
 import os
 
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile
 
 router = APIRouter(prefix="/api", tags=["health"])
 
@@ -102,10 +103,8 @@ async def claude_credits():
 
 
 @router.post("/health/pdf-text")
-async def pdf_text_extract(file: "UploadFile"):
+async def pdf_text_extract(file: UploadFile = File(...)):
     """Return raw pdfplumber text extraction for debugging — shows exactly what Claude receives."""
-    from fastapi import UploadFile
-    import io
     try:
         import pdfplumber
     except ImportError:
