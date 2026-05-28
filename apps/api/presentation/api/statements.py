@@ -163,6 +163,62 @@ async def delete_statement(
     await statement_repo.delete(statement_id)
 
 
+@router.get("/summary")
+async def statements_summary(
+    current_user_id: CurrentUserId,
+    db: DbSession,
+):
+    """Return all statements with charge counts and categorization status."""
+    from sqlalchemy import func, select
+    from infrastructure.database.models import ChargeModel, StatementModel
+    from infrastructure.repositories.sql_user_repository import SQLUserRepository
+
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user or not user.family_id:
+        return []
+
+    total_sub = (
+        select(ChargeModel.statement_id, func.count().label("total"))
+        .group_by(ChargeModel.statement_id)
+        .subquery()
+    )
+    categorized_sub = (
+        select(ChargeModel.statement_id, func.count().label("categorized"))
+        .where(ChargeModel.category_id.isnot(None))
+        .group_by(ChargeModel.statement_id)
+        .subquery()
+    )
+
+    result = await db.execute(
+        select(
+            StatementModel,
+            func.coalesce(total_sub.c.total, 0).label("total"),
+            func.coalesce(categorized_sub.c.categorized, 0).label("categorized"),
+        )
+        .outerjoin(total_sub, StatementModel.id == total_sub.c.statement_id)
+        .outerjoin(categorized_sub, StatementModel.id == categorized_sub.c.statement_id)
+        .where(StatementModel.family_id == user.family_id)
+        .where(StatementModel.uploaded_by == current_user_id)
+        .where(StatementModel.bank_hint != "manual")
+        .order_by(StatementModel.uploaded_at.desc())
+    )
+
+    rows = result.all()
+    return [
+        {
+            "id": str(row.StatementModel.id),
+            "filename": row.StatementModel.filename,
+            "type": row.StatementModel.type,
+            "status": row.StatementModel.status,
+            "uploaded_at": row.StatementModel.uploaded_at,
+            "total_charges": row.total,
+            "categorized": row.categorized,
+            "uncategorized": row.total - row.categorized,
+        }
+        for row in rows
+    ]
+
+
 @router.get("/", response_model=list[StatementResponse])
 async def list_statements(
     current_user_id: CurrentUserId,
