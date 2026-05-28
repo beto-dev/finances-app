@@ -9,6 +9,7 @@ from application.services.parser_service import ParserService
 from infrastructure.ai.claude_categorizer import ClaudeCategorizer
 from infrastructure.ai.gemini_categorizer import GeminiCategorizer
 from infrastructure.ai.groq_categorizer import GroqCategorizer
+from infrastructure.ai.openrouter_categorizer import OpenRouterCategorizer
 from infrastructure.auth.supabase_middleware import get_current_user_id
 from infrastructure.database.connection import get_db
 from infrastructure.google.oauth_client import GoogleOAuthClient
@@ -44,6 +45,9 @@ def get_storage() -> SupabaseStorage:
     return SupabaseStorage()
 
 def get_categorizer() -> ChargeCategorizerProtocol:
+    openrouter = OpenRouterCategorizer()
+    if openrouter.is_available:
+        return openrouter
     gemini = GeminiCategorizer()
     if gemini.is_available:
         return gemini

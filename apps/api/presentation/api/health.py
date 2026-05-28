@@ -10,8 +10,11 @@ async def health_check():
     anthropic_key = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY"))
     groq_key = bool(os.environ.get("GROQ_API_KEY"))
     gemini_key = bool(os.environ.get("GEMINI_API_KEY"))
+    openrouter_key = bool(os.environ.get("OPENROUTER_API_KEY"))
 
-    if gemini_key:
+    if openrouter_key:
+        parser = "openrouter"
+    elif gemini_key:
         parser = "gemini"
     elif groq_key:
         parser = "groq"
@@ -50,9 +53,22 @@ async def parser_test():
     groq_key = os.environ.get("GROQ_API_KEY", "")
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
 
     try:
-        if gemini_key:
+        if openrouter_key:
+            import httpx
+            from infrastructure.ai.openrouter_parser import _MODEL as openrouter_model
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {openrouter_key}", "HTTP-Referer": "https://finances-app"},
+                    json={"model": openrouter_model, "messages": [{"role": "user", "content": "Reply with the number 1"}]},
+                )
+                response.raise_for_status()
+                text = response.json()["choices"][0]["message"]["content"]
+            return {"ok": True, "parser": "openrouter", "model": openrouter_model, "response": text}
+        elif gemini_key:
             import asyncio
             from google import genai
             from infrastructure.ai.gemini_parser import _MODEL as gemini_model
