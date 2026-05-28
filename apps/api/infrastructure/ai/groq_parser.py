@@ -11,7 +11,7 @@ from domain.entities.charge import ParsedCharge
 log = structlog.get_logger()
 
 _PAGE_CHUNK = 15
-_MODEL = "llama-3.3-70b-versatile"
+_MODEL = "llama-3.1-8b-instant"  # 131k TPM free tier vs 12k for 70b
 
 
 class GroqParser:
@@ -103,7 +103,8 @@ Bank statement (file: {filename or "unknown"}):
             except Exception as exc:
                 last_exc = exc
                 log.warning("groq_parser_attempt_failed", attempt=attempt + 1, error=str(exc), error_type=type(exc).__name__, filename=filename)
-                if "429" not in str(exc) and "rate" not in str(exc).lower():
+                exc_str = str(exc)
+                if "429" not in exc_str and "413" not in exc_str and "rate" not in exc_str.lower():
                     break
 
         log.error("groq_parser_error", error=str(last_exc), error_type=type(last_exc).__name__ if last_exc else "None", filename=filename)

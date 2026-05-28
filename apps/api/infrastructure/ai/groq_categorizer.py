@@ -9,7 +9,7 @@ from domain.entities.charge import Charge
 
 log = structlog.get_logger()
 
-_MODEL = "llama-3.3-70b-versatile"
+_MODEL = "llama-3.1-8b-instant"  # 131k TPM free tier vs 12k for 70b
 _BATCH_SIZE = 50
 
 
