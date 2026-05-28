@@ -57,10 +57,9 @@ async def _parse_and_categorize(
     import structlog
     from application.services.categorization_service import CategorizationService
     from application.use_cases.categorize_charges import CategorizeChargesUseCase
-    from infrastructure.ai.groq_categorizer import GroqCategorizer
-    from infrastructure.ai.claude_categorizer import ClaudeCategorizer
     from infrastructure.database.connection import AsyncSessionLocal
     from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
+    from presentation.dependencies import get_categorizer
 
     log = structlog.get_logger()
 
@@ -84,8 +83,7 @@ async def _parse_and_categorize(
         if not stmt:
             return
 
-        groq = GroqCategorizer()
-        categorizer = groq if groq.is_available else ClaudeCategorizer()
+        categorizer = get_categorizer()
         category_repo = SQLCategoryRepository(session)
         categorization_service = CategorizationService(category_repo, categorizer)
         categorize_uc = CategorizeChargesUseCase(charge_repo, category_repo, categorization_service)

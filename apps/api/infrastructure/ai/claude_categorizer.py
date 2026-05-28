@@ -18,6 +18,11 @@ class ClaudeCategorizer:
         except ImportError:
             pass
 
+    @property
+    def is_available(self) -> bool:
+        key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
+        return self._client is not None and bool(key)
+
     async def categorize_batch(self, charges: list[Charge], categories: list[Category]) -> list[Charge]:
         if self._client is None:
             return charges
