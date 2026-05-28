@@ -85,6 +85,8 @@ Rules:
 Bank statement (file: {filename or "unknown"}):
 {content}"""
 
+        from infrastructure.ai._groq_semaphore import get as groq_sem
+
         last_exc: Exception | None = None
         for attempt in range(4):
             try:
@@ -92,13 +94,14 @@ Bank statement (file: {filename or "unknown"}):
                     raise RuntimeError("Groq client not initialized — set GROQ_API_KEY")
                 if attempt > 0:
                     await asyncio.sleep(2 ** attempt)  # 2s, 4s, 8s
-                response = await asyncio.to_thread(
-                    lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
-                        model=_MODEL,
-                        messages=[{"role": "user", "content": prompt}],
-                        max_tokens=32768,
+                async with groq_sem():
+                    response = await asyncio.to_thread(
+                        lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
+                            model=_MODEL,
+                            messages=[{"role": "user", "content": prompt}],
+                            max_tokens=32768,
+                        )
                     )
-                )
                 return self._parse_response(response.choices[0].message.content or "")
             except Exception as exc:
                 last_exc = exc

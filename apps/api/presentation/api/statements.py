@@ -64,17 +64,22 @@ async def _parse_and_categorize(
 
     log = structlog.get_logger()
 
+    # Phase 1: Parse — isolated session so any post-parse error can't roll it back
     async with AsyncSessionLocal() as session:
         statement_repo = SQLStatementRepository(session)
         charge_repo = SQLChargeRepository(session)
         parser_service = ParserService()
-
         parse_uc = ParseStatementUseCase(statement_repo, charge_repo, parser_service)
         try:
             await parse_uc.execute(statement_id, file_bytes, filename)
-        except Exception:
+        except Exception as exc:
+            log.warning("parse_failed", error=str(exc), filename=filename)
             return  # status already set to 'error' by ParseStatementUseCase
 
+    # Phase 2: Categorize — fresh session, parse result is already committed and safe
+    async with AsyncSessionLocal() as session:
+        statement_repo = SQLStatementRepository(session)
+        charge_repo = SQLChargeRepository(session)
         stmt = await statement_repo.get_by_id(statement_id)
         if not stmt:
             return

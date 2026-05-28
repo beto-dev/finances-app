@@ -62,6 +62,8 @@ Responde UNICAMENTE con un JSON array con el mismo numero de elementos que los g
 Cada elemento debe tener: {{"index": 0, "category_id": "uuid-de-la-categoria"}}.
 Si no puedes determinar la categoria, usa la categoria "Otros"."""
 
+        from infrastructure.ai._groq_semaphore import get as groq_sem
+
         last_exc: Exception | None = None
         for attempt in range(4):
             try:
@@ -69,13 +71,14 @@ Si no puedes determinar la categoria, usa la categoria "Otros"."""
                     raise RuntimeError("Groq client not initialized")
                 if attempt > 0:
                     await asyncio.sleep(2 ** attempt)  # 2s, 4s, 8s
-                response = await asyncio.to_thread(
-                    lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
-                        model=_MODEL,
-                        messages=[{"role": "user", "content": prompt}],
-                        max_tokens=4096,
+                async with groq_sem():
+                    response = await asyncio.to_thread(
+                        lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
+                            model=_MODEL,
+                            messages=[{"role": "user", "content": prompt}],
+                            max_tokens=4096,
+                        )
                     )
-                )
                 text = response.choices[0].message.content or ""
                 return self._parse_response(text, charges, categories)
             except Exception as exc:
