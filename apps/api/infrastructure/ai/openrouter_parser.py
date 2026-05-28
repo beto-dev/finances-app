@@ -68,8 +68,10 @@ Rules:
 Bank statement (file: {filename or "unknown"}):
 {content}"""
 
+        import asyncio
+
         last_exc: Exception | None = None
-        for attempt in range(3):
+        for attempt in range(4):
             try:
                 async with httpx.AsyncClient(timeout=120) as client:
                     response = await client.post(
@@ -90,10 +92,14 @@ Bank statement (file: {filename or "unknown"}):
                     return self._parse_response(text)
             except Exception as exc:
                 last_exc = exc
-                log.warning("openrouter_parser_attempt_failed", attempt=attempt + 1, error=str(exc)[:200], filename=filename)
-                if attempt < 2:
-                    import asyncio
-                    await asyncio.sleep(2 ** (attempt + 1))
+                exc_str = str(exc)
+                log.warning("openrouter_parser_attempt_failed", attempt=attempt + 1, error=exc_str[:200], filename=filename)
+                if "429" in exc_str:
+                    # RPM limit — wait for the 1-minute window to reset
+                    log.warning("openrouter_ratelimit_wait", attempt=attempt + 1, filename=filename)
+                    await asyncio.sleep(65)
+                else:
+                    break  # non-retriable error
 
         log.error("openrouter_parser_error", error=str(last_exc)[:200], filename=filename)
         raise RuntimeError(f"OpenRouter parsing failed: {last_exc}") from last_exc

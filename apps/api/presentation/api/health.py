@@ -78,17 +78,9 @@ async def parser_test():
 
     try:
         if openrouter_key:
-            import httpx
             from infrastructure.ai.openrouter_parser import _MODEL as openrouter_model
-            async with httpx.AsyncClient(timeout=30) as client:
-                response = await client.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {openrouter_key}", "HTTP-Referer": "https://finances-app"},
-                    json={"model": openrouter_model, "messages": [{"role": "user", "content": "Reply with the number 1"}]},
-                )
-                response.raise_for_status()
-                text = response.json()["choices"][0]["message"]["content"]
-            return {"ok": True, "parser": "openrouter", "model": openrouter_model, "response": text}
+            # Don't make a real API call — just verify the key is configured (avoids burning the 20 RPM free limit)
+            return {"ok": True, "parser": "openrouter", "model": openrouter_model, "note": "key configured, skipping live call"}
         elif gemini_key:
             import asyncio
             from google import genai
