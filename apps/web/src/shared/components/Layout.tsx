@@ -20,11 +20,11 @@ const familyRoutes = [...familyItems.map((i) => i.to), '/familia']
 
 // ── Bottom tab bar (mobile) ──────────────────────────────────────────────────
 const tabItems = [
-  { to: '/resumen',        emoji: '📊', label: 'Resumen'  },
-  { to: '/gastos-familia', emoji: '👨‍👩‍👧', label: 'Familia'  },
-  { to: '/nuevo-gasto',    emoji: '➕', label: 'Gasto',    fab: true },
-  { to: '/cargar',         emoji: '📤', label: 'Subir'    },
-  { to: '/aportes',        emoji: '💰', label: 'Aportes'  },
+  { to: '/resumen',        emoji: '📊', label: 'Resumen' },
+  { to: '/gastos',         emoji: '📋', label: 'Gastos'  },
+  { to: '/cargar',         emoji: '📤', label: 'Subir',   fab: true },
+  { to: '/gastos-familia', emoji: '👨‍👩‍👧', label: 'Familia' },
+  { to: '/aportes',        emoji: '💰', label: 'Aportes' },
 ]
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>

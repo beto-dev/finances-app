@@ -17,12 +17,14 @@ const TYPE_LABELS: Record<string, string> = {
   checking: 'Cuenta Corriente',
   credit_card: 'Tarjeta de Crédito',
   credit_line: 'Línea de Crédito',
+  manual: 'Efectivo',
 }
 
 const TYPE_COLORS: Record<string, string> = {
   checking: '#3b82f6',
   credit_card: '#8b5cf6',
   credit_line: '#f97316',
+  manual: '#10b981',
 }
 
 export default function DashboardPage() {
