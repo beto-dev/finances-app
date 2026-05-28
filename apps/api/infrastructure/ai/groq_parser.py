@@ -90,8 +90,6 @@ Bank statement (file: {filename or "unknown"}):
             try:
                 if self._client is None:
                     raise RuntimeError("Groq client not initialized — set GROQ_API_KEY")
-                if attempt > 0:
-                    await asyncio.sleep(2 ** attempt)  # 2s, 4s, 8s
                 response = await asyncio.to_thread(
                     lambda: self._client.chat.completions.create(  # type: ignore[union-attr]
                         model=_MODEL,
@@ -102,12 +100,19 @@ Bank statement (file: {filename or "unknown"}):
                 return self._parse_response(response.choices[0].message.content or "")
             except Exception as exc:
                 last_exc = exc
-                log.warning("groq_parser_attempt_failed", attempt=attempt + 1, error=str(exc), error_type=type(exc).__name__, filename=filename)
                 exc_str = str(exc)
-                if "429" not in exc_str and "413" not in exc_str and "rate" not in exc_str.lower():
-                    break
+                log.warning("groq_parser_attempt_failed", attempt=attempt + 1, error=exc_str[:200], filename=filename)
+                if "413" in exc_str:
+                    # TPM limit — wait for the 1-minute token window to reset
+                    log.warning("groq_tpm_limit_wait", attempt=attempt + 1, filename=filename)
+                    await asyncio.sleep(65)
+                elif "429" in exc_str or "rate" in exc_str.lower():
+                    # RPM limit — short exponential backoff
+                    await asyncio.sleep(2 ** (attempt + 1))  # 2s, 4s, 8s, 16s
+                else:
+                    break  # non-retriable error
 
-        log.error("groq_parser_error", error=str(last_exc), error_type=type(last_exc).__name__ if last_exc else "None", filename=filename)
+        log.error("groq_parser_error", error=str(last_exc)[:200], filename=filename)
         raise RuntimeError(f"Groq parsing failed: {last_exc}") from last_exc
 
     def _parse_response(self, text: str) -> list[ParsedCharge]:
