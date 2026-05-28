@@ -1,5 +1,5 @@
 import { useState, DragEvent, ChangeEvent, useRef } from 'react'
-import { useStatements, useUploadStatement, useDeleteStatement } from './useUpload'
+import { useStatements, useUploadStatement, useDeleteStatement, useDeleteAllStatements } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
 
@@ -50,6 +50,7 @@ export default function UploadPage() {
   const { data: statements, isLoading } = useStatements()
   const upload = useUploadStatement()
   const deleteStatement = useDeleteStatement()
+  const deleteAll = useDeleteAllStatements()
 
   const updateFileStatus = (index: number, status: FileStatus, error?: string) => {
     setQueue((prev) => prev.map((item, i) => i === index ? { ...item, status, error } : item))
@@ -239,7 +240,22 @@ export default function UploadPage() {
 
         {/* Recent uploads */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Subidas recientes</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">Subidas recientes</h2>
+            {statements && statements.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm('¿Borrar todas las cartolas y sus gastos?')) {
+                    deleteAll.mutate(statements.map((s) => s.id))
+                  }
+                }}
+                disabled={deleteAll.isPending}
+                className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50"
+              >
+                {deleteAll.isPending ? 'Borrando...' : 'Borrar todo'}
+              </button>
+            )}
+          </div>
           {isLoading ? (
             <div className="flex justify-center py-4"><Spinner /></div>
           ) : !statements || statements.length === 0 ? (
@@ -247,9 +263,12 @@ export default function UploadPage() {
           ) : (
             <ul className="space-y-2">
               {statements
-                .filter((s) => {
+                .filter((s, _i, arr) => {
                   if (s.status !== 'error') return true
-                  return !statements.some((o) => o.filename === s.filename && o.status !== 'error')
+                  // hide if there's a successful upload of the same file
+                  if (arr.some((o) => o.filename === s.filename && o.status !== 'error')) return false
+                  // show only the most recent error per filename (array is sorted desc)
+                  return arr.findIndex((o) => o.filename === s.filename && o.status === 'error') === _i
                 })
                 .slice(0, 20)
                 .map((s) => (
