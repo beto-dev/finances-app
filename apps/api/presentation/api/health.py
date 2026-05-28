@@ -11,10 +11,10 @@ async def health_check():
     groq_key = bool(os.environ.get("GROQ_API_KEY"))
     gemini_key = bool(os.environ.get("GEMINI_API_KEY"))
 
-    if groq_key:
-        parser = "groq"
-    elif gemini_key:
+    if gemini_key:
         parser = "gemini"
+    elif groq_key:
+        parser = "groq"
     elif anthropic_key:
         parser = "claude"
     else:
@@ -35,7 +35,18 @@ async def parser_test():
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
 
     try:
-        if groq_key:
+        if gemini_key:
+            import asyncio
+            from google import genai
+            from infrastructure.ai.gemini_parser import _MODEL as gemini_model
+            client = genai.Client(api_key=gemini_key)
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model=gemini_model,
+                contents="Reply with the number 1",
+            )
+            return {"ok": True, "parser": "gemini", "model": gemini_model, "response": response.text}
+        elif groq_key:
             from groq import Groq
             import asyncio
             from infrastructure.ai.groq_parser import _MODEL as groq_model
@@ -48,8 +59,6 @@ async def parser_test():
                 )
             )
             return {"ok": True, "parser": "groq", "model": groq_model, "response": response.choices[0].message.content}
-        elif gemini_key:
-            return {"ok": True, "parser": "gemini", "response": "not tested"}
         elif anthropic_key:
             import anthropic
             client = anthropic.AsyncAnthropic(api_key=anthropic_key)

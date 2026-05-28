@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from application.services.categorization_service import CategorizationService, ChargeCategorizerProtocol
 from application.services.parser_service import ParserService
 from infrastructure.ai.claude_categorizer import ClaudeCategorizer
+from infrastructure.ai.gemini_categorizer import GeminiCategorizer
 from infrastructure.ai.groq_categorizer import GroqCategorizer
 from infrastructure.auth.supabase_middleware import get_current_user_id
 from infrastructure.database.connection import get_db
@@ -43,6 +44,9 @@ def get_storage() -> SupabaseStorage:
     return SupabaseStorage()
 
 def get_categorizer() -> ChargeCategorizerProtocol:
+    gemini = GeminiCategorizer()
+    if gemini.is_available:
+        return gemini
     groq = GroqCategorizer()
     if groq.is_available:
         return groq

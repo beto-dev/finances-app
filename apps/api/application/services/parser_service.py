@@ -13,25 +13,25 @@ log = structlog.get_logger()
 
 class ParserService:
     def __init__(self) -> None:
-        groq = GroqParser()
         gemini = GeminiParser()
+        groq = GroqParser()
         claude = ClaudeParser()
 
         llm: GroqParser | GeminiParser | ClaudeParser
-        if groq.is_available:
-            llm = groq
-            log.info("parser_backend", backend="groq")
-        elif gemini.is_available:
+        if gemini.is_available:
             llm = gemini
             log.info("parser_backend", backend="gemini")
+        elif groq.is_available:
+            llm = groq
+            log.info("parser_backend", backend="groq")
         elif claude.is_available:
             llm = claude
             log.info("parser_backend", backend="claude")
         else:
-            llm = groq  # will fail at parse time with a clear error
+            llm = gemini  # will fail at parse time with a clear error
             log.warning(
                 "parser_backend_unavailable",
-                hint="Set GROQ_API_KEY (free at console.groq.com) in .env",
+                hint="Set GEMINI_API_KEY (free at aistudio.google.com/app/apikey) in .env",
             )
 
         self._parsers = {
