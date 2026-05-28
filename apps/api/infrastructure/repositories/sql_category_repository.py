@@ -45,6 +45,21 @@ class SQLCategoryRepository(CategoryRepository):
         await self._session.refresh(m)
         return _to_cat(m)
 
+    async def update(self, category_id: UUID, name: str, color: str | None) -> Category:
+        result = await self._session.execute(select(CategoryModel).where(CategoryModel.id == category_id))
+        m = result.scalar_one()
+        m.name = name
+        m.color = color
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_cat(m)
+
+    async def delete(self, category_id: UUID) -> None:
+        result = await self._session.execute(select(CategoryModel).where(CategoryModel.id == category_id))
+        m = result.scalar_one()
+        await self._session.delete(m)
+        await self._session.commit()
+
     async def get_rules(self, family_id: UUID) -> list[CategoryRule]:
         result = await self._session.execute(
             select(CategoryRuleModel).where(CategoryRuleModel.family_id == family_id)

@@ -92,6 +92,11 @@ export default function Layout() {
                     {isAdmin ? '👥 Miembros' : '🏠 Crear familia'}
                   </NavLink>
                 )}
+                {isAdmin && (
+                  <NavLink to="/categorias" className={navLinkClass}>
+                    🏷️ Categorías
+                  </NavLink>
+                )}
               </div>
             )}
           </div>

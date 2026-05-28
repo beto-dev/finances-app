@@ -1,10 +1,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from application.use_cases.review_charges import ReviewChargesUseCase
 from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
 from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
+from infrastructure.repositories.sql_family_repository import SQLFamilyRepository
 from infrastructure.repositories.sql_user_repository import SQLUserRepository
 from presentation.dependencies import CurrentUserId, DbSession, get_category_repo, get_charge_repo
 from presentation.schemas.charge import (
@@ -179,6 +181,11 @@ async def create_manual_charge(
     )
 
 
+class CategoryBody(BaseModel):
+    name: str
+    color: str | None = None
+
+
 @router.get("/categories", response_model=list[dict])
 async def list_categories(
     current_user_id: CurrentUserId,
@@ -188,3 +195,59 @@ async def list_categories(
     user = await SQLUserRepository(db).get_by_id(current_user_id)
     categories = await category_repo.get_all(user.family_id if user else None)
     return [{"id": str(c.id), "name": c.name, "color": c.color, "is_system": c.is_system} for c in categories]
+
+
+async def _assert_admin(current_user_id: UUID, db: DbSession) -> UUID:
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user or not user.family_id:
+        raise HTTPException(status_code=403, detail="Sin familia")
+    me = await SQLFamilyRepository(db).get_member(user.family_id, current_user_id)
+    if not me or me.role != "admin":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden gestionar categorías")
+    return user.family_id
+
+
+@router.post("/categories", response_model=dict, status_code=201)
+async def create_category(
+    body: CategoryBody,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    category_repo: SQLCategoryRepository = Depends(get_category_repo),
+):
+    family_id = await _assert_admin(current_user_id, db)
+    cat = await category_repo.create(body.name, family_id, body.color)
+    return {"id": str(cat.id), "name": cat.name, "color": cat.color, "is_system": cat.is_system}
+
+
+@router.patch("/categories/{category_id}", response_model=dict)
+async def update_category(
+    category_id: UUID,
+    body: CategoryBody,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    category_repo: SQLCategoryRepository = Depends(get_category_repo),
+):
+    await _assert_admin(current_user_id, db)
+    cat = await category_repo.get_by_id(category_id)
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    if cat.is_system:
+        raise HTTPException(status_code=400, detail="No se pueden editar categorías del sistema")
+    updated = await category_repo.update(category_id, body.name, body.color)
+    return {"id": str(updated.id), "name": updated.name, "color": updated.color, "is_system": updated.is_system}
+
+
+@router.delete("/categories/{category_id}", status_code=204)
+async def delete_category(
+    category_id: UUID,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    category_repo: SQLCategoryRepository = Depends(get_category_repo),
+):
+    await _assert_admin(current_user_id, db)
+    cat = await category_repo.get_by_id(category_id)
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    if cat.is_system:
+        raise HTTPException(status_code=400, detail="No se pueden eliminar categorías del sistema")
+    await category_repo.delete(category_id)

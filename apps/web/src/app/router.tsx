@@ -13,6 +13,7 @@ import SheetsPage from '../features/sheets/SheetsPage'
 import FamilyChargesPage from '../features/charges/FamilyChargesPage'
 import ContributionsPage from '../features/contributions/ContributionsPage'
 import QuickExpensePage from '../features/expenses/QuickExpensePage'
+import CategoriesPage from '../features/categories/CategoriesPage'
 import Spinner from '../shared/components/Spinner'
 
 function AdminRoute() {
@@ -39,6 +40,7 @@ export default function AppRouter() {
           <Route path="/aportes" element={<ContributionsPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/familia" element={<FamilyPage />} />
+            <Route path="/categorias" element={<CategoriesPage />} />
           </Route>
           <Route path="/hojas" element={<SheetsPage />} />
           <Route path="/nuevo-gasto" element={<QuickExpensePage />} />
