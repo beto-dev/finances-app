@@ -41,6 +41,7 @@ async def list_charges(
             amount=c.amount, currency=c.currency, category_id=c.category_id,
             is_shared=c.is_shared, ai_suggested=c.ai_suggested, created_at=c.created_at,
             statement_type=c.statement_type, uploaded_by=c.uploaded_by,
+            cuota_numero=c.cuota_numero, cuota_total=c.cuota_total, cuota_monto=c.cuota_monto,
         )
         for c in charges
     ]
@@ -65,6 +66,7 @@ async def list_family_charges(
             amount=c.amount, currency=c.currency, category_id=c.category_id,
             is_shared=c.is_shared, ai_suggested=c.ai_suggested, created_at=c.created_at,
             statement_type=c.statement_type, uploaded_by=c.uploaded_by,
+            cuota_numero=c.cuota_numero, cuota_total=c.cuota_total, cuota_monto=c.cuota_monto,
         )
         for c in charges
     ]
