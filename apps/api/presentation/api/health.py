@@ -27,6 +27,23 @@ async def health_check():
     }
 
 
+@router.get("/health/gemini-models")
+async def gemini_models():
+    """List available Gemini models that support generateContent."""
+    import asyncio
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    if not gemini_key:
+        return {"error": "GEMINI_API_KEY not set"}
+    try:
+        from google import genai
+        client = genai.Client(api_key=gemini_key)
+        models = await asyncio.to_thread(lambda: list(client.models.list()))
+        names = [m.name for m in models if "generateContent" in (m.supported_actions or [])]
+        return {"models": names}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.get("/health/parser-test")
 async def parser_test():
     """Smoke-test the active AI parser with a real API call."""

@@ -11,7 +11,7 @@ from domain.entities.charge import ParsedCharge
 log = structlog.get_logger()
 
 _PAGE_CHUNK = 15
-_MODEL = "gemini-1.5-flash"
+_MODEL = "gemini-2.0-flash-lite"
 
 
 class GeminiParser:
