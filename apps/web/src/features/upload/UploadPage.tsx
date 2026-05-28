@@ -245,7 +245,13 @@ export default function UploadPage() {
             <p className="text-sm text-gray-400 text-center py-4">Sin archivos subidos</p>
           ) : (
             <ul className="space-y-2">
-              {statements.slice(0, 10).map((s) => (
+              {statements
+                .filter((s) => {
+                  if (s.status !== 'error') return true
+                  return !statements.some((o) => o.filename === s.filename && o.status !== 'error')
+                })
+                .slice(0, 10)
+                .map((s) => (
                 <li key={s.id} className="flex items-start justify-between gap-2 text-sm">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-800 truncate">{s.filename}</p>
