@@ -70,22 +70,33 @@ async def gemini_models():
 
 @router.get("/health/claude-credits")
 async def claude_credits():
-    """Check remaining Anthropic credits via the billing API."""
-    import httpx
+    """Check if Anthropic credits are available by making a minimal 1-token call."""
+    import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
     if not api_key:
-        return {"error": "ANTHROPIC_API_KEY not configured"}
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-    }
+        return {"ok": False, "error": "ANTHROPIC_API_KEY not configured"}
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get("https://api.anthropic.com/v1/organizations/me", headers=headers)
-            if r.status_code == 200:
-                data = r.json()
-                return {"ok": True, "data": data}
-            return {"ok": False, "status": r.status_code, "body": r.text}
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        msg = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1,
+            messages=[{"role": "user", "content": "1"}],
+        )
+        usage = msg.usage
+        return {
+            "ok": True,
+            "credits_available": True,
+            "input_tokens": usage.input_tokens,
+            "output_tokens": usage.output_tokens,
+        }
+    except anthropic.APIStatusError as e:
+        low_credit = e.status_code in (402, 529) or "credit" in str(e).lower()
+        return {
+            "ok": False,
+            "credits_available": False if low_credit else None,
+            "status": e.status_code,
+            "error": str(e.message),
+        }
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
