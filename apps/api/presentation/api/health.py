@@ -101,6 +101,24 @@ async def claude_credits():
         return {"ok": False, "error": str(e)}
 
 
+@router.post("/health/pdf-text")
+async def pdf_text_extract(file: "UploadFile"):
+    """Return raw pdfplumber text extraction for debugging — shows exactly what Claude receives."""
+    from fastapi import UploadFile
+    import io
+    try:
+        import pdfplumber
+    except ImportError:
+        return {"error": "pdfplumber not installed"}
+    data = await file.read()
+    pages = []
+    with pdfplumber.open(io.BytesIO(data)) as pdf:
+        for i, page in enumerate(pdf.pages):
+            text = page.extract_text() or ""
+            pages.append({"page": i + 1, "text": text[:3000]})
+    return {"pages": pages, "total_pages": len(pages)}
+
+
 @router.get("/health/parser-test")
 async def parser_test():
     """Smoke-test the active AI parser with a real API call."""
