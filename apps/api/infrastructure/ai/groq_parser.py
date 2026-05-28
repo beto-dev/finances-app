@@ -86,6 +86,7 @@ Bank statement (file: {filename or "unknown"}):
 {content}"""
 
         last_exc: Exception | None = None
+        tpm_attempts = 0
         for attempt in range(4):
             try:
                 if self._client is None:
@@ -103,7 +104,10 @@ Bank statement (file: {filename or "unknown"}):
                 exc_str = str(exc)
                 log.warning("groq_parser_attempt_failed", attempt=attempt + 1, error=exc_str[:200], filename=filename)
                 if "413" in exc_str:
-                    # TPM limit — wait for the 1-minute token window to reset
+                    # TPM limit — wait for the 1-minute token window to reset, max 2 retries
+                    tpm_attempts += 1
+                    if tpm_attempts >= 2:
+                        break
                     log.warning("groq_tpm_limit_wait", attempt=attempt + 1, filename=filename)
                     await asyncio.sleep(65)
                 elif "429" in exc_str or "rate" in exc_str.lower():
