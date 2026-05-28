@@ -9,13 +9,18 @@ interface CuotaGroup {
   date: string
 }
 
+// Strip trailing interest-rate suffixes Claude sometimes appends (e.g. "0,00 %" or "2,07 %")
+function normalizeDesc(desc: string): string {
+  return desc.trim().toLowerCase().replace(/\s+\d+[,.]\d+\s*%\s*$/, '').trim()
+}
+
 function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup[] {
   if (!charges) return []
-  // Group by description + cuota_total, keep the highest cuota_numero (most recent month)
+  // Group by normalized description + cuota_total, keep the highest cuota_numero (most recent month)
   const map = new Map<string, CuotaGroup>()
   for (const c of charges) {
     if (c.cuota_numero == null || c.cuota_total == null) continue
-    const key = `${c.description.trim().toLowerCase()}|${c.cuota_total}`
+    const key = `${normalizeDesc(c.description)}|${c.cuota_total}`
     const existing = map.get(key)
     if (!existing || c.cuota_numero > existing.cuota_numero) {
       map.set(key, {
