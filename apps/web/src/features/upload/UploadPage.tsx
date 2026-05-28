@@ -45,7 +45,6 @@ export default function UploadPage() {
   const [bankHint, setBankHint] = useState('')
   const [queue, setQueue] = useState<FileItem[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [batchPause, setBatchPause] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: statements, isLoading } = useStatements()
@@ -56,25 +55,12 @@ export default function UploadPage() {
     setQueue((prev) => prev.map((item, i) => i === index ? { ...item, status, error } : item))
   }
 
-  const BATCH_SIZE = 3
-  const BATCH_PAUSE_S = 70
-
   const uploadQueue = async (items: FileItem[], startIndex: number) => {
     setIsUploading(true)
-    let batchCount = 0
 
     for (let i = startIndex; i < items.length; i++) {
       const item = items[i]
       if (item.status === 'duplicate') continue
-
-      // Pause between batches of 3 to respect Groq token-per-minute limit
-      if (batchCount > 0 && batchCount % BATCH_SIZE === 0) {
-        for (let s = BATCH_PAUSE_S; s > 0; s--) {
-          setBatchPause(s)
-          await new Promise<void>((r) => setTimeout(r, 1000))
-        }
-        setBatchPause(null)
-      }
 
       updateFileStatus(i, 'uploading')
 
@@ -91,8 +77,6 @@ export default function UploadPage() {
         const msg = e.response?.data?.detail ?? (e.response ? `HTTP ${e.response.status}` : (e.message ?? 'Error'))
         updateFileStatus(i, 'error', msg)
       }
-
-      batchCount++
     }
 
     setIsUploading(false)
@@ -246,12 +230,6 @@ export default function UploadPage() {
                   </li>
                 ))}
               </ul>
-              {batchPause !== null && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                  <Spinner size="sm" />
-                  <span>Esperando {batchPause}s antes del siguiente grupo (límite de tokens de Groq)...</span>
-                </div>
-              )}
               {duplicates.length > 0 && !isUploading && (
                 <p className="text-xs text-yellow-600 mt-3">
                   {duplicates.length} archivo(s) omitido(s) por ser duplicados. Elimínalos primero si quieres subirlos de nuevo.
