@@ -9,7 +9,7 @@ from domain.entities.charge import Charge
 
 log = structlog.get_logger()
 
-_MODEL = "gemini-2.0-flash"
+_MODEL = "gemini-1.5-flash"
 _BATCH_SIZE = 50
 
 
