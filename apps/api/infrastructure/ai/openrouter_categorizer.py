@@ -9,7 +9,7 @@ from domain.entities.charge import Charge
 
 log = structlog.get_logger()
 
-_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
+_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 _API_URL = "https://openrouter.ai/api/v1/chat/completions"
 _BATCH_SIZE = 50
 

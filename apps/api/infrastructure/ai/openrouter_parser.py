@@ -11,7 +11,7 @@ from domain.entities.charge import ParsedCharge
 log = structlog.get_logger()
 
 _PAGE_CHUNK = 15
-_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
+_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 _API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
