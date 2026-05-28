@@ -11,18 +11,24 @@ interface CuotaGroup {
 
 function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup[] {
   if (!charges) return []
-  const groups: CuotaGroup[] = []
+  // Group by description + cuota_total, keep the highest cuota_numero (most recent month)
+  const map = new Map<string, CuotaGroup>()
   for (const c of charges) {
     if (c.cuota_numero == null || c.cuota_total == null) continue
-    groups.push({
-      description: c.description,
-      cuota_numero: c.cuota_numero,
-      cuota_total: c.cuota_total,
-      cuota_monto: c.cuota_monto ?? c.amount,
-      date: c.date,
-    })
+    const key = `${c.description.trim().toLowerCase()}|${c.cuota_total}`
+    const existing = map.get(key)
+    if (!existing || c.cuota_numero > existing.cuota_numero) {
+      map.set(key, {
+        description: c.description,
+        cuota_numero: c.cuota_numero,
+        cuota_total: c.cuota_total,
+        cuota_monto: c.cuota_monto ?? c.amount,
+        date: c.date,
+      })
+    }
   }
-  // Sort: active first (not fully paid), then by remaining installments desc
+  const groups = Array.from(map.values())
+  // Sort: active first, then by remaining installments desc
   return groups.sort((a, b) => {
     const aDone = a.cuota_numero >= a.cuota_total
     const bDone = b.cuota_numero >= b.cuota_total
