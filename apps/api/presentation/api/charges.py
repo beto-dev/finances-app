@@ -92,6 +92,32 @@ async def update_charge_category(
     )
 
 
+@router.delete("/{charge_id}", status_code=204)
+async def delete_charge(
+    charge_id: UUID,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    charge_repo: SQLChargeRepository = Depends(get_charge_repo),
+):
+    from infrastructure.database.models import ChargeModel, StatementModel
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(ChargeModel, StatementModel)
+        .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
+        .where(ChargeModel.id == charge_id)
+    )
+    row = result.one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    _, stmt = row
+    if stmt.bank_hint != "manual":
+        raise HTTPException(status_code=400, detail="Solo se pueden eliminar gastos manuales")
+    if stmt.uploaded_by != current_user_id:
+        raise HTTPException(status_code=403, detail="No puedes eliminar gastos de otro usuario")
+    await charge_repo.delete(charge_id)
+
+
 @router.post("/bulk-confirm", response_model=dict)
 async def bulk_confirm(
     body: BulkConfirmRequest,

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Charge, Category } from '../../shared/types'
-import { useUpdateCategory } from './useCharges'
+import { useUpdateCategory, useDeleteCharge } from './useCharges'
 
 interface ChargeRowProps {
   charge: Charge
@@ -11,6 +11,7 @@ interface ChargeRowProps {
 
 export default function ChargeRow({ charge, categories, selected, onSelect }: ChargeRowProps) {
   const updateCategory = useUpdateCategory()
+  const deleteCharge = useDeleteCharge()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
 
   const currentCatId = optimisticCatId ?? charge.category_id
@@ -70,6 +71,18 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Solo mío</span>
         )}
       </td>
+      {charge.statement_type === 'manual' && (
+        <td className="px-2 py-3 text-center">
+          <button
+            onClick={() => deleteCharge.mutate(charge.id)}
+            disabled={deleteCharge.isPending}
+            className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40"
+            aria-label="Eliminar gasto"
+          >
+            Eliminar
+          </button>
+        </td>
+      )}
     </tr>
   )
 }

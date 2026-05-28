@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
@@ -19,6 +19,7 @@ function MobileChargeCard({
   const updateCategory = useUpdateCategory()
   const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
+  const deleteCharge = useDeleteCharge()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -84,6 +85,15 @@ function MobileChargeCard({
 
           {!isShared && charge.ai_suggested && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">IA</span>
+          )}
+          {charge.statement_type === 'manual' && (
+            <button
+              onClick={() => deleteCharge.mutate(charge.id)}
+              disabled={deleteCharge.isPending}
+              className="text-xs text-red-400 active:text-red-600 disabled:opacity-40 ml-auto"
+            >
+              Eliminar
+            </button>
           )}
         </div>
       </div>

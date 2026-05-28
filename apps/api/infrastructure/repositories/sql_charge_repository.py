@@ -147,6 +147,11 @@ class SQLChargeRepository(ChargeRepository):
         await self._session.commit()
         return result.rowcount  # type: ignore[attr-defined]
 
+    async def delete(self, charge_id: UUID) -> None:
+        from sqlalchemy import delete
+        await self._session.execute(delete(ChargeModel).where(ChargeModel.id == charge_id))
+        await self._session.commit()
+
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int:
         result = await self._session.execute(
             select(ChargeModel).where(ChargeModel.id.in_(charge_ids))
