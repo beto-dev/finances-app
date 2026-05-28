@@ -57,6 +57,13 @@ class SQLStatementRepository(StatementRepository):
         )
         return [_to_entity(m) for m in result.scalars().all()]
 
+    async def delete(self, statement_id: UUID) -> None:
+        result = await self._session.execute(select(StatementModel).where(StatementModel.id == statement_id))
+        m = result.scalar_one_or_none()
+        if m:
+            await self._session.delete(m)
+            await self._session.commit()
+
     async def update_status(self, statement_id: UUID, status: str) -> Statement:
         result = await self._session.execute(select(StatementModel).where(StatementModel.id == statement_id))
         m = result.scalar_one()

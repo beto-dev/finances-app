@@ -1,5 +1,5 @@
 import { useState, DragEvent, ChangeEvent, useRef } from 'react'
-import { useStatements, useUploadStatement } from './useUpload'
+import { useStatements, useUploadStatement, useDeleteStatement } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
 
@@ -49,6 +49,7 @@ export default function UploadPage() {
 
   const { data: statements, isLoading } = useStatements()
   const upload = useUploadStatement()
+  const deleteStatement = useDeleteStatement()
 
   const updateFileStatus = (index: number, status: FileStatus, error?: string) => {
     setQueue((prev) => prev.map((item, i) => i === index ? { ...item, status, error } : item))
@@ -250,16 +251,26 @@ export default function UploadPage() {
                   if (s.status !== 'error') return true
                   return !statements.some((o) => o.filename === s.filename && o.status !== 'error')
                 })
-                .slice(0, 10)
+                .slice(0, 20)
                 .map((s) => (
                 <li key={s.id} className="flex items-start justify-between gap-2 text-sm">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-800 truncate">{s.filename}</p>
                     <p className="text-gray-400 text-xs">{TYPE_LABELS[s.type]}</p>
                   </div>
-                  <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[s.status]}`}>
-                    {STATUS_LABELS[s.status]}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[s.status]}`}>
+                      {STATUS_LABELS[s.status]}
+                    </span>
+                    <button
+                      onClick={() => deleteStatement.mutate(s.id)}
+                      disabled={deleteStatement.isPending}
+                      className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
+                      title="Eliminar cartola"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

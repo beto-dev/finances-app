@@ -19,6 +19,19 @@ export function useStatements() {
   })
 }
 
+export function useDeleteStatement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (statementId: string) => {
+      await client.delete(`/api/statements/${statementId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['statements'] })
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
 export function useUploadStatement() {
   const queryClient = useQueryClient()
   return useMutation({

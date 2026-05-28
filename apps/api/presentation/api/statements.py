@@ -138,6 +138,28 @@ async def upload_statement(
     )
 
 
+@router.delete("/{statement_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_statement(
+    statement_id: UUID,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    statement_repo: SQLStatementRepository = Depends(get_statement_repo),
+):
+    from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
+    from infrastructure.repositories.sql_user_repository import SQLUserRepository
+
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user or not user.family_id:
+        raise HTTPException(status_code=400, detail="El usuario no pertenece a ninguna familia")
+
+    stmt = await statement_repo.get_by_id(statement_id)
+    if not stmt or stmt.family_id != user.family_id:
+        raise HTTPException(status_code=404, detail="Cartola no encontrada")
+
+    await SQLChargeRepository(db).delete_by_statement(statement_id)
+    await statement_repo.delete(statement_id)
+
+
 @router.get("/", response_model=list[StatementResponse])
 async def list_statements(
     current_user_id: CurrentUserId,

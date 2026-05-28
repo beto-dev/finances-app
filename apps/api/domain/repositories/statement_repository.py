@@ -24,3 +24,6 @@ class StatementRepository(ABC):
     async def get_by_family_and_filename(
         self, family_id: UUID | None, filename: str, exclude_id: UUID
     ) -> list[Statement]: ...
+
+    @abstractmethod
+    async def delete(self, statement_id: UUID) -> None: ...
