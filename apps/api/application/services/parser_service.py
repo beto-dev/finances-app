@@ -20,7 +20,10 @@ class ParserService:
         claude = ClaudeParser()
 
         llm: OpenRouterParser | GeminiParser | GroqParser | ClaudeParser
-        if openrouter.is_available:
+        if claude.is_available:
+            llm = claude
+            log.info("parser_backend", backend="claude")
+        elif openrouter.is_available:
             llm = openrouter
             log.info("parser_backend", backend="openrouter")
         elif gemini.is_available:
@@ -29,14 +32,11 @@ class ParserService:
         elif groq.is_available:
             llm = groq
             log.info("parser_backend", backend="groq")
-        elif claude.is_available:
-            llm = claude
-            log.info("parser_backend", backend="claude")
         else:
             llm = openrouter  # will fail at parse time with a clear error
             log.warning(
                 "parser_backend_unavailable",
-                hint="Set OPENROUTER_API_KEY (free at openrouter.ai) in .env",
+                hint="Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY in .env",
             )
 
         self._parsers = {

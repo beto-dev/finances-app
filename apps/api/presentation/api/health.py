@@ -12,14 +12,14 @@ async def health_check():
     gemini_key = bool(os.environ.get("GEMINI_API_KEY"))
     openrouter_key = bool(os.environ.get("OPENROUTER_API_KEY"))
 
-    if openrouter_key:
+    if anthropic_key:
+        parser = "claude"
+    elif openrouter_key:
         parser = "openrouter"
     elif gemini_key:
         parser = "gemini"
     elif groq_key:
         parser = "groq"
-    elif anthropic_key:
-        parser = "claude"
     else:
         parser = "none"
 

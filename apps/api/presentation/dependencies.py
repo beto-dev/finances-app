@@ -45,6 +45,9 @@ def get_storage() -> SupabaseStorage:
     return SupabaseStorage()
 
 def get_categorizer() -> ChargeCategorizerProtocol:
+    claude = ClaudeCategorizer()
+    if claude.is_available:
+        return claude
     openrouter = OpenRouterCategorizer()
     if openrouter.is_available:
         return openrouter
