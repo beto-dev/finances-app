@@ -118,6 +118,47 @@ async def pdf_text_extract(file: UploadFile = File(...)):
     return {"pages": pages, "total_pages": len(pages)}
 
 
+@router.post("/health/cuota-parse-test")
+async def cuota_parse_test(body: dict):
+    """Send raw statement text to Claude and see the raw JSON it returns — for debugging cuota extraction."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {"error": "ANTHROPIC_API_KEY not configured"}
+    text = body.get("text", "")
+    if not text:
+        return {"error": "Provide {\"text\": \"...statement lines...\"}"}
+    import anthropic
+    from anthropic.types import TextBlock
+    prompt = f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
+
+Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Each element:
+{{"date": "YYYY-MM-DD", "description": "string", "amount": number, "cuota_numero": number|null, "cuota_total": number|null, "cuota_monto": number|null}}
+
+Rules:
+- amount: positive = expense / debit / charge; negative = credit / refund / payment received
+- Skip: column headers, balance rows, section titles, page numbers, summary totals
+- Include: every individual transaction line
+- date: always YYYY-MM-DD regardless of the original format
+- amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements use . as the thousands separator and , as the decimal separator (e.g. "$1.440" = 1440, "$28.260" = 28260, "$1.234.567" = 1234567). Remove ALL thousands-separator dots and output the raw integer value
+- cuota_numero / cuota_total: for installment purchases, extract the current and total installments from columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not an installment.
+- cuota_monto: the monthly installment amount from "VALOR CUOTA MENSUAL" column. Set null if not present.
+- amount should be the amount charged this billing period (cuota_monto if available, otherwise the total)
+
+Bank statement (file: debug):
+{text}"""
+    try:
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        msg = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = next((b.text for b in msg.content if isinstance(b, TextBlock)), "")
+        return {"ok": True, "raw_response": raw, "input_tokens": msg.usage.input_tokens, "output_tokens": msg.usage.output_tokens}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @router.get("/health/parser-test")
 async def parser_test():
     """Smoke-test the active AI parser with a real API call."""
