@@ -159,6 +159,9 @@ class ChargeModel(Base):
     category_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("categories.id"))
     is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     ai_suggested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    cuota_numero: Mapped[int | None] = mapped_column(nullable=True)
+    cuota_total: Mapped[int | None] = mapped_column(nullable=True)
+    cuota_monto: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     statement: Mapped["StatementModel"] = relationship("StatementModel", back_populates="charges")

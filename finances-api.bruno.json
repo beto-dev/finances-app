@@ -1,0 +1,379 @@
+{
+  "info": {
+    "name": "Finances API",
+    "_postman_id": "finances-api-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "email", "value": "alb.tejos.dev@gmail.com" },
+    { "key": "password", "value": "" },
+    { "key": "chargeId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "statementId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] }
+          }
+        },
+        {
+          "name": "Claude Credits",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health/claude-credits", "host": ["{{baseUrl}}"], "path": ["api", "health", "claude-credits"] }
+          }
+        },
+        {
+          "name": "Parser Test",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health/parser-test", "host": ["{{baseUrl}}"], "path": ["api", "health", "parser-test"] }
+          }
+        },
+        {
+          "name": "OpenRouter Models",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health/openrouter-models", "host": ["{{baseUrl}}"], "path": ["api", "health", "openrouter-models"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Statements",
+      "item": [
+        {
+          "name": "List Statements",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/statements/", "host": ["{{baseUrl}}"], "path": ["api", "statements", ""] }
+          }
+        },
+        {
+          "name": "Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/statements/summary", "host": ["{{baseUrl}}"], "path": ["api", "statements", "summary"] }
+          }
+        },
+        {
+          "name": "Upload Statement",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "statement_type", "value": "checking", "type": "text" },
+                { "key": "bank_hint", "value": "santander", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/statements/", "host": ["{{baseUrl}}"], "path": ["api", "statements", ""] }
+          }
+        },
+        {
+          "name": "Delete Statement",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/statements/{{statementId}}", "host": ["{{baseUrl}}"], "path": ["api", "statements", "{{statementId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Charges",
+      "item": [
+        {
+          "name": "List My Charges",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/charges/?month=5&year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charges", ""],
+              "query": [
+                { "key": "month", "value": "5" },
+                { "key": "year", "value": "2026" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Family Charges",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/charges/family?month=5&year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charges", "family"],
+              "query": [
+                { "key": "month", "value": "5" },
+                { "key": "year", "value": "2026" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Manual Charge (Efectivo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Almuerzo\",\n  \"amount\": 5000,\n  \"currency\": \"CLP\",\n  \"date\": \"2026-05-27\",\n  \"category_id\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/manual", "host": ["{{baseUrl}}"], "path": ["api", "charges", "manual"] }
+          }
+        },
+        {
+          "name": "Update Charge Category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"{{categoryId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/{{chargeId}}/category", "host": ["{{baseUrl}}"], "path": ["api", "charges", "{{chargeId}}", "category"] }
+          }
+        },
+        {
+          "name": "Delete Manual Charge",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/charges/{{chargeId}}", "host": ["{{baseUrl}}"], "path": ["api", "charges", "{{chargeId}}"] }
+          }
+        },
+        {
+          "name": "Bulk Confirm (Share with Family)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"charge_ids\": [\"{{chargeId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/bulk-confirm", "host": ["{{baseUrl}}"], "path": ["api", "charges", "bulk-confirm"] }
+          }
+        },
+        {
+          "name": "Bulk Unshare",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"charge_ids\": [\"{{chargeId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/bulk-unshare", "host": ["{{baseUrl}}"], "path": ["api", "charges", "bulk-unshare"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/charges/categories", "host": ["{{baseUrl}}"], "path": ["api", "charges", "categories"] }
+          }
+        },
+        {
+          "name": "Create Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mascotas\",\n  \"color\": \"#f59e0b\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/categories", "host": ["{{baseUrl}}"], "path": ["api", "charges", "categories"] }
+          }
+        },
+        {
+          "name": "Update Category (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mascotas\",\n  \"color\": \"#f59e0b\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "charges", "categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Delete Category (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/charges/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "charges", "categories", "{{categoryId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Family",
+      "item": [
+        {
+          "name": "Create Family",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Familia Tejos\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/families/", "host": ["{{baseUrl}}"], "path": ["api", "families", ""] }
+          }
+        },
+        {
+          "name": "Get My Family",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me", "host": ["{{baseUrl}}"], "path": ["api", "families", "me"] }
+          }
+        },
+        {
+          "name": "Get My Role",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me/role", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "role"] }
+          }
+        },
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me/members", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "members"] }
+          }
+        },
+        {
+          "name": "Invite Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"member@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/families/me/invite", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "invite"] }
+          }
+        },
+        {
+          "name": "Get Contributions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me/contributions", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "contributions"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Google Sheets",
+      "item": [
+        {
+          "name": "Auth Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/google/status", "host": ["{{baseUrl}}"], "path": ["api", "google", "status"] }
+          }
+        },
+        {
+          "name": "Sync to Sheets",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/google/sync", "host": ["{{baseUrl}}"], "path": ["api", "google", "sync"] }
+          }
+        }
+      ]
+    }
+  ]
+}

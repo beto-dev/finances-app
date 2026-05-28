@@ -72,7 +72,7 @@ class ClaudeParser:
         prompt = f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
 
 Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Each element:
-{{"date": "YYYY-MM-DD", "description": "string", "amount": number}}
+{{"date": "YYYY-MM-DD", "description": "string", "amount": number, "cuota_numero": number|null, "cuota_total": number|null, "cuota_monto": number|null}}
 
 Rules:
 - amount: positive = expense / debit / charge; negative = credit / refund / payment received
@@ -80,7 +80,9 @@ Rules:
 - Include: every individual transaction line
 - date: always YYYY-MM-DD regardless of the original format
 - amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements use . as the thousands separator and , as the decimal separator (e.g. "$1.440" = 1440, "$28.260" = 28260, "$1.234.567" = 1234567). Remove ALL thousands-separator dots and output the raw integer value
-- For installment purchases with multiple amounts, use the amount charged this billing period
+- cuota_numero / cuota_total: for installment purchases, extract the current and total installments from columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not an installment.
+- cuota_monto: the monthly installment amount from "VALOR CUOTA MENSUAL" column. Set null if not present.
+- amount should be the amount charged this billing period (cuota_monto if available, otherwise the total)
 
 Bank statement (file: {filename or "unknown"}):
 {content}"""
@@ -131,7 +133,13 @@ Bank statement (file: {filename or "unknown"}):
                 if not description:
                     continue
                 amount = Decimal(str(item.get("amount", 0)))
-                charges.append(ParsedCharge(date=parsed_date, description=description, amount=amount))
+                cuota_numero = int(item["cuota_numero"]) if item.get("cuota_numero") else None
+                cuota_total = int(item["cuota_total"]) if item.get("cuota_total") else None
+                cuota_monto = Decimal(str(item["cuota_monto"])) if item.get("cuota_monto") else None
+                charges.append(ParsedCharge(
+                    date=parsed_date, description=description, amount=amount,
+                    cuota_numero=cuota_numero, cuota_total=cuota_total, cuota_monto=cuota_monto,
+                ))
             except (InvalidOperation, TypeError, KeyError):
                 continue
 

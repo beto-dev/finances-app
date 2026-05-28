@@ -9,6 +9,7 @@ const topItems = [
   { to: '/nuevo-gasto', label: '➕ Nuevo Gasto' },
   { to: '/cargar',      label: '📤 Subir Cartola' },
   { to: '/gastos',      label: '📋 Gastos' },
+  { to: '/cuotas',      label: '🔢 Cuotas' },
 ]
 
 const familyItems = [

@@ -18,6 +18,9 @@ class Charge:
     category_id: UUID | None = None
     statement_type: str = ""
     uploaded_by: UUID | None = None
+    cuota_numero: int | None = None
+    cuota_total: int | None = None
+    cuota_monto: Decimal | None = None
 
 
 @dataclass
@@ -27,3 +30,6 @@ class ParsedCharge:
     description: str
     amount: Decimal
     currency: str = "CLP"
+    cuota_numero: int | None = None
+    cuota_total: int | None = None
+    cuota_monto: Decimal | None = None

@@ -16,6 +16,9 @@ function makeCharge(overrides: Partial<Charge> = {}): Charge {
     created_at: new Date().toISOString(),
     statement_type: 'manual',
     uploaded_by: null,
+    cuota_numero: null,
+    cuota_total: null,
+    cuota_monto: null,
     ...overrides,
   }
 }

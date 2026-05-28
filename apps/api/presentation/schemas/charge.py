@@ -26,6 +26,9 @@ class ChargeResponse(BaseModel):
     created_at: datetime
     statement_type: str = ""
     uploaded_by: UUID | None = None
+    cuota_numero: int | None = None
+    cuota_total: int | None = None
+    cuota_monto: Decimal | None = None
 
     model_config = {"from_attributes": True}
 

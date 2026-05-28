@@ -16,6 +16,9 @@ def _to_entity(m: ChargeModel) -> Charge:
         currency=m.currency, category_id=m.category_id,
         is_shared=m.is_shared, ai_suggested=m.ai_suggested,
         created_at=m.created_at,
+        cuota_numero=m.cuota_numero,
+        cuota_total=m.cuota_total,
+        cuota_monto=Decimal(str(m.cuota_monto)) if m.cuota_monto is not None else None,
     )
 
 
@@ -110,6 +113,9 @@ class SQLChargeRepository(ChargeRepository):
                 description=c.description,
                 amount=c.amount,
                 currency=c.currency,
+                cuota_numero=c.cuota_numero,
+                cuota_total=c.cuota_total,
+                cuota_monto=c.cuota_monto,
             )
             for c in charges
         ]

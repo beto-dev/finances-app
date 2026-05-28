@@ -14,6 +14,7 @@ import FamilyChargesPage from '../features/charges/FamilyChargesPage'
 import ContributionsPage from '../features/contributions/ContributionsPage'
 import QuickExpensePage from '../features/expenses/QuickExpensePage'
 import CategoriesPage from '../features/categories/CategoriesPage'
+import CuotasPage from '../features/cuotas/CuotasPage'
 import Spinner from '../shared/components/Spinner'
 
 function AdminRoute() {
@@ -44,6 +45,7 @@ export default function AppRouter() {
           </Route>
           <Route path="/hojas" element={<SheetsPage />} />
           <Route path="/nuevo-gasto" element={<QuickExpensePage />} />
+          <Route path="/cuotas" element={<CuotasPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
