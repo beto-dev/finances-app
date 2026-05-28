@@ -1,5 +1,5 @@
 import { useState, DragEvent, ChangeEvent, useRef } from 'react'
-import { useStatements, useUploadStatement, useDeleteStatement, useDeleteAllStatements } from './useUpload'
+import { useStatements, useUploadStatement, useDeleteAllStatements } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
 
@@ -49,7 +49,6 @@ export default function UploadPage() {
 
   const { data: statements, isLoading } = useStatements()
   const upload = useUploadStatement()
-  const deleteStatement = useDeleteStatement()
   const deleteAll = useDeleteAllStatements()
 
   const updateFileStatus = (index: number, status: FileStatus, error?: string) => {
@@ -282,8 +281,11 @@ export default function UploadPage() {
                       {STATUS_LABELS[s.status]}
                     </span>
                     <button
-                      onClick={() => deleteStatement.mutate(s.id)}
-                      disabled={deleteStatement.isPending}
+                      onClick={() => {
+                        const ids = statements.filter((o) => o.filename === s.filename).map((o) => o.id)
+                        deleteAll.mutate(ids)
+                      }}
+                      disabled={deleteAll.isPending}
                       className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
                       title="Eliminar cartola"
                     >
