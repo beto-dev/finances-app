@@ -71,18 +71,17 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Solo mío</span>
         )}
       </td>
-      {charge.statement_type === 'manual' && (
-        <td className="px-2 py-3 text-center">
+      <td className="px-2 py-3 text-center">
+        {charge.statement_type === 'manual' && (
           <button
             onClick={() => deleteCharge.mutate(charge.id)}
             disabled={deleteCharge.isPending}
             className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40"
-            aria-label="Eliminar gasto"
           >
             Eliminar
           </button>
-        </td>
-      )}
+        )}
+      </td>
     </tr>
   )
 }

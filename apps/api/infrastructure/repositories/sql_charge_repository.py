@@ -62,7 +62,7 @@ class SQLChargeRepository(ChargeRepository):
     async def get_personal(self, user_id: UUID, month: int | None = None, year: int | None = None) -> list[Charge]:
         from sqlalchemy import extract
         stmt = (
-            select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)
+            select(ChargeModel, StatementModel.type, StatementModel.uploaded_by, StatementModel.bank_hint)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
             .where(StatementModel.uploaded_by == user_id)
             .where(StatementModel.family_id.is_(None))
@@ -75,7 +75,8 @@ class SQLChargeRepository(ChargeRepository):
         charges = []
         for row in result.all():
             charge = _to_entity(row[0])
-            charge.statement_type = row[1] or "manual"
+            bank_hint = row[3]
+            charge.statement_type = "manual" if bank_hint == "manual" else (row[1] or "")
             charge.uploaded_by = row[2]
             charges.append(charge)
         return charges
