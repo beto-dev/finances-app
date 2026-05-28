@@ -25,15 +25,15 @@ class ClaudeParser:
         self._client: Any = None
         try:
             import anthropic
-            self._client = anthropic.AsyncAnthropic(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", "")
-            )
+            api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
+            self._client = anthropic.AsyncAnthropic(api_key=api_key)
         except ImportError:
             pass
 
     @property
     def is_available(self) -> bool:
-        return self._client is not None and bool(os.environ.get("ANTHROPIC_API_KEY", ""))
+        key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
+        return self._client is not None and bool(key)
 
     # ------------------------------------------------------------------
     # Public API

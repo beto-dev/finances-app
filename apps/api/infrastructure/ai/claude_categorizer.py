@@ -13,7 +13,8 @@ class ClaudeCategorizer:
         self._client: Any = None
         try:
             import anthropic
-            self._client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+            api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY")
+            self._client = anthropic.AsyncAnthropic(api_key=api_key)
         except ImportError:
             pass
 

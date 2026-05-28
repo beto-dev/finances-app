@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api", tags=["health"])
 
 @router.get("/health")
 async def health_check():
-    anthropic_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    anthropic_key = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY"))
     groq_key = bool(os.environ.get("GROQ_API_KEY"))
     gemini_key = bool(os.environ.get("GEMINI_API_KEY"))
 
@@ -49,7 +49,7 @@ async def parser_test():
     """Smoke-test the active AI parser with a real API call."""
     groq_key = os.environ.get("GROQ_API_KEY", "")
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("APP_ANTHROPIC_API_KEY", "")
 
     try:
         if gemini_key:
