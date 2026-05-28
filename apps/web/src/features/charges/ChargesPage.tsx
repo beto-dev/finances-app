@@ -165,6 +165,7 @@ export default function ChargesPage() {
   const [searchDesc, setSearchDesc] = useState('')
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'shared' | 'personal'>('all')
+  const [filterType, setFilterType] = useState<string>('')
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -175,7 +176,7 @@ export default function ChargesPage() {
   const bulkUnshare = useBulkUnshare()
 
   let charges = allCharges || []
-  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus)
+  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType)
   charges = sortCharges(charges, sortField, sortOrder)
 
   const handleSelect = (id: string, checked: boolean) => {
@@ -263,7 +264,7 @@ export default function ChargesPage() {
 
       {/* Search and filter controls */}
       <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <label className="label text-xs">Buscar descripción</label>
             <input type="text" placeholder="UBER, JUMBO, Netflix..." className="input" value={searchDesc} onChange={(e) => setSearchDesc(e.target.value)} />
@@ -276,6 +277,16 @@ export default function ChargesPage() {
             </select>
           </div>
           <div>
+            <label className="label text-xs">Tipo de cuenta</label>
+            <select className="input" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="">Todos los tipos</option>
+              <option value="checking">Cuenta Corriente</option>
+              <option value="credit_card">Tarjeta de Crédito</option>
+              <option value="credit_line">Línea de Crédito</option>
+              <option value="manual">Efectivo</option>
+            </select>
+          </div>
+          <div>
             <label className="label text-xs">Estado</label>
             <select className="input" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'shared' | 'personal')}>
               <option value="all">Todos</option>
@@ -284,7 +295,7 @@ export default function ChargesPage() {
             </select>
           </div>
         </div>
-        {(searchDesc || filterCategoryId || filterStatus !== 'all') && (
+        {(searchDesc || filterCategoryId || filterStatus !== 'all' || filterType) && (
           <div className="text-xs text-gray-600 pt-1">
             Mostrando {charges.length} de {allCharges?.length || 0} gastos
           </div>
