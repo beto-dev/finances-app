@@ -38,15 +38,16 @@ async def parser_test():
         if groq_key:
             from groq import Groq
             import asyncio
+            from infrastructure.ai.groq_parser import _MODEL as groq_model
             client = Groq(api_key=groq_key)
             response = await asyncio.to_thread(
                 lambda: client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=groq_model,
                     messages=[{"role": "user", "content": "Reply with the number 1"}],
                     max_tokens=10,
                 )
             )
-            return {"ok": True, "parser": "groq", "response": response.choices[0].message.content}
+            return {"ok": True, "parser": "groq", "model": groq_model, "response": response.choices[0].message.content}
         elif gemini_key:
             return {"ok": True, "parser": "gemini", "response": "not tested"}
         elif anthropic_key:
