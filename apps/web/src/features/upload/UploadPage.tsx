@@ -60,6 +60,15 @@ function BankCombobox({ value, onChange, disabled }: {
     setOpen(false)
   }
 
+  const handleBlur = () => {
+    // Only keep the value if it matches exactly a bank in the list
+    if (!CHILEAN_BANKS.includes(query)) {
+      setQuery('')
+      onChange('')
+    }
+    setOpen(false)
+  }
+
   return (
     <div ref={ref} className="relative">
       <div className="relative">
@@ -71,6 +80,7 @@ function BankCombobox({ value, onChange, disabled }: {
           disabled={disabled}
           onChange={(e) => { setQuery(e.target.value); onChange(''); setOpen(true) }}
           onFocus={() => setOpen(true)}
+          onBlur={handleBlur}
         />
         {query && !disabled && (
           <button
