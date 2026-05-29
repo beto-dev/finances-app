@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from presentation.api import auth, charges, debug, families, google, health, statements
+from presentation.api import auth, charges, credits, debug, families, google, health, statements
 from presentation.middleware.rate_limit import limiter, on_rate_limit_exceeded
 from presentation.middleware.security_headers import SecurityHeadersMiddleware
 
@@ -44,6 +44,7 @@ app.include_router(auth.router)
 app.include_router(statements.router)
 app.include_router(charges.router)
 app.include_router(families.router)
+app.include_router(credits.router)
 app.include_router(google.router)
 if os.environ.get("ENABLE_DEBUG_ENDPOINTS") == "true":
     app.include_router(debug.router)

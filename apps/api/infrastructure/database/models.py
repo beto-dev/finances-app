@@ -168,6 +168,21 @@ class ChargeModel(Base):
     category: Mapped["CategoryModel | None"] = relationship("CategoryModel", back_populates="charges")
 
 
+class CreditModel(Base):
+    __tablename__ = "credits"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    bank: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cuota_monto: Mapped[int] = mapped_column(nullable=False)
+    cuota_numero: Mapped[int] = mapped_column(nullable=False, default=1)
+    cuota_total: Mapped[int] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class GoogleSheetConfigModel(Base):
     __tablename__ = "google_sheet_configs"
 

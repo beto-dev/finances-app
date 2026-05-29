@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import client from '../../shared/api/client'
-import { Charge, Category } from '../../shared/types'
+import { Charge, Category, Credit } from '../../shared/types'
 
 interface CategoryBreakdown {
   category: Category
@@ -19,6 +19,7 @@ interface DashboardData {
   totalAmount: number
   totalExpenses: number
   totalIncome: number
+  totalCredits: number
   currency: string
   byCategory: CategoryBreakdown[]
   byMonth: MonthBreakdown[]
@@ -44,10 +45,24 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     },
   })
 
+  const { data: credits = [] } = useQuery<Credit[]>({
+    queryKey: ['credits'],
+    queryFn: async () => {
+      const res = await client.get('/api/credits/')
+      return res.data
+    },
+  })
+
+  // Sum of active credit monthly payments (cuota_numero < cuota_total)
+  const activeCreditsTotal = credits
+    .filter((c) => c.cuota_numero < c.cuota_total)
+    .reduce((sum, c) => sum + c.cuota_monto, 0)
+
   const dashboard: DashboardData = {
     totalAmount: 0,
     totalExpenses: 0,
     totalIncome: 0,
+    totalCredits: activeCreditsTotal,
     currency: 'CLP',
     byCategory: [],
     byMonth: [],
@@ -83,7 +98,7 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     }
   }
 
-  dashboard.totalAmount = dashboard.totalExpenses
+  dashboard.totalAmount = dashboard.totalExpenses + activeCreditsTotal
 
   dashboard.byCategory = Array.from(byCat.entries())
     .map(([catId, data]) => ({

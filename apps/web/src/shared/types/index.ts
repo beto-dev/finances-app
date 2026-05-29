@@ -58,6 +58,17 @@ export interface GoogleAuthStatus {
   last_sync_at: string | null
 }
 
+export interface Credit {
+  id: string
+  user_id: string
+  description: string
+  bank: string | null
+  cuota_monto: number
+  cuota_numero: number
+  cuota_total: number
+  created_at: string
+}
+
 export interface AuthUser {
   id: string
   email: string

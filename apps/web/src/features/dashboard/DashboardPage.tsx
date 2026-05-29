@@ -172,7 +172,7 @@ export default function DashboardPage() {
 
       {/* Summary cards + charts */}
       {!isLoading && !isError && (<>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="card">
           <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(dashboard.totalExpenses)}</p>
@@ -188,15 +188,20 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="card">
+          <p className="text-sm text-gray-500">Créditos/mes</p>
+          <p className="text-2xl font-bold text-orange-500 mt-1">{formatCurrency(dashboard.totalCredits)}</p>
+          <p className="text-xs text-gray-400 mt-1">dividendos activos</p>
+        </div>
+        <div className="card">
           <p className="text-sm text-gray-500">Balance neto</p>
           {(() => {
-            const net = dashboard.totalIncome - dashboard.totalExpenses
+            const net = dashboard.totalIncome - dashboard.totalExpenses - dashboard.totalCredits
             return (
               <>
                 <p className={`text-2xl font-bold mt-1 ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                   {net >= 0 ? '+' : ''}{formatCurrency(net)}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">ingresos − gastos</p>
+                <p className="text-xs text-gray-400 mt-1">ingresos − gastos − créditos</p>
               </>
             )
           })()}
