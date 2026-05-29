@@ -103,10 +103,11 @@ apps/
 ## Key Domain Concepts
 
 - **Family**: Top-level grouping. All data is family-scoped. One Google Sheet per family.
-- **Statement**: An uploaded file. Has type (checking / credit_card / credit_line / manual).
+- **Statement**: An uploaded file. Has type (checking / credit_card / credit_line / manual). Type is required at upload — no default. Bank is optional (selected from a fixed list of 21 Chilean banks, no free text).
 - **Charge**: A single line item. Fields: date, description, amount, currency, category_id, `is_shared` (was `is_confirmed` — renamed).
+- **amount sign convention**: positive = expense / debit / charge; negative = income / credit (salary, deposit, incoming transfer, refund). The parser enforces this; the UI displays income in green with `+` prefix.
 - **is_shared**: Whether a charge is visible to the whole family in the family view and Google Sheets sync. Manual charges default to `is_shared=False`.
-- **Category**: AI-suggested or user-confirmed label.
+- **Category**: AI-suggested or user-confirmed label. System categories include both expense categories (Alimentación, Transporte, etc.) and income categories (Remuneración, Abono, Transferencia recibida, Devolución / Reembolso — added in migration 0008).
 - **CategoryRule**: Persisted description→category mapping per family (auto-apply on future uploads).
 
 ---
@@ -136,11 +137,14 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | # | Task | Status |
 |---|---|---|
 | 3.1 | Persistent category memory | ✅ Done (CategoryRule) |
-| 3.2 | Chat agent UI | ⏳ Pending |
-| 3.3 | Email ingestion | ⏳ Pending |
-| 3.4 | Multi-currency | ⏳ Pending |
-| 3.5 | Export & reports | ⏳ Pending |
-| 3.6 | Audit log | ⏳ Pending |
+| 3.2 | Income support | ✅ Done — negative amounts = income; income categories (migration 0008); dashboard shows Gastos / Ingresos / Balance neto; charges page filter by type |
+| 3.3 | Bank combobox on upload | ✅ Done — searchable dropdown with 21 Chilean banks, no free text allowed |
+| 3.4 | Statement type required on upload | ✅ Done — no default; drop zone disabled until type is selected |
+| 3.5 | Chat agent UI | ⏳ Pending |
+| 3.6 | Email ingestion | ⏳ Pending |
+| 3.7 | Multi-currency | ⏳ Pending |
+| 3.8 | Export & reports | ⏳ Pending |
+| 3.9 | Audit log | ⏳ Pending |
 
 ### Phase 4 — Deploy & Mobile
 
@@ -149,6 +153,22 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | 4.1 | Production deployment | ✅ Done (Vercel + Koyeb) |
 | 4.2 | Monitoring | ⏳ Pending |
 | 4.3–4.5 | Mobile (React Native) | ⏳ Pending |
+
+### Backlog — High Priority
+
+| Task | Notes |
+|---|---|
+| Edit statement type after upload | Today requires delete + re-upload if wrong type selected |
+| Monthly budget per category | Set a spending limit per category with progress bar and alert |
+| Notification when statement finishes processing | Currently user must refresh to know when parsing is done |
+
+### Backlog — Medium Priority
+
+| Task | Notes |
+|---|---|
+| Edit charge description | Clean up cryptic bank names (e.g. "TRF 0000123456" → "Netflix") |
+| Recurring charges | Mark a charge as fixed (rent, internet) to auto-appear each month |
+| Global search | Search across all charges from all months in one place |
 
 ---
 
