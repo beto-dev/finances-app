@@ -60,6 +60,19 @@ function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup
     }
   }
 
+  // Deduplicate: within each merged bucket keep only the most-recent charge per
+  // cuota_numero. Two entries at the same installment number after description-merging
+  // are duplicates (re-upload or same month under different description variants).
+  for (const [key, list] of buckets.entries()) {
+    if (list.length < 2) continue
+    const byNum = new Map<number, C>()
+    for (const c of list) {
+      const existing = byNum.get(c.cuota_numero!)
+      if (!existing || c.date > existing.date) byNum.set(c.cuota_numero!, c)
+    }
+    buckets.set(key, [...byNum.values()])
+  }
+
   const groups: CuotaGroup[] = []
 
   for (const list of buckets.values()) {
