@@ -93,7 +93,7 @@ Bank statement (file: {filename or "unknown"}):
             from anthropic.types import TextBlock
             message = await self._client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=4096,
+                max_tokens=8192,
                 messages=[{"role": "user", "content": prompt}],
             )
             text_block = next((b for b in message.content if isinstance(b, TextBlock)), None)
@@ -114,16 +114,28 @@ Bank statement (file: {filename or "unknown"}):
 
     def _parse_response(self, text: str) -> list[ParsedCharge]:
         """Parse Claude's JSON response into ParsedCharge objects."""
+        import re
+        start = text.find("[")
+        end = text.rfind("]") + 1
+        if start == -1 or end == 0:
+            log.warning("claude_parser_no_json_array", response_preview=text[:200])
+            return []
         try:
-            start = text.find("[")
-            end = text.rfind("]") + 1
-            if start == -1 or end == 0:
-                log.warning("claude_parser_no_json_array", response_preview=text[:200])
-                return []
             data = json.loads(text[start:end])
         except json.JSONDecodeError as exc:
             log.warning("claude_parser_invalid_json", error=str(exc), response_preview=text[:200])
-            return []
+            # Partial recovery: extract complete {...} objects from truncated JSON
+            partial: list[Any] = []
+            for m in re.finditer(r'\{[^{}]*\}', text[start:]):
+                try:
+                    partial.append(json.loads(m.group()))
+                except json.JSONDecodeError:
+                    continue
+            if partial:
+                log.info("claude_parser_partial_recovery", recovered=len(partial))
+                data = partial
+            else:
+                return []
 
         charges: list[ParsedCharge] = []
         for item in data:
