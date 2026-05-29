@@ -256,9 +256,14 @@ export default function CuotasPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-xs text-orange-500 font-medium">
-                    Quedan {c.cuota_total - c.cuota_numero} cuota{c.cuota_total - c.cuota_numero !== 1 ? 's' : ''} · {fmt((c.cuota_total - c.cuota_numero) * c.cuota_monto)} restante
-                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-xs text-orange-500 font-medium">
+                      Quedan {c.cuota_total - c.cuota_numero} cuota{c.cuota_total - c.cuota_numero !== 1 ? 's' : ''} · {fmt((c.cuota_total - c.cuota_numero) * c.cuota_monto)} restante
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Ya pagado: <span className="font-medium text-gray-600">{fmt(c.cuota_numero * c.cuota_monto)}</span>
+                    </p>
+                  </div>
                   <div className="flex gap-3">
                     <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => setEditingId(c.id)}>Editar</button>
                     <button className="text-xs text-red-400 hover:text-red-600" onClick={() => deleteCredit.mutate(c.id)}>Eliminar</button>
@@ -327,9 +332,14 @@ export default function CuotasPage() {
                         </p>
                       </div>
                     </div>
-                    <p className="text-xs text-brand-600 font-medium mt-1.5">
-                      Quedan {g.cuota_total - g.cuota_numero} cuota{g.cuota_total - g.cuota_numero !== 1 ? 's' : ''} · {fmt((g.cuota_total - g.cuota_numero) * g.cuota_monto)} restante
-                    </p>
+                    <div className="flex flex-col gap-0.5 mt-1.5">
+                      <p className="text-xs text-brand-600 font-medium">
+                        Quedan {g.cuota_total - g.cuota_numero} cuota{g.cuota_total - g.cuota_numero !== 1 ? 's' : ''} · {fmt((g.cuota_total - g.cuota_numero) * g.cuota_monto)} restante
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Ya pagado: <span className="font-medium text-gray-600">{fmt(g.cuota_numero * g.cuota_monto)}</span>
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
