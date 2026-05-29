@@ -17,6 +17,8 @@ interface MonthBreakdown {
 
 interface DashboardData {
   totalAmount: number
+  totalExpenses: number
+  totalIncome: number
   currency: string
   byCategory: CategoryBreakdown[]
   byMonth: MonthBreakdown[]
@@ -44,6 +46,8 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
 
   const dashboard: DashboardData = {
     totalAmount: 0,
+    totalExpenses: 0,
+    totalIncome: 0,
     currency: 'CLP',
     byCategory: [],
     byMonth: [],
@@ -58,19 +62,28 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
 
   for (const charge of charges) {
     const amt = Number(charge.amount)
-    dashboard.totalAmount += amt
+    const isIncome = amt < 0
     dashboard.currency = charge.currency
 
-    // category grouping
-    const catId = charge.category_id ?? 'sin-categoria'
-    const cat = byCat.get(catId) ?? { amount: 0, count: 0 }
-    byCat.set(catId, { amount: cat.amount + amt, count: cat.count + 1 })
+    if (isIncome) {
+      dashboard.totalIncome += Math.abs(amt)
+    } else {
+      dashboard.totalExpenses += amt
+      // category grouping: expenses only
+      const catId = charge.category_id ?? 'sin-categoria'
+      const cat = byCat.get(catId) ?? { amount: 0, count: 0 }
+      byCat.set(catId, { amount: cat.amount + amt, count: cat.count + 1 })
+    }
 
-    // month grouping (for annual view)
-    const m = new Date(charge.date).getMonth() + 1
-    const mon = byMonth.get(m) ?? { amount: 0, count: 0 }
-    byMonth.set(m, { amount: mon.amount + amt, count: mon.count + 1 })
+    // month grouping uses expenses only for the monthly trend
+    if (!isIncome) {
+      const m = new Date(charge.date).getMonth() + 1
+      const mon = byMonth.get(m) ?? { amount: 0, count: 0 }
+      byMonth.set(m, { amount: mon.amount + amt, count: mon.count + 1 })
+    }
   }
+
+  dashboard.totalAmount = dashboard.totalExpenses
 
   dashboard.byCategory = Array.from(byCat.entries())
     .map(([catId, data]) => ({

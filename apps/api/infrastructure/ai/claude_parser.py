@@ -75,9 +75,11 @@ Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Ea
 {{"date": "YYYY-MM-DD", "description": "string", "amount": number, "cuota_numero": number|null, "cuota_total": number|null, "cuota_monto": number|null}}
 
 Rules:
-- amount: positive = expense / debit / charge; negative = credit / refund / payment received
+- amount sign convention:
+  - POSITIVE = expense / debit / charge / payment made / purchase
+  - NEGATIVE = income / credit / money received — this includes: salary / remuneración / sueldo, deposits / abonos, incoming transfers / transferencias recibidas, refunds / devoluciones, interest earned, cashback
 - Skip: column headers, balance rows, section titles, page numbers, summary totals
-- Include: every individual transaction line
+- Include: every individual transaction line, both expenses AND income
 - date: always YYYY-MM-DD regardless of the original format
 - amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements use . as the thousands separator and , as the decimal separator (e.g. "$1.440" = 1440, "$28.260" = 28260, "$1.234.567" = 1234567). Remove ALL thousands-separator dots and output the raw integer value
 - cuota_numero / cuota_total: for installment purchases, extract the current and total installments from columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not an installment.

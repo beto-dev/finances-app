@@ -26,11 +26,12 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
     }
   }
 
+  const isIncome = Number(charge.amount) < 0
   const formattedAmount = new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency: charge.currency || 'CLP',
     maximumFractionDigits: 0,
-  }).format(charge.amount)
+  }).format(Math.abs(Number(charge.amount)))
 
   const formattedDate = new Date(charge.date).toLocaleDateString('es-ES')
 
@@ -45,9 +46,12 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
         />
       </td>
       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{formattedDate}</td>
-      <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">{charge.description}</td>
-      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">
-        {formattedAmount}
+      <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
+        {isIncome && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 shrink-0" />}
+        {charge.description}
+      </td>
+      <td className={`px-4 py-3 text-sm font-medium text-right whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-gray-900'}`}>
+        {isIncome ? '+' : ''}{formattedAmount}
       </td>
       <td className="px-4 py-3">
         <select

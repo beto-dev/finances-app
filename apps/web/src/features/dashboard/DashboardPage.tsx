@@ -172,28 +172,45 @@ export default function DashboardPage() {
 
       {/* Summary cards + charts */}
       {!isLoading && !isError && (<>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="card">
-          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gasto total' : 'Gasto total del año'}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{formatCurrency(dashboard.totalAmount)}</p>
+          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(dashboard.totalExpenses)}</p>
           <p className="text-xs text-gray-400 mt-1">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Número de gastos</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{dashboard.charges.length}</p>
+          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Ingresos' : 'Ingresos del año'}</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCurrency(dashboard.totalIncome)}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
+          </p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Balance neto</p>
+          {(() => {
+            const net = dashboard.totalIncome - dashboard.totalExpenses
+            return (
+              <>
+                <p className={`text-2xl font-bold mt-1 ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {net >= 0 ? '+' : ''}{formatCurrency(net)}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">ingresos − gastos</p>
+              </>
+            )
+          })()}
         </div>
         <div className="card">
           {view === 'mensual' ? (
             <>
               <p className="text-sm text-gray-500">Categorías activas</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{dashboard.byCategory.length}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboard.byCategory.length}</p>
             </>
           ) : (
             <>
               <p className="text-sm text-gray-500">Promedio mensual</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{formatCurrency(monthlyAverage)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(monthlyAverage)}</p>
               <p className="text-xs text-gray-400 mt-1">
                 {activeMonthsCount} {activeMonthsCount === 1 ? 'mes con datos' : 'meses con datos'}
               </p>
