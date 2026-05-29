@@ -106,31 +106,29 @@ export default function ContributionsPage() {
         {!isAdmin && (
           <p className="text-xs text-gray-400 mb-4">Solo el administrador puede editar los aportes.</p>
         )}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {members.map((m) => {
             const name = NAME_BY_EMAIL[m.email.toLowerCase()] ?? m.email
             const pct = parseFloat(localPcts[m.user_id] || '0') || 0
             return (
-              <div key={m.user_id} className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">{name}</p>
-                  <p className="text-xs text-gray-400">{m.email}</p>
+              <div key={m.user_id} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{name}</p>
+                  <p className="text-xs text-gray-400 truncate">{m.email}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={localPcts[m.user_id] ?? '0'}
                     onChange={(e) => setLocalPcts((prev) => ({ ...prev, [m.user_id]: e.target.value }))}
-                    className="input w-24 text-right disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-default"
+                    className="w-16 h-10 rounded-lg border border-gray-300 px-2 text-right text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-default"
                     disabled={!isAdmin}
                   />
-                  <span className="text-sm text-gray-500 w-4">%</span>
+                  <span className="text-sm text-gray-500">%</span>
                 </div>
                 {/* Visual bar */}
-                <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden shrink-0">
                   <div
                     className="h-full bg-brand-500 rounded-full transition-all"
                     style={{ width: `${Math.min(pct, 100)}%` }}
