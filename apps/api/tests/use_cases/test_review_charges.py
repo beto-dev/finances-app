@@ -10,8 +10,8 @@ from tests.conftest import MockCategoryRepo, MockChargeRepo, make_category, make
 
 
 class TestUpdateCategory:
-    async def test_sets_is_shared_true(self):
-        charge = make_charge()
+    async def test_sets_category_without_changing_is_shared(self):
+        charge = make_charge(is_shared=False)
         cat = make_category()
         repo = MockChargeRepo([charge])
         cat_repo = MockCategoryRepo([cat])
@@ -20,7 +20,7 @@ class TestUpdateCategory:
         result = await uc.update_category(charge.id, cat.id, family_id=uuid.uuid4())
 
         assert result.category_id == cat.id
-        assert result.is_shared is True
+        assert result.is_shared is False  # must not change sharing status
 
     async def test_raises_if_category_not_found(self):
         charge = make_charge()

@@ -127,10 +127,9 @@ class MockChargeRepo(ChargeRepository):
                 c.is_shared = False
         return len(charge_ids)
 
-    async def update_category(self, charge_id: UUID, category_id: UUID, is_shared: bool) -> Charge:
+    async def update_category(self, charge_id: UUID, category_id: UUID) -> Charge:
         charge = next(c for c in self.charges if c.id == charge_id)
         charge.category_id = category_id
-        charge.is_shared = is_shared
         return charge
 
     async def bulk_create(self, statement_id: UUID, charges: list[ParsedCharge]) -> list[Charge]:

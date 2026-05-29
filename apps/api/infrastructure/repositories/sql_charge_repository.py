@@ -125,11 +125,10 @@ class SQLChargeRepository(ChargeRepository):
             await self._session.refresh(m)
         return [_to_entity(m) for m in models]
 
-    async def update_category(self, charge_id: UUID, category_id: UUID, is_shared: bool) -> Charge:
+    async def update_category(self, charge_id: UUID, category_id: UUID) -> Charge:
         result = await self._session.execute(select(ChargeModel).where(ChargeModel.id == charge_id))
         m = result.scalar_one()
         m.category_id = category_id
-        m.is_shared = is_shared
         await self._session.commit()
         await self._session.refresh(m)
         return _to_entity(m)
