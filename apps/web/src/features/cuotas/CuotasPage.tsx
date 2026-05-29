@@ -27,6 +27,29 @@ function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup
     buckets.get(key)!.push(c)
   }
 
+  // Merge buckets where one description is a prefix of another with the same cuota_total.
+  // Santander appends suffixes like "TRES CUOTAS PREC" or "CUOTA COMERCIO" inconsistently
+  // across months, causing the same purchase to appear as two separate series.
+  const keyList = [...buckets.keys()].sort((a, b) => a.length - b.length)
+  for (const longKey of keyList) {
+    if (!buckets.has(longKey)) continue
+    const sep = longKey.lastIndexOf('|')
+    const longDesc = longKey.slice(0, sep)
+    const longTotal = longKey.slice(sep + 1)
+    for (const shortKey of keyList) {
+      if (shortKey === longKey || !buckets.has(shortKey)) continue
+      const sep2 = shortKey.lastIndexOf('|')
+      const shortDesc = shortKey.slice(0, sep2)
+      const shortTotal = shortKey.slice(sep2 + 1)
+      if (shortTotal !== longTotal || shortDesc.length >= longDesc.length) continue
+      if (longDesc.startsWith(shortDesc + ' ')) {
+        buckets.get(shortKey)!.push(...buckets.get(longKey)!)
+        buckets.delete(longKey)
+        break
+      }
+    }
+  }
+
   const groups: CuotaGroup[] = []
 
   for (const list of buckets.values()) {
