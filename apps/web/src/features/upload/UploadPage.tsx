@@ -41,7 +41,7 @@ function isAllowed(file: File): boolean {
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-  const [statementType, setStatementType] = useState('checking')
+  const [statementType, setStatementType] = useState('')
   const [bankHint, setBankHint] = useState('')
   const [queue, setQueue] = useState<FileItem[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -61,6 +61,7 @@ export default function UploadPage() {
     for (let i = startIndex; i < items.length; i++) {
       const item = items[i]
       if (item.status === 'duplicate') continue
+      if (!statementType) continue
 
       updateFileStatus(i, 'uploading')
 
@@ -85,6 +86,10 @@ export default function UploadPage() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return
+    if (!statementType) {
+      setToast({ message: 'Selecciona el tipo de cuenta antes de subir', type: 'error' })
+      return
+    }
 
     const newItems: FileItem[] = []
     let invalidCount = 0
@@ -115,7 +120,7 @@ export default function UploadPage() {
     handleFiles(e.dataTransfer.files)
   }
 
-  const onDragOver = (e: DragEvent) => { e.preventDefault(); setIsDragging(true) }
+  const onDragOver = (e: DragEvent) => { e.preventDefault(); if (statementType) setIsDragging(true) }
   const onDragLeave = () => setIsDragging(false)
 
   const clearQueue = () => setQueue([])
@@ -133,13 +138,15 @@ export default function UploadPage() {
             <h2 className="text-sm font-semibold text-gray-700 mb-4">Opciones</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Tipo de cuenta</label>
+                <label className="label">Tipo de cuenta <span className="text-red-500">*</span></label>
                 <select
-                  className="input"
+                  className={`input ${!statementType ? 'border-red-300 text-gray-400' : ''}`}
                   value={statementType}
                   onChange={(e) => setStatementType(e.target.value)}
                   disabled={isUploading}
+                  required
                 >
+                  <option value="" disabled>Selecciona un tipo...</option>
                   {Object.entries(TYPE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
@@ -164,10 +171,10 @@ export default function UploadPage() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
-            onClick={() => !isUploading && fileInputRef.current?.click()}
+            onClick={() => !isUploading && statementType && fileInputRef.current?.click()}
             className={`rounded-xl border-2 border-dashed p-12 text-center transition-colors ${
-              isUploading
-                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+              isUploading || !statementType
+                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
                 : isDragging
                 ? 'border-brand-500 bg-brand-50 cursor-pointer'
                 : 'border-gray-300 hover:border-brand-400 hover:bg-gray-50 cursor-pointer'
@@ -187,6 +194,8 @@ export default function UploadPage() {
                 <Spinner size="sm" />
                 <span className="text-sm text-gray-600">Subiendo archivos...</span>
               </div>
+            ) : !statementType ? (
+              <p className="text-sm text-gray-400">Selecciona primero el tipo de cuenta</p>
             ) : (
               <>
                 <p className="text-base font-medium text-gray-700">
