@@ -1,7 +1,109 @@
-import { useState, DragEvent, ChangeEvent, useRef } from 'react'
+import { useState, DragEvent, ChangeEvent, useRef, useEffect } from 'react'
 import { useStatements, useUploadStatement, useDeleteAllStatements } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
+
+const CHILEAN_BANKS = [
+  'Banco de Chile',
+  'Banco Santander',
+  'BancoEstado',
+  'Banco BCI',
+  'Banco Itaú',
+  'Banco Scotiabank Chile',
+  'Banco Falabella',
+  'Banco Ripley',
+  'Banco Security',
+  'Banco BICE',
+  'Banco Internacional',
+  'Banco Consorcio',
+  'Banco BTG Pactual Chile',
+  'Coopeuch',
+  'Caja Los Andes',
+  'MACH',
+  'Tenpo',
+  'Chek',
+  'Tapp',
+  'Global66',
+  'Prepago Los Héroes',
+]
+
+function BankCombobox({ value, onChange, disabled }: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+}) {
+  const [query, setQuery] = useState(value)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const filtered = query.trim()
+    ? CHILEAN_BANKS.filter((b) => b.toLowerCase().includes(query.toLowerCase()))
+    : CHILEAN_BANKS
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const select = (bank: string) => {
+    setQuery(bank)
+    onChange(bank)
+    setOpen(false)
+  }
+
+  const clear = () => {
+    setQuery('')
+    onChange('')
+    setOpen(false)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          className="input pr-8"
+          placeholder="Buscar banco..."
+          value={query}
+          disabled={disabled}
+          onChange={(e) => { setQuery(e.target.value); onChange(''); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+        />
+        {query && !disabled && (
+          <button
+            type="button"
+            onClick={clear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            tabIndex={-1}
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {open && !disabled && filtered.length > 0 && (
+        <ul className="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+          {filtered.map((bank) => (
+            <li
+              key={bank}
+              onMouseDown={() => select(bank)}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 ${bank === value ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-700'}`}
+            >
+              {bank}
+            </li>
+          ))}
+        </ul>
+      )}
+      {open && !disabled && filtered.length === 0 && (
+        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
+          Sin resultados
+        </div>
+      )}
+    </div>
+  )
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -154,14 +256,7 @@ export default function UploadPage() {
               </div>
               <div>
                 <label className="label">Banco (opcional)</label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="ej. BancoEstado, Santander"
-                  value={bankHint}
-                  onChange={(e) => setBankHint(e.target.value)}
-                  disabled={isUploading}
-                />
+                <BankCombobox value={bankHint} onChange={setBankHint} disabled={isUploading} />
               </div>
             </div>
           </div>
