@@ -14,6 +14,17 @@ function normalizeDesc(desc: string): string {
   return desc.trim().toLowerCase().replace(/\s+\d+[,.]\d+\s*%\s*$/, '').trim()
 }
 
+// Two descriptions refer to the same purchase if one is a word-boundary prefix of the other,
+// OR if they share a long common character prefix (handles typos like NACIONA/NACIONAL and
+// truncated suffixes like "CUOTA COMERCIO" vs "03 CUOTAS COMERC").
+function descsShouldMerge(a: string, b: string): boolean {
+  if (b.startsWith(a + ' ') || a.startsWith(b + ' ')) return true
+  const shorter = a.length <= b.length ? a : b
+  let i = 0
+  while (i < a.length && i < b.length && a[i] === b[i]) i++
+  return i >= 20 && i / shorter.length >= 0.5
+}
+
 function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup[] {
   if (!charges) return []
 
@@ -27,26 +38,25 @@ function groupCuotas(charges: ReturnType<typeof useCharges>['data']): CuotaGroup
     buckets.get(key)!.push(c)
   }
 
-  // Merge buckets where one description is a prefix of another with the same cuota_total.
-  // Santander appends suffixes like "TRES CUOTAS PREC" or "CUOTA COMERCIO" inconsistently
-  // across months, causing the same purchase to appear as two separate series.
-  const keyList = [...buckets.keys()].sort((a, b) => a.length - b.length)
-  for (const longKey of keyList) {
-    if (!buckets.has(longKey)) continue
-    const sep = longKey.lastIndexOf('|')
-    const longDesc = longKey.slice(0, sep)
-    const longTotal = longKey.slice(sep + 1)
-    for (const shortKey of keyList) {
-      if (shortKey === longKey || !buckets.has(shortKey)) continue
-      const sep2 = shortKey.lastIndexOf('|')
-      const shortDesc = shortKey.slice(0, sep2)
-      const shortTotal = shortKey.slice(sep2 + 1)
-      if (shortTotal !== longTotal || shortDesc.length >= longDesc.length) continue
-      if (longDesc.startsWith(shortDesc + ' ')) {
-        buckets.get(shortKey)!.push(...buckets.get(longKey)!)
-        buckets.delete(longKey)
-        break
-      }
+  // Merge similar-description buckets with the same cuota_total.
+  // Handles Santander inconsistencies: typos (NACIONA/NACIONAL), truncated suffixes
+  // (CUOTA COMERCIO vs 03 CUOTAS COMERC), and appended suffixes (TRES CUOTAS PREC).
+  const keyList = [...buckets.keys()]
+  for (let i = 0; i < keyList.length; i++) {
+    const keyA = keyList[i]
+    if (!buckets.has(keyA)) continue
+    const sepA = keyA.lastIndexOf('|')
+    const descA = keyA.slice(0, sepA)
+    const totalA = keyA.slice(sepA + 1)
+    for (let j = i + 1; j < keyList.length; j++) {
+      const keyB = keyList[j]
+      if (!buckets.has(keyB)) continue
+      const sepB = keyB.lastIndexOf('|')
+      const descB = keyB.slice(0, sepB)
+      const totalB = keyB.slice(sepB + 1)
+      if (totalA !== totalB || !descsShouldMerge(descA, descB)) continue
+      buckets.get(keyA)!.push(...buckets.get(keyB)!)
+      buckets.delete(keyB)
     }
   }
 
