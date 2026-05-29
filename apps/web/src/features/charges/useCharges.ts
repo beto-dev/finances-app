@@ -121,6 +121,7 @@ export function filterCharges(
   categoryId: string | null,
   status: 'all' | 'shared' | 'personal',
   type?: string,
+  kind?: 'all' | 'income' | 'expense',
 ): Charge[] {
   return charges.filter((c) => {
     if (searchDesc && !c.description.toLowerCase().includes(searchDesc.toLowerCase())) return false
@@ -128,6 +129,8 @@ export function filterCharges(
     if (status === 'shared' && !c.is_shared) return false
     if (status === 'personal' && c.is_shared) return false
     if (type && c.statement_type !== type) return false
+    if (kind === 'income' && Number(c.amount) >= 0) return false
+    if (kind === 'expense' && Number(c.amount) < 0) return false
     return true
   })
 }

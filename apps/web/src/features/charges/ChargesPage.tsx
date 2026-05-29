@@ -49,9 +49,10 @@ function MobileChargeCard({
     }
   }
 
+  const isIncome = Number(charge.amount) < 0
   const formattedAmount = new Intl.NumberFormat('es-CL', {
     style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0,
-  }).format(charge.amount)
+  }).format(Math.abs(Number(charge.amount)))
 
   const formattedDate = new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES', {
     day: 'numeric', month: 'short',
@@ -62,7 +63,9 @@ function MobileChargeCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
-          <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formattedAmount}</p>
+          <p className={`text-sm font-semibold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-gray-900'}`}>
+            {isIncome ? '+' : ''}{formattedAmount}
+          </p>
         </div>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <span className="text-xs text-gray-400">{formattedDate}</span>
@@ -166,6 +169,7 @@ export default function ChargesPage() {
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'shared' | 'personal'>('all')
   const [filterType, setFilterType] = useState<string>('')
+  const [filterKind, setFilterKind] = useState<'all' | 'income' | 'expense'>('all')
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -176,7 +180,7 @@ export default function ChargesPage() {
   const bulkUnshare = useBulkUnshare()
 
   let charges = allCharges || []
-  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType)
+  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind)
   charges = sortCharges(charges, sortField, sortOrder)
 
   const handleSelect = (id: string, checked: boolean) => {
@@ -229,7 +233,7 @@ export default function ChargesPage() {
 
   const emptyMessage = (
     <div className="text-center py-12 text-gray-400 px-4">
-      <p className="text-base">{allCharges?.length === 0 ? 'No hay gastos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
+      <p className="text-base">{allCharges?.length === 0 ? 'No hay movimientos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
       <p className="text-sm mt-1">Sube una cartola en "Subir"</p>
     </div>
   )
@@ -237,7 +241,9 @@ export default function ChargesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gastos</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {filterKind === 'income' ? 'Ingresos' : filterKind === 'expense' ? 'Gastos' : 'Movimientos'}
+        </h1>
         {selectedIds.size > 0 && (
           <div className="hidden md:flex gap-2">
             <button onClick={handleBulkConfirm} className="btn-primary" disabled={bulkConfirm.isPending}>
@@ -264,7 +270,15 @@ export default function ChargesPage() {
 
       {/* Search and filter controls */}
       <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div>
+            <label className="label text-xs">Tipo de movimiento</label>
+            <select className="input" value={filterKind} onChange={(e) => setFilterKind(e.target.value as 'all' | 'income' | 'expense')}>
+              <option value="all">Todos</option>
+              <option value="expense">Gastos</option>
+              <option value="income">Ingresos</option>
+            </select>
+          </div>
           <div>
             <label className="label text-xs">Buscar descripción</label>
             <input type="text" placeholder="UBER, JUMBO, Netflix..." className="input" value={searchDesc} onChange={(e) => setSearchDesc(e.target.value)} />
@@ -295,9 +309,9 @@ export default function ChargesPage() {
             </select>
           </div>
         </div>
-        {(searchDesc || filterCategoryId || filterStatus !== 'all' || filterType) && (
+        {(filterKind !== 'all' || searchDesc || filterCategoryId || filterStatus !== 'all' || filterType) && (
           <div className="text-xs text-gray-600 pt-1">
-            Mostrando {charges.length} de {allCharges?.length || 0} gastos
+            Mostrando {charges.length} de {allCharges?.length || 0} movimientos
           </div>
         )}
       </div>
@@ -324,14 +338,14 @@ export default function ChargesPage() {
           ) : !charges.length ? emptyMessage : (
             <div>
               <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-                <span className="text-xs text-gray-500 font-medium">{charges.length} gastos</span>
+                <span className="text-xs text-gray-500 font-medium">{charges.length} movimientos</span>
               </div>
               {groupChargesByDate(charges).map((group) => (
                 <div key={group.date}>
                   <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{group.label}</span>
-                    <span className="text-xs font-medium text-gray-400">
-                      {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(group.total)}
+                    <span className={`text-xs font-medium ${group.total < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                      {group.total < 0 ? '+' : ''}{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Math.abs(group.total))}
                     </span>
                   </div>
                   <div className="divide-y divide-gray-100">

@@ -23,6 +23,7 @@ export interface Charge {
   statement_id: string
   date: string
   description: string
+  /** Positive = expense/debit; negative = income/credit (salary, deposit, transfer received) */
   amount: number
   currency: string
   category_id: string | null
