@@ -185,7 +185,7 @@ class SQLChargeRepository(ChargeRepository):
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
             .where(StatementModel.uploaded_by == uploaded_by)
             .where(ChargeModel.id != exclude_id)
-            .where(func.lower(ChargeModel.description).contains(pattern.lower()))
+            .where(ChargeModel.description.ilike(f"%{pattern}%"))
             .where(or_(ChargeModel.category_id.is_(None), ChargeModel.category_id != exclude_category_id))
         )
         result = await self._session.execute(stmt)
@@ -197,7 +197,7 @@ class SQLChargeRepository(ChargeRepository):
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
             .where(StatementModel.uploaded_by == uploaded_by)
             .where(ChargeModel.id != exclude_id)
-            .where(func.lower(ChargeModel.description).contains(pattern.lower()))
+            .where(ChargeModel.description.ilike(f"%{pattern}%"))
         )
         id_result = await self._session.execute(id_query)
         ids = [row[0] for row in id_result.all()]
