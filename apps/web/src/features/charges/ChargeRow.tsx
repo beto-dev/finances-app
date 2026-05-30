@@ -92,17 +92,21 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
           {isIncome ? '+' : ''}{formattedAmount}
         </td>
         <td className="px-4 py-3">
-          <select
-            value={currentCatId ?? ''}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 w-40"
-            style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
-          >
-            <option value="">Sin categoría</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-1.5">
+            <select
+              value={currentCatId ?? ''}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              disabled={updateCategory.isPending}
+              className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 w-40 disabled:opacity-60 disabled:cursor-wait"
+              style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
+            >
+              <option value="">Sin categoría</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+            {updateCategory.isPending && <Spinner size="sm" />}
+          </div>
         </td>
         <td className="px-4 py-3 text-center">
           {charge.is_shared ? (

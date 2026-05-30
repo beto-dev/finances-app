@@ -29,7 +29,10 @@ class ReviewChargesUseCase:
         category = await self._categories.get_by_id(category_id)
         if category is None:
             raise ValueError(f"Category {category_id} not found")
-        return await self._charges.update_category(charge_id, category_id)
+        charge = await self._charges.update_category(charge_id, category_id)
+        pattern = extract_pattern(charge.description)
+        await self._categories.upsert_rule(family_id, pattern, category_id)
+        return charge
 
     async def count_similar(self, uploaded_by: UUID, description: str, exclude_id: UUID, exclude_category_id: UUID) -> tuple[int, str]:
         pattern = extract_pattern(description)

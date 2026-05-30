@@ -106,18 +106,23 @@ function MobileChargeCard({
 
           {/* Category trigger — opens bottom sheet */}
           <button
-            onClick={() => setSheetOpen(true)}
-            className="flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 border border-gray-200 active:bg-gray-50 transition-colors"
+            onClick={() => !updateCategory.isPending && setSheetOpen(true)}
+            disabled={updateCategory.isPending}
+            className="flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 border border-gray-200 active:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-wait"
             style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
           >
-            {currentCat?.color && (
+            {updateCategory.isPending ? (
+              <Spinner size="sm" />
+            ) : currentCat?.color ? (
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: currentCat.color }} />
-            )}
+            ) : null}
             <span className="max-w-[110px] truncate">{currentCat?.name ?? 'Sin categoría'}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
-              strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 shrink-0 text-gray-400">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            {!updateCategory.isPending && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+                strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 shrink-0 text-gray-400">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
           </button>
 
           {!isShared && charge.ai_suggested && (
