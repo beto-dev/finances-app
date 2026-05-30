@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities.category import Category, CategoryRule
@@ -55,14 +55,9 @@ class SQLCategoryRepository(CategoryRepository):
         return _to_cat(m)
 
     async def delete(self, category_id: UUID) -> None:
-        from sqlalchemy import update
-        from infrastructure.database.models import ChargeModel
-        await self._session.execute(
-            update(ChargeModel).where(ChargeModel.category_id == category_id).values(category_id=None)
-        )
-        result = await self._session.execute(select(CategoryModel).where(CategoryModel.id == category_id))
-        m = result.scalar_one()
-        await self._session.delete(m)
+        # Use raw SQL to bypass ORM relationship handling which conflicts with the FK constraint
+        await self._session.execute(text("UPDATE charges SET category_id = NULL WHERE category_id = :id"), {"id": category_id})
+        await self._session.execute(text("DELETE FROM categories WHERE id = :id"), {"id": category_id})
         await self._session.commit()
 
     async def get_rules(self, family_id: UUID) -> list[CategoryRule]:
