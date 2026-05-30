@@ -60,15 +60,22 @@ export default function DashboardPage() {
   const activeMonthsCount = dashboard.byMonth.filter((m) => m.amount > 0).length
   const monthlyAverage = activeMonthsCount > 0 ? dashboard.totalAmount / activeMonthsCount : 0
 
-  // Account type breakdown
+  // Account type breakdown — separate expenses (positive) from income/credits (negative)
   const accountTypes = Array.from(
     new Set(dashboard.charges.map((c) => c.statement_type).filter(Boolean))
   ).sort() as string[]
 
-  const totalPerType: Record<string, number> = {}
+  const gastosPerType: Record<string, number> = {}
+  const abonosPerType: Record<string, number> = {}
   for (const charge of dashboard.charges) {
     const t = charge.statement_type || 'checking'
-    totalPerType[t] = (totalPerType[t] ?? 0) + Number(charge.amount)
+    const amt = Number(charge.amount)
+    if (amt > 0) gastosPerType[t] = (gastosPerType[t] ?? 0) + amt
+    else abonosPerType[t] = (abonosPerType[t] ?? 0) + Math.abs(amt)
+  }
+  const totalPerType: Record<string, number> = {}
+  for (const t of accountTypes) {
+    totalPerType[t] = (gastosPerType[t] ?? 0) - (abonosPerType[t] ?? 0)
   }
 
   const accountStackedData = MONTHS_SHORT.map((label, i) => {
@@ -285,19 +292,40 @@ export default function DashboardPage() {
           {/* Account type breakdown */}
           {accountTypes.length > 0 && (
             <div className="card lg:col-span-2">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">Gastos por Tipo de Cuenta</h2>
+              <h2 className="text-base font-semibold text-gray-800 mb-4">Movimientos por Tipo de Cuenta</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                {accountTypes.map((t) => (
-                  <div key={t} className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500">{TYPE_LABELS[t] ?? t}</p>
-                    <p className="text-lg font-bold text-gray-900 mt-0.5">{formatCurrency(totalPerType[t] ?? 0)}</p>
-                    <p className="text-xs text-gray-400">
-                      {dashboard.totalAmount > 0
-                        ? `${(((totalPerType[t] ?? 0) / dashboard.totalAmount) * 100).toFixed(1)}%`
-                        : '—'}
-                    </p>
-                  </div>
-                ))}
+                {accountTypes.map((t) => {
+                  const gastos = gastosPerType[t] ?? 0
+                  const abonos = abonosPerType[t] ?? 0
+                  const neto = gastos - abonos
+                  const favorable = neto < 0
+                  return (
+                    <div key={t} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: TYPE_COLORS[t] ?? '#6b7280' }} />
+                        <p className="text-xs font-medium text-gray-600">{TYPE_LABELS[t] ?? t}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-400">Gastos</span>
+                          <span className="text-xs font-medium text-gray-700">{formatCurrency(gastos)}</span>
+                        </div>
+                        {abonos > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-400">Abonos</span>
+                            <span className="text-xs font-medium text-emerald-600">+{formatCurrency(abonos)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Neto</span>
+                        <span className={`text-sm font-bold ${favorable ? 'text-emerald-600' : 'text-gray-900'}`}>
+                          {favorable ? '+' : ''}{formatCurrency(Math.abs(neto))}{favorable ? ' a favor' : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               {view === 'anual' && (
                 <ResponsiveContainer width="100%" height={260}>
