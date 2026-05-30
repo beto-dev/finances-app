@@ -10,7 +10,9 @@ from infrastructure.repositories.sql_family_repository import SQLFamilyRepositor
 from infrastructure.repositories.sql_user_repository import SQLUserRepository
 from presentation.dependencies import CurrentUserId, DbSession, get_category_repo, get_charge_repo
 from presentation.schemas.charge import (
+    ApplyToSimilarRequest,
     BulkConfirmRequest,
+    CategoryUpdateResponse,
     ChargeResponse,
     ChargeUpdateCategory,
     ManualChargeRequest,
@@ -72,7 +74,7 @@ async def list_family_charges(
     ]
 
 
-@router.patch("/{charge_id}/category", response_model=ChargeResponse)
+@router.patch("/{charge_id}/category", response_model=CategoryUpdateResponse)
 async def update_charge_category(
     charge_id: UUID,
     body: ChargeUpdateCategory,
@@ -86,12 +88,34 @@ async def update_charge_category(
         raise HTTPException(status_code=400, detail="Usuario sin familia")
     uc = ReviewChargesUseCase(charge_repo, category_repo)
     charge = await uc.update_category(charge_id, body.category_id, user.family_id)
-    return ChargeResponse(
+    similar_count, suggested_pattern = await uc.count_similar(
+        current_user_id, charge.description, charge_id, body.category_id
+    )
+    return CategoryUpdateResponse(
         id=charge.id, statement_id=charge.statement_id, date=charge.date,
         description=charge.description, amount=charge.amount, currency=charge.currency,
         category_id=charge.category_id, is_shared=charge.is_shared,
         ai_suggested=charge.ai_suggested, created_at=charge.created_at,
+        similar_count=similar_count, suggested_pattern=suggested_pattern,
     )
+
+
+@router.post("/apply-to-similar", response_model=dict)
+async def apply_to_similar(
+    body: ApplyToSimilarRequest,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    charge_repo: SQLChargeRepository = Depends(get_charge_repo),
+    category_repo: SQLCategoryRepository = Depends(get_category_repo),
+):
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user or not user.family_id:
+        raise HTTPException(status_code=400, detail="Usuario sin familia")
+    uc = ReviewChargesUseCase(charge_repo, category_repo)
+    count = await uc.apply_to_similar(
+        current_user_id, user.family_id, body.pattern, body.category_id, body.exclude_charge_id
+    )
+    return {"updated": count}
 
 
 @router.delete("/{charge_id}", status_code=204)

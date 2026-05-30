@@ -28,3 +28,6 @@ class CategoryRepository(ABC):
 
     @abstractmethod
     async def find_matching_rule(self, family_id: UUID, description: str) -> CategoryRule | None: ...
+
+    @abstractmethod
+    async def upsert_rule(self, family_id: UUID, pattern: str, category_id: UUID) -> CategoryRule: ...

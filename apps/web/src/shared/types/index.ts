@@ -37,6 +37,11 @@ export interface Charge {
   cuota_monto: number | null
 }
 
+export interface CategoryUpdateResult extends Charge {
+  similar_count: number
+  suggested_pattern: string
+}
+
 export interface Family {
   id: string
   name: string

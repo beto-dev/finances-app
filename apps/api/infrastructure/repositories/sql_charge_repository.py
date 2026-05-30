@@ -1,7 +1,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities.charge import Charge, ParsedCharge
@@ -177,3 +177,32 @@ class SQLChargeRepository(ChargeRepository):
             m.is_shared = False
         await self._session.commit()
         return len(models)
+
+    async def count_similar(self, uploaded_by: UUID, pattern: str, exclude_id: UUID, exclude_category_id: UUID) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(ChargeModel)
+            .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
+            .where(StatementModel.uploaded_by == uploaded_by)
+            .where(ChargeModel.id != exclude_id)
+            .where(func.lower(ChargeModel.description).contains(pattern.lower()))
+            .where(or_(ChargeModel.category_id.is_(None), ChargeModel.category_id != exclude_category_id))
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar() or 0
+
+    async def apply_category_by_pattern(self, uploaded_by: UUID, pattern: str, category_id: UUID, exclude_id: UUID) -> int:
+        id_query = (
+            select(ChargeModel.id)
+            .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
+            .where(StatementModel.uploaded_by == uploaded_by)
+            .where(ChargeModel.id != exclude_id)
+            .where(func.lower(ChargeModel.description).contains(pattern.lower()))
+        )
+        id_result = await self._session.execute(id_query)
+        ids = [row[0] for row in id_result.all()]
+        if not ids:
+            return 0
+        await self._session.execute(update(ChargeModel).where(ChargeModel.id.in_(ids)).values(category_id=category_id))
+        await self._session.commit()
+        return len(ids)

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import client from '../../shared/api/client'
-import { Charge, Category } from '../../shared/types'
+import { Charge, Category, CategoryUpdateResult } from '../../shared/types'
 
 export type SortField = 'date' | 'description' | 'amount' | 'category' | 'status'
 export type SortOrder = 'asc' | 'desc'
@@ -46,7 +46,24 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: async ({ chargeId, categoryId }: { chargeId: string; categoryId: string }) => {
       const res = await client.patch(`/api/charges/${chargeId}/category`, { category_id: categoryId })
-      return res.data as Charge
+      return res.data as CategoryUpdateResult
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
+export function useApplyToSimilar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ pattern, categoryId, excludeChargeId }: { pattern: string; categoryId: string; excludeChargeId: string }) => {
+      const res = await client.post('/api/charges/apply-to-similar', {
+        pattern,
+        category_id: categoryId,
+        exclude_charge_id: excludeChargeId,
+      })
+      return res.data as { updated: number }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] })

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities.category import Category, CategoryRule
@@ -83,3 +83,21 @@ class SQLCategoryRepository(CategoryRepository):
             if rule.pattern.lower() in desc_lower:
                 return _to_rule(rule)
         return None
+
+    async def upsert_rule(self, family_id: UUID, pattern: str, category_id: UUID) -> CategoryRule:
+        result = await self._session.execute(
+            select(CategoryRuleModel)
+            .where(CategoryRuleModel.family_id == family_id)
+            .where(func.lower(CategoryRuleModel.pattern) == pattern.lower())
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            existing.category_id = category_id
+            await self._session.commit()
+            await self._session.refresh(existing)
+            return _to_rule(existing)
+        m = CategoryRuleModel(family_id=family_id, pattern=pattern, category_id=category_id)
+        self._session.add(m)
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_rule(m)

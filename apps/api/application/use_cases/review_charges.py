@@ -1,8 +1,23 @@
+import re
 from uuid import UUID
 
 from domain.entities.charge import Charge
 from domain.repositories.category_repository import CategoryRepository
 from domain.repositories.charge_repository import ChargeRepository
+
+
+def extract_pattern(description: str) -> str:
+    """Strip trailing noise tokens (IDs, numbers, transaction codes) from a bank description."""
+    tokens = description.strip().split()
+    while len(tokens) > 1:
+        last = tokens[-1]
+        if re.match(r'^\d+$', last):
+            tokens.pop()
+        elif len(last) >= 4 and re.match(r'^[A-Z0-9\-\./]+$', last, re.IGNORECASE) and any(c.isdigit() for c in last):
+            tokens.pop()
+        else:
+            break
+    return ' '.join(tokens)
 
 
 class ReviewChargesUseCase:
@@ -15,6 +30,19 @@ class ReviewChargesUseCase:
         if category is None:
             raise ValueError(f"Category {category_id} not found")
         return await self._charges.update_category(charge_id, category_id)
+
+    async def count_similar(self, uploaded_by: UUID, description: str, exclude_id: UUID, exclude_category_id: UUID) -> tuple[int, str]:
+        pattern = extract_pattern(description)
+        count = await self._charges.count_similar(uploaded_by, pattern, exclude_id, exclude_category_id)
+        return count, pattern
+
+    async def apply_to_similar(self, uploaded_by: UUID, family_id: UUID, pattern: str, category_id: UUID, exclude_id: UUID) -> int:
+        category = await self._categories.get_by_id(category_id)
+        if category is None:
+            raise ValueError(f"Category {category_id} not found")
+        count = await self._charges.apply_category_by_pattern(uploaded_by, pattern, category_id, exclude_id)
+        await self._categories.upsert_rule(family_id, pattern, category_id)
+        return count
 
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int:
         return await self._charges.bulk_confirm(charge_ids)

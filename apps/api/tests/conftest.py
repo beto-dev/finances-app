@@ -141,6 +141,15 @@ class MockChargeRepo(ChargeRepository):
     async def delete_by_statement(self, statement_id: UUID) -> int:
         return 0
 
+    async def delete(self, charge_id: UUID) -> None:
+        pass
+
+    async def count_similar(self, uploaded_by: UUID, pattern: str, exclude_id: UUID, exclude_category_id: UUID) -> int:
+        return 0
+
+    async def apply_category_by_pattern(self, uploaded_by: UUID, pattern: str, category_id: UUID, exclude_id: UUID) -> int:
+        return 0
+
 
 class MockCategoryRepo(CategoryRepository):
     def __init__(self, categories: list[Category] | None = None) -> None:
@@ -172,6 +181,16 @@ class MockCategoryRepo(CategoryRepository):
         return None
 
     async def create_rule(self, family_id: UUID, pattern: str, category_id: UUID) -> CategoryRule:
+        self.rule_calls.append((family_id, pattern, category_id))
+        return CategoryRule(
+            id=uuid.uuid4(),
+            family_id=family_id,
+            pattern=pattern,
+            category_id=category_id,
+            created_at=datetime.now(UTC),
+        )
+
+    async def upsert_rule(self, family_id: UUID, pattern: str, category_id: UUID) -> CategoryRule:
         self.rule_calls.append((family_id, pattern, category_id))
         return CategoryRule(
             id=uuid.uuid4(),

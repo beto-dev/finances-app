@@ -37,6 +37,17 @@ class ChargeUpdateCategory(BaseModel):
     category_id: UUID
 
 
+class CategoryUpdateResponse(ChargeResponse):
+    similar_count: int = 0
+    suggested_pattern: str = ""
+
+
+class ApplyToSimilarRequest(BaseModel):
+    pattern: str
+    category_id: UUID
+    exclude_charge_id: UUID
+
+
 class BulkConfirmRequest(BaseModel):
     charge_ids: list[UUID]
 

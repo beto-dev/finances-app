@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
@@ -12,29 +12,52 @@ const MONTHS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
+interface SimilarPrompt {
+  count: number
+  pattern: string
+  categoryId: string
+  categoryName: string
+}
+
 // ── Mobile card component ────────────────────────────────────────────────────
 function MobileChargeCard({
   charge, categories,
 }: { charge: Charge; categories: Category[] }) {
   const updateCategory = useUpdateCategory()
+  const applyToSimilar = useApplyToSimilar()
   const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
   const deleteCharge = useDeleteCharge()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
 
   const isShared = optimisticConfirmed ?? charge.is_shared
   const currentCatId = optimisticCatId ?? charge.category_id
   const currentCat = categories.find((c) => c.id === currentCatId)
 
   const handleCategoryChange = async (categoryId: string) => {
+    setSimilarPrompt(null)
     setOptimisticCatId(categoryId || null)
     if (!categoryId) return
     try {
-      await updateCategory.mutateAsync({ chargeId: charge.id, categoryId })
+      const result = await updateCategory.mutateAsync({ chargeId: charge.id, categoryId })
+      if (result.similar_count > 0) {
+        const catName = categories.find((c) => c.id === categoryId)?.name ?? ''
+        setSimilarPrompt({ count: result.similar_count, pattern: result.suggested_pattern, categoryId, categoryName: catName })
+      }
     } catch {
       setOptimisticCatId(null)
+    }
+  }
+
+  const handleApplyToSimilar = async () => {
+    if (!similarPrompt) return
+    try {
+      await applyToSimilar.mutateAsync({ pattern: similarPrompt.pattern, categoryId: similarPrompt.categoryId, excludeChargeId: charge.id })
+    } finally {
+      setSimilarPrompt(null)
     }
   }
 
@@ -108,6 +131,29 @@ function MobileChargeCard({
           onChange={handleCategoryChange}
           onClose={() => setSheetOpen(false)}
         />
+      )}
+
+      {similarPrompt && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 bg-indigo-600 text-white rounded-xl shadow-lg px-4 py-3 flex flex-col gap-2">
+          <p className="text-sm">
+            ¿Aplicar <strong>{similarPrompt.categoryName}</strong> a {similarPrompt.count} cargo{similarPrompt.count !== 1 ? 's' : ''} con "{similarPrompt.pattern}"?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleApplyToSimilar}
+              disabled={applyToSimilar.isPending}
+              className="flex-1 py-2 text-sm font-medium bg-white text-indigo-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
+            </button>
+            <button
+              onClick={() => setSimilarPrompt(null)}
+              className="flex-1 py-2 text-sm font-medium border border-white/40 rounded-lg"
+            >
+              Solo este
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Tap-to-confirm button — 44px touch target */}
