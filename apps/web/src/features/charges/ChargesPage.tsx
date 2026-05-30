@@ -105,7 +105,7 @@ function MobileChargeCard({
     <div className="flex items-center gap-3 px-4 py-3.5">
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
+          <p className="text-sm font-medium text-gray-900 line-clamp-2 break-words">{charge.description}</p>
           <p className={`text-sm font-semibold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-gray-900'}`}>
             {isIncome ? '+' : ''}{formattedAmount}
           </p>

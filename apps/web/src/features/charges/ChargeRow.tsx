@@ -96,7 +96,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
           />
         </td>
         <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{formattedDate}</td>
-        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
+        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={charge.description}>
           {isIncome && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 shrink-0" />}
           {charge.description}
         </td>
