@@ -333,6 +333,7 @@ export default function ChargesPage() {
             <label className="label text-xs">Categoría</label>
             <select className="input" value={filterCategoryId ?? ''} onChange={(e) => setFilterCategoryId(e.target.value || null)}>
               <option value="">Todas las categorías</option>
+              <option value="none">Sin categoría</option>
               {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
