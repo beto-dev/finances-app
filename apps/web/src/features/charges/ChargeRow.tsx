@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Charge, Category } from '../../shared/types'
 import { useUpdateCategory, useDeleteCharge, useApplyToSimilar } from './useCharges'
 import Spinner from '../../shared/components/Spinner'
@@ -18,11 +19,14 @@ interface SimilarPrompt {
 }
 
 export default function ChargeRow({ charge, categories, selected, onSelect }: ChargeRowProps) {
+  const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
   const applyToSimilar = useApplyToSimilar()
   const deleteCharge = useDeleteCharge()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['charges'] })
 
   const currentCatId = optimisticCatId ?? charge.category_id
   const currentCat = categories.find((c) => c.id === currentCatId)
@@ -35,6 +39,9 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
       if (result.similar_count > 0) {
         const catName = categories.find((c) => c.id === categoryId)?.name ?? ''
         setSimilarPrompt({ count: result.similar_count, pattern: result.suggested_pattern, categoryId, categoryName: catName })
+        // delay invalidation until user decides — keeps the row visible while prompt is shown
+      } else {
+        invalidate()
       }
     } catch {
       setOptimisticCatId(null)
@@ -47,7 +54,13 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
       await applyToSimilar.mutateAsync({ pattern: similarPrompt.pattern, categoryId: similarPrompt.categoryId, excludeChargeId: charge.id })
     } finally {
       setSimilarPrompt(null)
+      // applyToSimilar.onSuccess already invalidates
     }
+  }
+
+  const handleDismissPrompt = () => {
+    setSimilarPrompt(null)
+    invalidate()
   }
 
   const isIncome = Number(charge.amount) < 0
@@ -125,7 +138,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
                 {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
               </button>
               <button
-                onClick={() => setSimilarPrompt(null)}
+                onClick={handleDismissPrompt}
                 className="px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
               >
                 Solo este

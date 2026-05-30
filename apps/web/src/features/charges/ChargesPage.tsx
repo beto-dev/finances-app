@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
@@ -23,6 +24,7 @@ interface SimilarPrompt {
 function MobileChargeCard({
   charge, categories,
 }: { charge: Charge; categories: Category[] }) {
+  const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
   const applyToSimilar = useApplyToSimilar()
   const bulkConfirm = useBulkConfirm()
@@ -32,6 +34,8 @@ function MobileChargeCard({
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['charges'] })
 
   const isShared = optimisticConfirmed ?? charge.is_shared
   const currentCatId = optimisticCatId ?? charge.category_id
@@ -46,6 +50,8 @@ function MobileChargeCard({
       if (result.similar_count > 0) {
         const catName = categories.find((c) => c.id === categoryId)?.name ?? ''
         setSimilarPrompt({ count: result.similar_count, pattern: result.suggested_pattern, categoryId, categoryName: catName })
+      } else {
+        invalidate()
       }
     } catch {
       setOptimisticCatId(null)
@@ -59,6 +65,11 @@ function MobileChargeCard({
     } finally {
       setSimilarPrompt(null)
     }
+  }
+
+  const handleDismissPrompt = () => {
+    setSimilarPrompt(null)
+    invalidate()
   }
 
   const handleToggleShare = async () => {
@@ -147,7 +158,7 @@ function MobileChargeCard({
               {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
             </button>
             <button
-              onClick={() => setSimilarPrompt(null)}
+              onClick={handleDismissPrompt}
               className="flex-1 py-2 text-sm font-medium border border-white/40 rounded-lg"
             >
               Solo este

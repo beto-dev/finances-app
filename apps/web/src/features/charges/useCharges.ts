@@ -42,15 +42,12 @@ export function useCategories() {
 }
 
 export function useUpdateCategory() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ chargeId, categoryId }: { chargeId: string; categoryId: string }) => {
       const res = await client.patch(`/api/charges/${chargeId}/category`, { category_id: categoryId })
       return res.data as CategoryUpdateResult
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['charges'] })
-    },
+    // intentionally no onSuccess invalidation — callers handle it after the similar-prompt interaction
   })
 }
 
