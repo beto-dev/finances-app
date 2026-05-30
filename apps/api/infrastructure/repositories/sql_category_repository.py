@@ -55,6 +55,11 @@ class SQLCategoryRepository(CategoryRepository):
         return _to_cat(m)
 
     async def delete(self, category_id: UUID) -> None:
+        from sqlalchemy import update
+        from infrastructure.database.models import ChargeModel
+        await self._session.execute(
+            update(ChargeModel).where(ChargeModel.category_id == category_id).values(category_id=None)
+        )
         result = await self._session.execute(select(CategoryModel).where(CategoryModel.id == category_id))
         m = result.scalar_one()
         await self._session.delete(m)
