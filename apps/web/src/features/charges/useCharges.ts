@@ -51,6 +51,19 @@ export function useUpdateCategory() {
   })
 }
 
+export function useCreateCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ name, color }: { name: string; color: string }) => {
+      const res = await client.post('/api/charges/categories', { name, color })
+      return res.data as { id: string; name: string; color: string | null; is_system: boolean }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+    },
+  })
+}
+
 export function useApplyToSimilar() {
   const queryClient = useQueryClient()
   return useMutation({

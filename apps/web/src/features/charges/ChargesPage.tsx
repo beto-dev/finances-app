@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
 import Skeleton from '../../shared/components/Skeleton'
 import Toast from '../../shared/components/Toast'
 import CategorySheet from '../../shared/components/CategorySheet'
+import NewCategoryModal from '../../shared/components/NewCategoryModal'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -26,6 +27,7 @@ function MobileChargeCard({
 }: { charge: Charge; categories: Category[] }) {
   const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
+  const createCategory = useCreateCategory()
   const applyToSimilar = useApplyToSimilar()
   const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
@@ -33,6 +35,7 @@ function MobileChargeCard({
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [showNewModal, setShowNewModal] = useState(false)
   const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['charges'] })
@@ -70,6 +73,12 @@ function MobileChargeCard({
   const handleDismissPrompt = () => {
     setSimilarPrompt(null)
     invalidate()
+  }
+
+  const handleCreateCategory = async (name: string, color: string) => {
+    const newCat = await createCategory.mutateAsync({ name, color })
+    setShowNewModal(false)
+    await handleCategoryChange(newCat.id)
   }
 
   const handleToggleShare = async () => {
@@ -146,6 +155,14 @@ function MobileChargeCard({
           value={currentCatId ?? null}
           onChange={handleCategoryChange}
           onClose={() => setSheetOpen(false)}
+          onCreateNew={() => setShowNewModal(true)}
+        />
+      )}
+      {showNewModal && (
+        <NewCategoryModal
+          onConfirm={handleCreateCategory}
+          onClose={() => setShowNewModal(false)}
+          isPending={createCategory.isPending}
         />
       )}
 

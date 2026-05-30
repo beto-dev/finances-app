@@ -6,9 +6,10 @@ interface Props {
   value: string | null   // current category id, null/'' = none
   onChange: (categoryId: string) => void
   onClose: () => void
+  onCreateNew?: () => void
 }
 
-export default function CategorySheet({ categories, value, onChange, onClose }: Props) {
+export default function CategorySheet({ categories, value, onChange, onClose, onCreateNew }: Props) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -88,6 +89,19 @@ export default function CategorySheet({ categories, value, onChange, onClose }: 
               </button>
             )
           })}
+
+          {/* Nueva categoría */}
+          {onCreateNew && (
+            <button
+              onClick={() => { close(); onCreateNew() }}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl transition-all active:scale-95 bg-gray-50 border-2 border-dashed border-gray-300"
+            >
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl">
+                +
+              </div>
+              <span className="text-[11px] font-medium text-gray-500 text-center leading-tight">Nueva categoría</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

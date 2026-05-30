@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Charge, Category } from '../../shared/types'
-import { useUpdateCategory, useDeleteCharge, useApplyToSimilar } from './useCharges'
+import { useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory } from './useCharges'
 import Spinner from '../../shared/components/Spinner'
+import NewCategoryModal from '../../shared/components/NewCategoryModal'
 
 interface ChargeRowProps {
   charge: Charge
@@ -21,10 +22,12 @@ interface SimilarPrompt {
 export default function ChargeRow({ charge, categories, selected, onSelect }: ChargeRowProps) {
   const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
+  const createCategory = useCreateCategory()
   const applyToSimilar = useApplyToSimilar()
   const deleteCharge = useDeleteCharge()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
+  const [showNewModal, setShowNewModal] = useState(false)
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['charges'] })
 
@@ -32,6 +35,10 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
   const currentCat = categories.find((c) => c.id === currentCatId)
 
   const handleCategoryChange = async (categoryId: string) => {
+    if (categoryId === '__new__') {
+      setShowNewModal(true)
+      return
+    }
     setSimilarPrompt(null)
     setOptimisticCatId(categoryId)
     try {
@@ -39,13 +46,18 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
       if (result.similar_count > 0) {
         const catName = categories.find((c) => c.id === categoryId)?.name ?? ''
         setSimilarPrompt({ count: result.similar_count, pattern: result.suggested_pattern, categoryId, categoryName: catName })
-        // delay invalidation until user decides — keeps the row visible while prompt is shown
       } else {
         invalidate()
       }
     } catch {
       setOptimisticCatId(null)
     }
+  }
+
+  const handleCreateCategory = async (name: string, color: string) => {
+    const newCat = await createCategory.mutateAsync({ name, color })
+    setShowNewModal(false)
+    await handleCategoryChange(newCat.id)
   }
 
   const handleApplyToSimilar = async () => {
@@ -104,6 +116,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
+              <option value="__new__">➕ Nueva categoría...</option>
             </select>
             {updateCategory.isPending && <Spinner size="sm" />}
           </div>
@@ -150,6 +163,13 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
             </div>
           </td>
         </tr>
+      )}
+      {showNewModal && (
+        <NewCategoryModal
+          onConfirm={handleCreateCategory}
+          onClose={() => setShowNewModal(false)}
+          isPending={createCategory.isPending}
+        />
       )}
     </>
   )
