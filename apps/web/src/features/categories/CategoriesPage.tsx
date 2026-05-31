@@ -4,7 +4,8 @@ import client from '../../shared/api/client'
 import { Category } from '../../shared/types'
 import Toast from '../../shared/components/Toast'
 import Spinner from '../../shared/components/Spinner'
-import { useBudgets, useUpsertBudget, useDeleteBudget } from './useBudgets'
+import { useBudgets, useBudgetSuggestions, useUpsertBudget, useDeleteBudget } from './useBudgets'
+import BudgetSuggestionsModal from './BudgetSuggestionsModal'
 
 function BudgetInput({ categoryId, currentAmount }: { categoryId: string; currentAmount: number | undefined }) {
   const [value, setValue] = useState(currentAmount != null ? String(Math.round(currentAmount)) : '')
@@ -86,6 +87,8 @@ function validate(form: FormState, categories: Category[], excludeId?: string): 
 export default function CategoriesPage() {
   const { data: categories = [], isLoading } = useCategories()
   const { data: budgets = {} } = useBudgets()
+  const { data: budgetSuggestions } = useBudgetSuggestions()
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const create = useCreateCategory()
   const update = useUpdateCategory()
   const del = useDeleteCategory()
@@ -157,14 +160,24 @@ export default function CategoriesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
-        {!showNew && !editId && (
-          <button
-            onClick={() => { setShowNew(true); setForm({ name: '', color: '#3b82f6' }); setFormError(null) }}
-            className="btn-primary text-sm"
-          >
-            + Nueva categoría
-          </button>
-        )}
+        <div className="flex gap-2">
+          {budgetSuggestions && budgetSuggestions.income_avg > 0 && !showNew && !editId && (
+            <button
+              onClick={() => setShowSuggestions(true)}
+              className="btn-secondary text-sm"
+            >
+              ✨ Sugerir límites
+            </button>
+          )}
+          {!showNew && !editId && (
+            <button
+              onClick={() => { setShowNew(true); setForm({ name: '', color: '#3b82f6' }); setFormError(null) }}
+              className="btn-primary text-sm"
+            >
+              + Nueva categoría
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -251,6 +264,15 @@ export default function CategoriesPage() {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {showSuggestions && budgetSuggestions && budgetSuggestions.income_avg > 0 && (
+        <BudgetSuggestionsModal
+          suggestions={budgetSuggestions}
+          categories={categories}
+          onClose={() => setShowSuggestions(false)}
+          onApplied={() => { setShowSuggestions(false); showToast('Límites aplicados') }}
+        />
+      )}
     </div>
   )
 }

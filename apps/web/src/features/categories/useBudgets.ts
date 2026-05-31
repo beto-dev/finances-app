@@ -1,10 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import client from '../../shared/api/client'
 
+export interface BudgetSuggestions {
+  income_avg: number
+  suggestions: Record<string, number>
+}
+
 export function useBudgets() {
   return useQuery<Record<string, number>>({
     queryKey: ['budgets'],
     queryFn: async () => (await client.get('/api/budgets/')).data,
+  })
+}
+
+export function useBudgetSuggestions() {
+  return useQuery<BudgetSuggestions>({
+    queryKey: ['budget-suggestions'],
+    queryFn: async () => (await client.get('/api/budgets/suggestions')).data,
   })
 }
 
