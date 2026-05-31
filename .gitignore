@@ -30,3 +30,9 @@ apps/web/e2e/.auth.json
 *.pdf
 analyze_pdf.py
 test_parser.py
+
+# Docs — kept local only
+README.md
+BETA_LAUNCH.md
+SECURITY_PLAN.md
+ARCHITECTURE.md
