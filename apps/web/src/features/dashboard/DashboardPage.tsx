@@ -179,6 +179,49 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ── Budget alerts ── */}
+      {!isLoading && !isError && view === 'mensual' && (() => {
+        const alerts = dashboard.byCategory
+          .filter((item) => {
+            const b = budgets[item.category.id]
+            return b != null && item.amount > 0 && item.amount / b >= 0.8
+          })
+          .map((item) => {
+            const b = budgets[item.category.id]!
+            const over = item.amount > b
+            return { item, b, over, pct: Math.round((item.amount / b) * 100) }
+          })
+        if (alerts.length === 0) return null
+        return (
+          <div className="mb-6 space-y-2">
+            {alerts.map(({ item, b, over, pct }) => (
+              <div key={item.category.id} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${over ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+                <span className="text-lg shrink-0">{over ? '🚨' : '⚠️'}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.category.color ?? '#6b7280' }} />
+                    <span className={`text-sm font-semibold ${over ? 'text-red-800' : 'text-amber-800'}`}>
+                      {item.category.name}
+                    </span>
+                    <span className={`text-sm ${over ? 'text-red-700' : 'text-amber-700'}`}>
+                      {over
+                        ? `superó el límite — gastaste ${formatCurrency(item.amount)} de ${formatCurrency(b)} (+${formatCurrency(item.amount - b)})`
+                        : `${pct}% del límite — ${formatCurrency(item.amount)} de ${formatCurrency(b)}`}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 w-full bg-white/60 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full ${over ? 'bg-red-500' : 'bg-amber-400'}`}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
+
       {/* Summary cards + charts */}
       {!isLoading && !isError && (<>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
