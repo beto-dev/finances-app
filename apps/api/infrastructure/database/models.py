@@ -109,6 +109,22 @@ class CategoryModel(Base):
     rules: Mapped[list["CategoryRuleModel"]] = relationship("CategoryRuleModel", back_populates="category")
 
 
+class CategoryBudgetModel(Base):
+    __tablename__ = "category_budgets"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    family_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("families.id", ondelete="CASCADE"), nullable=False
+    )
+    category_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), nullable=False
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("family_id", "category_id", name="uq_family_category_budget"),)
+
+
 class CategoryRuleModel(Base):
     __tablename__ = "category_rules"
 

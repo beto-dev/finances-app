@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import { useDashboard } from './useDashboard'
+import { useBudgets } from '../categories/useBudgets'
 import Skeleton from '../../shared/components/Skeleton'
 
 const MONTHS = [
@@ -57,6 +58,7 @@ export default function DashboardPage() {
     monto: item.amount,
   }))
 
+  const { data: budgets = {} } = useBudgets()
   const activeMonthsCount = dashboard.byMonth.filter((m) => m.amount > 0).length
   const monthlyAverage = activeMonthsCount > 0 ? dashboard.totalAmount / activeMonthsCount : 0
 
@@ -358,30 +360,57 @@ export default function DashboardPage() {
                   <th className="pb-2 font-medium">Categoría</th>
                   <th className="pb-2 font-medium text-right">Gastos</th>
                   <th className="pb-2 font-medium text-right">Total</th>
-                  <th className="pb-2 font-medium text-right">% del total</th>
+                  <th className="pb-2 font-medium text-right hidden md:table-cell">% del total</th>
+                  {view === 'mensual' && <th className="pb-2 font-medium text-right">Presupuesto</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {dashboard.byCategory.map((item) => (
-                  <tr key={item.category.id}>
-                    <td className="py-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: item.category.color ?? '#6b7280' }}
-                        />
-                        {item.category.name}
-                      </div>
-                    </td>
-                    <td className="py-2 text-right text-gray-600">{item.count}</td>
-                    <td className="py-2 text-right font-medium">{formatCurrency(item.amount)}</td>
-                    <td className="py-2 text-right text-gray-500">
-                      {dashboard.totalAmount > 0
-                        ? `${((item.amount / dashboard.totalAmount) * 100).toFixed(1)}%`
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
+                {dashboard.byCategory.map((item) => {
+                  const budget = budgets[item.category.id]
+                  const pct = budget ? Math.min((item.amount / budget) * 100, 100) : null
+                  const over = budget != null && item.amount > budget
+                  const warn = budget != null && !over && item.amount / budget >= 0.8
+                  return (
+                    <tr key={item.category.id}>
+                      <td className="py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.category.color ?? '#6b7280' }} />
+                          {item.category.name}
+                        </div>
+                      </td>
+                      <td className="py-2 text-right text-gray-600">{item.count}</td>
+                      <td className={`py-2 text-right font-medium ${over ? 'text-red-600' : ''}`}>{formatCurrency(item.amount)}</td>
+                      <td className="py-2 text-right text-gray-500 hidden md:table-cell">
+                        {dashboard.totalAmount > 0 ? `${((item.amount / dashboard.totalAmount) * 100).toFixed(1)}%` : '—'}
+                      </td>
+                      {view === 'mensual' && (
+                        <td className="py-2 text-right min-w-[120px]">
+                          {budget != null ? (
+                            <div className="flex flex-col items-end gap-1">
+                              <span className={`text-xs font-medium ${over ? 'text-red-600' : warn ? 'text-amber-600' : 'text-gray-500'}`}>
+                                {formatCurrency(budget)}
+                                {over && ' ⚠️'}
+                              </span>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                <div
+                                  className={`h-1.5 rounded-full transition-all ${over ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-emerald-500'}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className={`text-[10px] ${over ? 'text-red-500' : 'text-gray-400'}`}>
+                                {over
+                                  ? `+${formatCurrency(item.amount - budget)} excedido`
+                                  : `${Math.round((item.amount / budget) * 100)}% usado`}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

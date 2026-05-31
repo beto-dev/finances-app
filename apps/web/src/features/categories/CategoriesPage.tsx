@@ -4,6 +4,38 @@ import client from '../../shared/api/client'
 import { Category } from '../../shared/types'
 import Toast from '../../shared/components/Toast'
 import Spinner from '../../shared/components/Spinner'
+import { useBudgets, useUpsertBudget, useDeleteBudget } from './useBudgets'
+
+function BudgetInput({ categoryId, currentAmount }: { categoryId: string; currentAmount: number | undefined }) {
+  const [value, setValue] = useState(currentAmount != null ? String(Math.round(currentAmount)) : '')
+  const upsert = useUpsertBudget()
+  const del = useDeleteBudget()
+
+  const save = () => {
+    const num = Number(value.replace(/\D/g, ''))
+    if (!value.trim() || num === 0) {
+      if (currentAmount != null) del.mutate(categoryId)
+    } else if (num !== currentAmount) {
+      upsert.mutate({ categoryId, amount: num })
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-gray-400">$</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
+        onBlur={save}
+        onKeyDown={(e) => e.key === 'Enter' && save()}
+        placeholder="Sin límite"
+        className="w-28 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-500 text-right"
+      />
+    </div>
+  )
+}
 
 function useCategories() {
   return useQuery<Category[]>({
@@ -53,6 +85,7 @@ function validate(form: FormState, categories: Category[], excludeId?: string): 
 
 export default function CategoriesPage() {
   const { data: categories = [], isLoading } = useCategories()
+  const { data: budgets = {} } = useBudgets()
   const create = useCreateCategory()
   const update = useUpdateCategory()
   const del = useDeleteCategory()
@@ -173,11 +206,12 @@ export default function CategoriesPage() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color ?? '#6b7280' }} />
-                          <span className="text-sm text-gray-800">{cat.name}</span>
+                          <span className="text-sm text-gray-800 truncate">{cat.name}</span>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <BudgetInput categoryId={cat.id} currentAmount={budgets[cat.id]} />
                           <button onClick={() => startEdit(cat)} className="text-xs text-gray-400 hover:text-gray-600">Editar</button>
                           <button onClick={() => handleDelete(cat.id, cat.name)} disabled={del.isPending} className="text-xs text-red-400 hover:text-red-600">Eliminar</button>
                         </div>
@@ -194,10 +228,15 @@ export default function CategoriesPage() {
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Categorías del sistema</h2>
             <ul className="space-y-2">
               {system.map((cat) => (
-                <li key={cat.id} className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color ?? '#6b7280' }} />
-                  <span className="text-sm text-gray-600">{cat.name}</span>
-                  <span className="text-xs text-gray-300 ml-auto">Sistema</span>
+                <li key={cat.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color ?? '#6b7280' }} />
+                    <span className="text-sm text-gray-600 truncate">{cat.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <BudgetInput categoryId={cat.id} currentAmount={budgets[cat.id]} />
+                    <span className="text-xs text-gray-300">Sistema</span>
+                  </div>
                 </li>
               ))}
             </ul>
