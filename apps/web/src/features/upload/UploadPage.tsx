@@ -1,5 +1,5 @@
 import { useState, DragEvent, ChangeEvent, useRef, useEffect } from 'react'
-import { useStatements, useUploadStatement, useDeleteAllStatements } from './useUpload'
+import { useStatements, useUploadStatement, useDeleteAllStatements, useUpdateStatement } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
 
@@ -162,6 +162,25 @@ export default function UploadPage() {
   const { data: statements, isLoading } = useStatements()
   const upload = useUploadStatement()
   const deleteAll = useDeleteAllStatements()
+  const updateStatement = useUpdateStatement()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editType, setEditType] = useState('')
+  const [editBank, setEditBank] = useState('')
+
+  const startEdit = (id: string, type: string, bank: string) => {
+    setEditingId(id); setEditType(type); setEditBank(bank)
+  }
+  const cancelEdit = () => setEditingId(null)
+  const saveEdit = async () => {
+    if (!editingId || !editType) return
+    try {
+      await updateStatement.mutateAsync({ id: editingId, statementType: editType, bankHint: editBank })
+      setEditingId(null)
+      setToast({ message: 'Cartola actualizada', type: 'success' })
+    } catch {
+      setToast({ message: 'Error al actualizar', type: 'error' })
+    }
+  }
 
   const updateFileStatus = (index: number, status: FileStatus, error?: string) => {
     setQueue((prev) => prev.map((item, i) => i === index ? { ...item, status, error } : item))
@@ -380,34 +399,67 @@ export default function UploadPage() {
               {statements
                 .filter((s, _i, arr) => {
                   if (s.status !== 'error') return true
-                  // hide if there's a successful upload of the same file
                   if (arr.some((o) => o.filename === s.filename && o.status !== 'error')) return false
-                  // show only the most recent error per filename (array is sorted desc)
                   return arr.findIndex((o) => o.filename === s.filename && o.status === 'error') === _i
                 })
                 .slice(0, 20)
                 .map((s) => (
-                <li key={s.id} className="flex items-start justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-800 truncate">{s.filename}</p>
-                    <p className="text-gray-400 text-xs">{TYPE_LABELS[s.type]}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[s.status]}`}>
-                      {STATUS_LABELS[s.status]}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const ids = statements.filter((o) => o.filename === s.filename).map((o) => o.id)
-                        deleteAll.mutate(ids)
-                      }}
-                      disabled={deleteAll.isPending}
-                      className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
-                      title="Eliminar cartola"
-                    >
-                      ×
-                    </button>
-                  </div>
+                <li key={s.id} className="text-sm">
+                  {editingId === s.id ? (
+                    <div className="bg-gray-50 rounded-lg p-2 space-y-2">
+                      <p className="text-xs font-medium text-gray-600 truncate">{s.filename}</p>
+                      <select
+                        className="input text-xs py-1"
+                        value={editType}
+                        onChange={(e) => setEditType(e.target.value)}
+                      >
+                        {Object.entries(TYPE_LABELS).map(([v, l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                      <BankCombobox value={editBank} onChange={setEditBank} />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={saveEdit}
+                          disabled={updateStatement.isPending}
+                          className="btn-primary text-xs py-1 px-3 flex items-center gap-1"
+                        >
+                          {updateStatement.isPending ? <Spinner size="sm" /> : 'Guardar'}
+                        </button>
+                        <button onClick={cancelEdit} className="btn-secondary text-xs py-1 px-3">Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{s.filename}</p>
+                        <p className="text-gray-400 text-xs">{TYPE_LABELS[s.type]}{s.bank_hint ? ` · ${s.bank_hint}` : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[s.status]}`}>
+                          {STATUS_LABELS[s.status]}
+                        </span>
+                        <button
+                          onClick={() => startEdit(s.id, s.type, s.bank_hint ?? '')}
+                          className="text-gray-300 hover:text-blue-400 transition-colors p-0.5 text-base"
+                          title="Editar tipo de cuenta"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            const ids = statements.filter((o) => o.filename === s.filename).map((o) => o.id)
+                            deleteAll.mutate(ids)
+                          }}
+                          disabled={deleteAll.isPending}
+                          className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
+                          title="Eliminar cartola"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

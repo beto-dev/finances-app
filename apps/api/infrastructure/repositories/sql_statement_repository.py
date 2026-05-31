@@ -64,6 +64,15 @@ class SQLStatementRepository(StatementRepository):
             await self._session.delete(m)
             await self._session.commit()
 
+    async def update_type(self, statement_id: UUID, statement_type: str, bank_hint: str | None) -> Statement:
+        result = await self._session.execute(select(StatementModel).where(StatementModel.id == statement_id))
+        m = result.scalar_one()
+        m.type = statement_type
+        m.bank_hint = bank_hint
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_entity(m)
+
     async def update_status(self, statement_id: UUID, status: str) -> Statement:
         result = await self._session.execute(select(StatementModel).where(StatementModel.id == statement_id))
         m = result.scalar_one()

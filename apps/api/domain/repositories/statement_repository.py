@@ -27,3 +27,6 @@ class StatementRepository(ABC):
 
     @abstractmethod
     async def delete(self, statement_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def update_type(self, statement_id: UUID, statement_type: str, bank_hint: str | None) -> Statement: ...

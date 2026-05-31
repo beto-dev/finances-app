@@ -141,6 +141,30 @@ async def upload_statement(
     )
 
 
+@router.patch("/{statement_id}", response_model=StatementResponse)
+async def update_statement(
+    statement_id: UUID,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    statement_type: str = Form(...),
+    bank_hint: str | None = Form(default=None),
+    statement_repo: SQLStatementRepository = Depends(get_statement_repo),
+):
+    from infrastructure.repositories.sql_user_repository import SQLUserRepository
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user or not user.family_id:
+        raise HTTPException(status_code=400, detail="El usuario no pertenece a ninguna familia")
+    stmt = await statement_repo.get_by_id(statement_id)
+    if not stmt or stmt.family_id != user.family_id:
+        raise HTTPException(status_code=404, detail="Cartola no encontrada")
+    updated = await statement_repo.update_type(statement_id, statement_type, bank_hint or None)
+    return StatementResponse(
+        id=updated.id, family_id=updated.family_id, filename=updated.filename,
+        bank_hint=updated.bank_hint, type=updated.type, status=updated.status,
+        uploaded_at=updated.uploaded_at,
+    )
+
+
 @router.delete("/{statement_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_statement(
     statement_id: UUID,

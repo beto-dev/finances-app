@@ -85,6 +85,25 @@ export function useStatementNotifier() {
   return { notification, clearNotification: () => setNotification(null) }
 }
 
+export function useUpdateStatement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, statementType, bankHint }: { id: string; statementType: string; bankHint: string }) => {
+      const form = new FormData()
+      form.append('statement_type', statementType)
+      if (bankHint) form.append('bank_hint', bankHint)
+      const res = await client.patch(`/api/statements/${id}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return res.data as Statement
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['statements'] })
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
 export function useUploadStatement() {
   const queryClient = useQueryClient()
   return useMutation({
