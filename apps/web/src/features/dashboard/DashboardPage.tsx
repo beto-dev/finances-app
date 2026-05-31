@@ -361,7 +361,7 @@ export default function DashboardPage() {
                   <th className="pb-2 font-medium text-right">Gastos</th>
                   <th className="pb-2 font-medium text-right">Total</th>
                   <th className="pb-2 font-medium text-right hidden md:table-cell">% del total</th>
-                  {view === 'mensual' && <th className="pb-2 font-medium text-right">Presupuesto</th>}
+                  {view === 'mensual' && <th className="pb-2 font-medium text-right">Límite mensual</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">

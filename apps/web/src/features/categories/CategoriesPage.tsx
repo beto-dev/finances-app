@@ -187,7 +187,10 @@ export default function CategoriesPage() {
 
           {/* Custom categories */}
           <div className="card">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Categorías personalizadas</h2>
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">Categorías personalizadas</h2>
+              <span className="text-xs text-gray-400">Límite mensual →</span>
+            </div>
             {custom.length === 0 && !showNew ? (
               <p className="text-sm text-gray-400 py-2">Sin categorías personalizadas aún.</p>
             ) : (
@@ -225,7 +228,10 @@ export default function CategoriesPage() {
 
           {/* System categories (read-only) */}
           <div className="card">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Categorías del sistema</h2>
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">Categorías del sistema</h2>
+              <span className="text-xs text-gray-400">Límite mensual →</span>
+            </div>
             <ul className="space-y-2">
               {system.map((cat) => (
                 <li key={cat.id} className="flex items-center justify-between gap-2">
