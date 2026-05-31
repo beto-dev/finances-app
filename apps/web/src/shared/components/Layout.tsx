@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../../features/auth/useAuth'
 import { useMyRole } from '../../features/family/useMyRole'
+import { useStatementNotifier } from '../../features/upload/useUpload'
 
 // ── Sidebar nav (desktop) ────────────────────────────────────────────────────
 const topItems = [
@@ -44,6 +45,7 @@ export default function Layout() {
   const { pathname } = useLocation()
 
   const [familyOpen, setFamilyOpen] = useState(() => familyRoutes.includes(pathname))
+  const { notification, clearNotification } = useStatementNotifier()
 
   const handleLogout = () => {
     logout()
@@ -162,6 +164,32 @@ export default function Layout() {
         ))}
       </nav>
 
+      {/* ── Statement processing notification ── */}
+      {notification && (
+        <div className={`fixed bottom-20 md:bottom-6 right-4 z-50 flex items-start gap-3 rounded-xl border shadow-xl px-4 py-3 max-w-sm animate-slide-up ${
+          notification.type === 'success'
+            ? 'bg-green-50 border-green-300 text-green-900'
+            : 'bg-red-50 border-red-300 text-red-900'
+        }`}>
+          <span className="text-xl shrink-0">{notification.type === 'success' ? '✅' : '❌'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">
+              {notification.type === 'success' ? 'Cartola procesada' : 'Error al procesar'}
+            </p>
+            <p className="text-xs opacity-75 truncate mt-0.5">{notification.filename}</p>
+            {notification.type === 'success' && (
+              <Link
+                to="/gastos"
+                onClick={clearNotification}
+                className="text-xs font-medium text-green-700 underline mt-1 inline-block"
+              >
+                Ver gastos →
+              </Link>
+            )}
+          </div>
+          <button onClick={clearNotification} className="text-lg leading-none opacity-50 hover:opacity-100 shrink-0">×</button>
+        </div>
+      )}
     </div>
   )
 }

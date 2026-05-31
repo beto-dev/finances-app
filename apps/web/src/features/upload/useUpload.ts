@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import client from '../../shared/api/client'
 import { Statement } from '../../shared/types'
@@ -43,6 +44,45 @@ export function useDeleteAllStatements() {
       queryClient.invalidateQueries({ queryKey: ['charges'] })
     },
   })
+}
+
+interface StatementNotification {
+  filename: string
+  type: 'success' | 'error'
+}
+
+export function useStatementNotifier() {
+  const [notification, setNotification] = useState<StatementNotification | null>(null)
+  const prevStatuses = useRef<Record<string, string>>({})
+  const initialized = useRef(false)
+
+  const { data: statements } = useQuery<Statement[]>({
+    queryKey: ['statements'],
+    queryFn: async () => (await client.get('/api/statements/')).data,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      return data?.some((s) => PROCESSING_STATUSES.has(s.status)) ? 3000 : false
+    },
+  })
+
+  useEffect(() => {
+    if (!statements) return
+    if (!initialized.current) {
+      statements.forEach((s) => { prevStatuses.current[s.id] = s.status })
+      initialized.current = true
+      return
+    }
+    for (const s of statements) {
+      const prev = prevStatuses.current[s.id]
+      if (prev && PROCESSING_STATUSES.has(prev)) {
+        if (s.status === 'parsed') setNotification({ filename: s.filename, type: 'success' })
+        else if (s.status === 'error') setNotification({ filename: s.filename, type: 'error' })
+      }
+      prevStatuses.current[s.id] = s.status
+    }
+  }, [statements])
+
+  return { notification, clearNotification: () => setNotification(null) }
 }
 
 export function useUploadStatement() {
