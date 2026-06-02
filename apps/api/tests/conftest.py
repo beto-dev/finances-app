@@ -200,6 +200,15 @@ class MockCategoryRepo(CategoryRepository):
             created_at=datetime.now(UTC),
         )
 
+    async def update(self, category_id: UUID, name: str, color: str | None) -> Category:
+        cat = next(c for c in self.categories if c.id == category_id)
+        cat.name = name
+        cat.color = color
+        return cat
+
+    async def delete(self, category_id: UUID) -> None:
+        self.categories = [c for c in self.categories if c.id != category_id]
+
 
 class MockUserRepo:
     def __init__(self, user: User | None = None) -> None:
