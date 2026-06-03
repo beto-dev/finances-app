@@ -149,6 +149,8 @@ export function filterCharges(
   status: 'all' | 'shared' | 'personal',
   type?: string,
   kind?: 'all' | 'income' | 'expense',
+  month?: number,
+  year?: number,
 ): Charge[] {
   return charges.filter((c) => {
     if (searchDesc && !c.description.toLowerCase().includes(searchDesc.toLowerCase())) return false
@@ -159,6 +161,11 @@ export function filterCharges(
     if (type && c.statement_type !== type) return false
     if (kind === 'income' && Number(c.amount) >= 0) return false
     if (kind === 'expense' && Number(c.amount) < 0) return false
+    if (month !== undefined || year !== undefined) {
+      const d = new Date(c.date + 'T00:00:00')
+      if (month !== undefined && d.getMonth() + 1 !== month) return false
+      if (year !== undefined && d.getFullYear() !== year) return false
+    }
     return true
   })
 }
