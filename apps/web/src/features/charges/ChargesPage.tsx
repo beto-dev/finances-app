@@ -259,7 +259,7 @@ export default function ChargesPage() {
   const bulkUnshare = useBulkUnshare()
 
   let charges = allCharges || []
-  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind, filterMonth, filterYear)
+  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind)
   charges = sortCharges(charges, sortField, sortOrder)
 
   const handleSelect = (id: string, checked: boolean) => {

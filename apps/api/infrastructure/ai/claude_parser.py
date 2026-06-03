@@ -161,7 +161,11 @@ Bank statement (file: {filename or "unknown"}):
 
     @staticmethod
     def _parse_date(date_str: str) -> date | None:
-        for fmt in ["%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y", "%d-%m-%Y", "%m/%d/%Y"]:
+        # Claude is instructed to always return YYYY-MM-DD.
+        # Chilean banks use DD/MM/YYYY — never MM/DD/YYYY (US format), which we
+        # intentionally omit to avoid ambiguous misparsing (e.g. "01/12/2025"
+        # being read as January 12 instead of December 1).
+        for fmt in ["%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y", "%d-%m-%Y"]:
             try:
                 return datetime.strptime(date_str.strip(), fmt).date()
             except ValueError:
