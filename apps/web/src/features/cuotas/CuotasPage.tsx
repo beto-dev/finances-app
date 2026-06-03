@@ -240,35 +240,25 @@ export default function CuotasPage() {
               />
             ) : (
               <div key={c.id} className="px-4 py-3.5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">{c.description}</p>
-                      {c.bank && <span className="text-xs text-gray-400 shrink-0">{c.bank}</span>}
-                    </div>
-                    <ProgressBar value={c.cuota_numero} total={c.cuota_total} />
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold text-gray-900">{fmt(c.cuota_monto)}<span className="text-xs text-gray-400 font-normal">/mes</span></p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Cuota <span className="font-medium text-gray-700">{c.cuota_numero}</span> de {c.cuota_total}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-1.5">
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-xs text-orange-500 font-medium">
-                      Quedan {c.cuota_total - c.cuota_numero} cuota{c.cuota_total - c.cuota_numero !== 1 ? 's' : ''} · {fmt((c.cuota_total - c.cuota_numero) * c.cuota_monto)} restante
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Ya pagado: <span className="font-medium text-gray-600">{fmt(c.cuota_numero * c.cuota_monto)}</span>
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {c.description}
+                    {c.bank && <span className="text-gray-400 font-normal"> · {c.bank}</span>}
+                  </p>
+                  <div className="flex gap-3 shrink-0">
                     <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => setEditingId(c.id)}>Editar</button>
                     <button className="text-xs text-red-400 hover:text-red-600" onClick={() => deleteCredit.mutate(c.id)}>Eliminar</button>
                   </div>
                 </div>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-base font-bold text-gray-900">{fmt((c.cuota_total - c.cuota_numero) * c.cuota_monto)}</span>
+                  <span className="text-xs text-gray-500">restantes</span>
+                  <span className="text-gray-200 mx-0.5">·</span>
+                  <span className="text-xs text-gray-500">{c.cuota_total - c.cuota_numero} cuotas</span>
+                  <span className="text-gray-200 mx-0.5">·</span>
+                  <span className="text-xs text-gray-500">{fmt(c.cuota_monto)}/mes</span>
+                </div>
+                <ProgressBar value={c.cuota_numero} total={c.cuota_total} />
               </div>
             )
           ))}
@@ -320,26 +310,16 @@ export default function CuotasPage() {
               <div className="card p-0 divide-y divide-gray-100">
                 {active.map((g, i) => (
                   <div key={i} className="px-4 py-3.5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{g.description}</p>
-                        <ProgressBar value={g.cuota_numero} total={g.cuota_total} />
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-gray-900">{fmt(g.cuota_monto)}<span className="text-xs text-gray-400 font-normal">/mes</span></p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Cuota <span className="font-medium text-gray-700">{g.cuota_numero}</span> de {g.cuota_total}
-                        </p>
-                      </div>
+                    <p className="text-sm font-medium text-gray-900 truncate">{g.description}</p>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span className="text-base font-bold text-gray-900">{fmt((g.cuota_total - g.cuota_numero) * g.cuota_monto)}</span>
+                      <span className="text-xs text-gray-500">restantes</span>
+                      <span className="text-gray-200 mx-0.5">·</span>
+                      <span className="text-xs text-gray-500">{g.cuota_total - g.cuota_numero} cuotas</span>
+                      <span className="text-gray-200 mx-0.5">·</span>
+                      <span className="text-xs text-gray-500">{fmt(g.cuota_monto)}/mes</span>
                     </div>
-                    <div className="flex flex-col gap-0.5 mt-1.5">
-                      <p className="text-xs text-brand-600 font-medium">
-                        Quedan {g.cuota_total - g.cuota_numero} cuota{g.cuota_total - g.cuota_numero !== 1 ? 's' : ''} · {fmt((g.cuota_total - g.cuota_numero) * g.cuota_monto)} restante
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Ya pagado: <span className="font-medium text-gray-600">{fmt(g.cuota_numero * g.cuota_monto)}</span>
-                      </p>
-                    </div>
+                    <ProgressBar value={g.cuota_numero} total={g.cuota_total} />
                   </div>
                 ))}
               </div>
