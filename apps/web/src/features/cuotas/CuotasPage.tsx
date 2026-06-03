@@ -219,8 +219,11 @@ export default function CuotasPage() {
       {/* ── Créditos bancarios ── */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-            Créditos bancarios {activeCredits.length > 0 && `(${activeCredits.length} activos)`}
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+            Créditos bancarios
+            {activeCredits.length > 0 && (
+              <span className="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{activeCredits.length}</span>
+            )}
           </h2>
           {!showForm && (
             <button className="text-sm text-brand-600 font-medium hover:text-brand-700" onClick={() => setShowForm(true)}>
@@ -241,9 +244,9 @@ export default function CuotasPage() {
             ) : (
               <div key={c.id} className="px-4 py-3.5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-gray-900 truncate uppercase">
                     {c.description}
-                    {c.bank && <span className="text-gray-400 font-normal"> · {c.bank}</span>}
+                    {c.bank && <span className="text-gray-400 font-normal normal-case"> · {c.bank}</span>}
                   </p>
                   <div className="flex gap-3 shrink-0">
                     <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => setEditingId(c.id)}>Editar</button>
@@ -304,13 +307,14 @@ export default function CuotasPage() {
         <>
           {active.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Cuotas tarjeta activas ({active.length})
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                Cuotas tarjeta activas
+                <span className="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{active.length}</span>
               </h2>
               <div className="card p-0 divide-y divide-gray-100">
                 {active.map((g, i) => (
                   <div key={i} className="px-4 py-3.5">
-                    <p className="text-sm font-medium text-gray-900 truncate">{g.description}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate uppercase">{g.description}</p>
                     <div className="flex items-baseline gap-1.5 mt-1">
                       <span className="text-base font-bold text-gray-900">{fmt((g.cuota_total - g.cuota_numero) * g.cuota_monto)}</span>
                       <span className="text-xs text-gray-500">restantes</span>
@@ -328,8 +332,9 @@ export default function CuotasPage() {
 
           {finished.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Cuotas tarjeta pagadas ({finished.length})
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                Cuotas tarjeta pagadas
+                <span className="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{finished.length}</span>
               </h2>
               <div className="card p-0 divide-y divide-gray-100">
                 {finished.map((g, i) => (
