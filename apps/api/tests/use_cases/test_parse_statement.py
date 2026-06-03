@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from application.use_cases.parse_statement import ParseStatementUseCase
+from application.use_cases.parse_statement import ParseStatementUseCase, _align_dates_to_statement_month
 from domain.entities.charge import Charge, ParsedCharge
 from domain.entities.statement import Statement
 from domain.repositories.charge_repository import ChargeRepository
@@ -230,3 +230,41 @@ class TestParseStatementExecute:
         result = await uc.execute(stmt.id, b"bytes", "jan.pdf")
 
         assert result == parsed
+
+
+class TestAlignDatesToStatementMonth:
+    def _charge(self, d: date) -> ParsedCharge:
+        return ParsedCharge(date=d, description="X", amount=Decimal("1000"))
+
+    def test_moves_dec31_to_jan1_in_january_statement(self) -> None:
+        charges = [
+            self._charge(date(2026, 1, 10)),
+            self._charge(date(2026, 1, 20)),
+            self._charge(date(2025, 12, 31)),
+        ]
+        result = _align_dates_to_statement_month(charges)
+        dates = [c.date for c in result]
+        assert date(2025, 12, 31) not in dates
+        assert date(2026, 1, 1) in dates
+
+    def test_leaves_midmonth_previous_charge_unchanged(self) -> None:
+        charges = [
+            self._charge(date(2026, 1, 10)),
+            self._charge(date(2025, 12, 15)),  # day 15 — not end-of-month, keep it
+        ]
+        result = _align_dates_to_statement_month(charges)
+        assert result[1].date == date(2025, 12, 15)
+
+    def test_handles_january_majority_crossing_year_boundary(self) -> None:
+        charges = [self._charge(date(2026, 1, 5)) for _ in range(5)]
+        charges.append(self._charge(date(2025, 12, 28)))
+        result = _align_dates_to_statement_month(charges)
+        assert all(c.date.year == 2026 and c.date.month == 1 for c in result)
+
+    def test_empty_list_returns_empty(self) -> None:
+        assert _align_dates_to_statement_month([]) == []
+
+    def test_does_not_affect_charges_already_in_majority_month(self) -> None:
+        charges = [self._charge(date(2026, 3, d)) for d in range(1, 6)]
+        result = _align_dates_to_statement_month(charges)
+        assert [c.date for c in result] == [c.date for c in charges]
