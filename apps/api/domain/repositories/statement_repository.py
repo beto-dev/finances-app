@@ -30,6 +30,3 @@ class StatementRepository(ABC):
 
     @abstractmethod
     async def update_type(self, statement_id: UUID, statement_type: str, bank_hint: str | None) -> Statement: ...
-
-    @abstractmethod
-    async def set_inferred_month(self, statement_id: UUID, month: int, year: int) -> None: ...

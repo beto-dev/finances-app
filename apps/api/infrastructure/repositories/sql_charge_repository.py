@@ -41,6 +41,7 @@ class SQLChargeRepository(ChargeRepository):
     async def get_by_family(
         self, family_id: UUID, month: int | None, year: int | None, uploaded_by_filter: UUID | None = None
     ) -> list[Charge]:
+        from sqlalchemy import extract
         stmt = (
             select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
@@ -49,9 +50,9 @@ class SQLChargeRepository(ChargeRepository):
         if uploaded_by_filter is not None:
             stmt = stmt.where(StatementModel.uploaded_by == uploaded_by_filter)
         if month is not None:
-            stmt = stmt.where(StatementModel.inferred_month == month)
+            stmt = stmt.where(extract("month", ChargeModel.date) == month)
         if year is not None:
-            stmt = stmt.where(StatementModel.inferred_year == year)
+            stmt = stmt.where(extract("year", ChargeModel.date) == year)
         result = await self._session.execute(stmt.order_by(ChargeModel.date.desc()))
         charges = []
         for row in result.all():
@@ -62,6 +63,7 @@ class SQLChargeRepository(ChargeRepository):
         return charges
 
     async def get_personal(self, user_id: UUID, month: int | None = None, year: int | None = None) -> list[Charge]:
+        from sqlalchemy import extract
         stmt = (
             select(ChargeModel, StatementModel.type, StatementModel.uploaded_by, StatementModel.bank_hint)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
@@ -69,9 +71,9 @@ class SQLChargeRepository(ChargeRepository):
             .where(StatementModel.family_id.is_(None))
         )
         if month is not None:
-            stmt = stmt.where(StatementModel.inferred_month == month)
+            stmt = stmt.where(extract("month", ChargeModel.date) == month)
         if year is not None:
-            stmt = stmt.where(StatementModel.inferred_year == year)
+            stmt = stmt.where(extract("year", ChargeModel.date) == year)
         result = await self._session.execute(stmt.order_by(ChargeModel.date.desc()))
         charges = []
         for row in result.all():
@@ -83,6 +85,7 @@ class SQLChargeRepository(ChargeRepository):
         return charges
 
     async def get_confirmed_by_family(self, family_id: UUID, month: int | None, year: int | None) -> list[Charge]:
+        from sqlalchemy import extract
         stmt = (
             select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
@@ -90,9 +93,9 @@ class SQLChargeRepository(ChargeRepository):
             .where(ChargeModel.is_shared == True)  # noqa: E712
         )
         if month is not None:
-            stmt = stmt.where(StatementModel.inferred_month == month)
+            stmt = stmt.where(extract("month", ChargeModel.date) == month)
         if year is not None:
-            stmt = stmt.where(StatementModel.inferred_year == year)
+            stmt = stmt.where(extract("year", ChargeModel.date) == year)
         result = await self._session.execute(stmt.order_by(ChargeModel.date.desc()))
         charges = []
         for row in result.all():

@@ -46,8 +46,6 @@ class MockStatementRepo(StatementRepository):
         self._statement = statement
         self._prior = prior or []
         self.status_updates: list[str] = []
-        self.inferred_month: int | None = None
-        self.inferred_year: int | None = None
 
     async def get_by_id(self, statement_id: uuid.UUID) -> Statement | None:
         return self._statement
@@ -82,10 +80,6 @@ class MockStatementRepo(StatementRepository):
 
     async def update_type(self, statement_id: uuid.UUID, statement_type: str, bank_hint: str | None) -> Statement:
         return self._statement or _make_statement()
-
-    async def set_inferred_month(self, statement_id: uuid.UUID, month: int, year: int) -> None:
-        self.inferred_month = month
-        self.inferred_year = year
 
 
 class MockChargeRepo(ChargeRepository):
@@ -238,30 +232,3 @@ class TestParseStatementExecute:
         assert result == parsed
 
 
-class TestParseStatementInferredMonth:
-    def _charge(self, d: date) -> ParsedCharge:
-        return ParsedCharge(date=d, description="X", amount=Decimal("1000"))
-
-    async def test_sets_inferred_month_from_majority(self) -> None:
-        stmt = _make_statement()
-        stmt_repo = MockStatementRepo(statement=stmt)
-        charges = [
-            self._charge(date(2026, 1, 10)),
-            self._charge(date(2026, 1, 20)),
-            self._charge(date(2025, 12, 31)),  # minority: December
-        ]
-        uc = ParseStatementUseCase(stmt_repo, MockChargeRepo(), MockParser(charges))
-
-        await uc.execute(stmt.id, b"bytes", "jan.pdf")
-
-        assert stmt_repo.inferred_month == 1
-        assert stmt_repo.inferred_year == 2026
-
-    async def test_inferred_month_not_set_for_empty_parse(self) -> None:
-        stmt = _make_statement()
-        stmt_repo = MockStatementRepo(statement=stmt)
-        uc = ParseStatementUseCase(stmt_repo, MockChargeRepo(), MockParser([]))
-
-        await uc.execute(stmt.id, b"bytes", "empty.pdf")
-
-        assert stmt_repo.inferred_month is None

@@ -14,5 +14,3 @@ class Statement:
     uploaded_at: datetime
     storage_path: str | None = None
     bank_hint: str | None = None
-    inferred_month: int | None = None
-    inferred_year: int | None = None

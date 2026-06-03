@@ -489,7 +489,7 @@ export default function ChargesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {charges.map((charge) => (
-                  <ChargeRow key={charge.id} charge={charge} categories={categories} selected={selectedIds.has(charge.id)} onSelect={handleSelect} />
+                  <ChargeRow key={charge.id} charge={charge} categories={categories} selected={selectedIds.has(charge.id)} onSelect={handleSelect} viewMonth={filterMonth} viewYear={filterYear} />
                 ))}
               </tbody>
             </table>

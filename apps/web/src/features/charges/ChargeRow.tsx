@@ -10,6 +10,8 @@ interface ChargeRowProps {
   categories: Category[]
   selected: boolean
   onSelect: (id: string, checked: boolean) => void
+  viewMonth?: number
+  viewYear?: number
 }
 
 interface SimilarPrompt {
@@ -19,7 +21,7 @@ interface SimilarPrompt {
   categoryName: string
 }
 
-export default function ChargeRow({ charge, categories, selected, onSelect }: ChargeRowProps) {
+export default function ChargeRow({ charge, categories, selected, onSelect, viewMonth, viewYear }: ChargeRowProps) {
   const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
   const createCategory = useCreateCategory()
@@ -82,7 +84,12 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
     maximumFractionDigits: 0,
   }).format(Math.abs(Number(charge.amount)))
 
-  const formattedDate = new Date(charge.date).toLocaleDateString('es-ES')
+  // Parse date as local time (appending T12:00:00 avoids UTC-midnight timezone shifts)
+  const chargeDate = new Date(charge.date + 'T12:00:00')
+  const formattedDate = chargeDate.toLocaleDateString('es-ES')
+  const isOutOfMonth =
+    viewMonth !== undefined && viewYear !== undefined &&
+    (chargeDate.getMonth() + 1 !== viewMonth || chargeDate.getFullYear() !== viewYear)
 
   return (
     <>
@@ -95,7 +102,19 @@ export default function ChargeRow({ charge, categories, selected, onSelect }: Ch
             className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
           />
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{formattedDate}</td>
+        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+          <span className="flex items-center gap-1.5">
+            {formattedDate}
+            {isOutOfMonth && (
+              <span
+                title="La fecha de este gasto no corresponde al mes visualizado"
+                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 text-amber-600 text-[9px] font-bold leading-none cursor-default shrink-0"
+              >
+                !
+              </span>
+            )}
+          </span>
+        </td>
         <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={charge.description}>
           {isIncome && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 shrink-0" />}
           {charge.description}

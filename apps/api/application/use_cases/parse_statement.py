@@ -1,4 +1,3 @@
-from collections import Counter
 from uuid import UUID
 
 from application.services.parser_service import ParserService
@@ -22,11 +21,6 @@ class ParseStatementUseCase:
         await self._statements.update_status(statement_id, "parsing")
         try:
             parsed = await self._parser.parse(file_bytes, filename)
-
-            if parsed:
-                month_counts: Counter = Counter((c.date.year, c.date.month) for c in parsed)
-                (inferred_year, inferred_month), _ = month_counts.most_common(1)[0]
-                await self._statements.set_inferred_month(statement_id, inferred_month, inferred_year)
 
             # Delete charges from any prior statement with the same filename in this family
             current = await self._statements.get_by_id(statement_id)
