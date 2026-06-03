@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from application.use_cases.parse_statement import ParseStatementUseCase, _align_dates_to_statement_month
+from application.use_cases.parse_statement import ParseStatementUseCase
 from domain.entities.charge import Charge, ParsedCharge
 from domain.entities.statement import Statement
 from domain.repositories.charge_repository import ChargeRepository
@@ -46,6 +46,8 @@ class MockStatementRepo(StatementRepository):
         self._statement = statement
         self._prior = prior or []
         self.status_updates: list[str] = []
+        self.inferred_month: int | None = None
+        self.inferred_year: int | None = None
 
     async def get_by_id(self, statement_id: uuid.UUID) -> Statement | None:
         return self._statement
@@ -80,6 +82,10 @@ class MockStatementRepo(StatementRepository):
 
     async def update_type(self, statement_id: uuid.UUID, statement_type: str, bank_hint: str | None) -> Statement:
         return self._statement or _make_statement()
+
+    async def set_inferred_month(self, statement_id: uuid.UUID, month: int, year: int) -> None:
+        self.inferred_month = month
+        self.inferred_year = year
 
 
 class MockChargeRepo(ChargeRepository):
@@ -232,39 +238,30 @@ class TestParseStatementExecute:
         assert result == parsed
 
 
-class TestAlignDatesToStatementMonth:
+class TestParseStatementInferredMonth:
     def _charge(self, d: date) -> ParsedCharge:
         return ParsedCharge(date=d, description="X", amount=Decimal("1000"))
 
-    def test_moves_dec31_to_jan1_in_january_statement(self) -> None:
+    async def test_sets_inferred_month_from_majority(self) -> None:
+        stmt = _make_statement()
+        stmt_repo = MockStatementRepo(statement=stmt)
         charges = [
             self._charge(date(2026, 1, 10)),
             self._charge(date(2026, 1, 20)),
-            self._charge(date(2025, 12, 31)),
+            self._charge(date(2025, 12, 31)),  # minority: December
         ]
-        result = _align_dates_to_statement_month(charges)
-        dates = [c.date for c in result]
-        assert date(2025, 12, 31) not in dates
-        assert date(2026, 1, 1) in dates
+        uc = ParseStatementUseCase(stmt_repo, MockChargeRepo(), MockParser(charges))
 
-    def test_leaves_midmonth_previous_charge_unchanged(self) -> None:
-        charges = [
-            self._charge(date(2026, 1, 10)),
-            self._charge(date(2025, 12, 15)),  # day 15 — not end-of-month, keep it
-        ]
-        result = _align_dates_to_statement_month(charges)
-        assert result[1].date == date(2025, 12, 15)
+        await uc.execute(stmt.id, b"bytes", "jan.pdf")
 
-    def test_handles_january_majority_crossing_year_boundary(self) -> None:
-        charges = [self._charge(date(2026, 1, 5)) for _ in range(5)]
-        charges.append(self._charge(date(2025, 12, 28)))
-        result = _align_dates_to_statement_month(charges)
-        assert all(c.date.year == 2026 and c.date.month == 1 for c in result)
+        assert stmt_repo.inferred_month == 1
+        assert stmt_repo.inferred_year == 2026
 
-    def test_empty_list_returns_empty(self) -> None:
-        assert _align_dates_to_statement_month([]) == []
+    async def test_inferred_month_not_set_for_empty_parse(self) -> None:
+        stmt = _make_statement()
+        stmt_repo = MockStatementRepo(statement=stmt)
+        uc = ParseStatementUseCase(stmt_repo, MockChargeRepo(), MockParser([]))
 
-    def test_does_not_affect_charges_already_in_majority_month(self) -> None:
-        charges = [self._charge(date(2026, 3, d)) for d in range(1, 6)]
-        result = _align_dates_to_statement_month(charges)
-        assert [c.date for c in result] == [c.date for c in charges]
+        await uc.execute(stmt.id, b"bytes", "empty.pdf")
+
+        assert stmt_repo.inferred_month is None

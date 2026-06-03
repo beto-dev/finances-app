@@ -155,6 +155,8 @@ class StatementModel(Base):
     type: Mapped[str] = mapped_column(String(50), nullable=False, default="checking")
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    inferred_month: Mapped[int | None] = mapped_column(nullable=True)
+    inferred_year: Mapped[int | None] = mapped_column(nullable=True)
 
     family: Mapped["FamilyModel | None"] = relationship("FamilyModel", back_populates="statements")
     uploader: Mapped["UserModel"] = relationship("UserModel", back_populates="statements")

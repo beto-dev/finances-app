@@ -68,6 +68,9 @@ class MockStatementRepo(StatementRepository):
     async def update_type(self, statement_id: uuid.UUID, statement_type: str, bank_hint: str | None) -> Statement:
         return _make_statement()
 
+    async def set_inferred_month(self, statement_id: uuid.UUID, month: int, year: int) -> None:
+        pass
+
 
 class MockStorage:
     def __init__(self, path: str = "statements/family/jan.pdf") -> None:

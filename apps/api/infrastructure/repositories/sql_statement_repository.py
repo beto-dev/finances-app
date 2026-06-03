@@ -13,6 +13,7 @@ def _to_entity(m: StatementModel) -> Statement:
         id=m.id, family_id=m.family_id, uploaded_by=m.uploaded_by,
         filename=m.filename, type=m.type, status=m.status,
         uploaded_at=m.uploaded_at, storage_path=m.storage_path, bank_hint=m.bank_hint,
+        inferred_month=m.inferred_month, inferred_year=m.inferred_year,
     )
 
 
@@ -80,3 +81,10 @@ class SQLStatementRepository(StatementRepository):
         await self._session.commit()
         await self._session.refresh(m)
         return _to_entity(m)
+
+    async def set_inferred_month(self, statement_id: UUID, month: int, year: int) -> None:
+        result = await self._session.execute(select(StatementModel).where(StatementModel.id == statement_id))
+        m = result.scalar_one()
+        m.inferred_month = month
+        m.inferred_year = year
+        await self._session.commit()
