@@ -368,7 +368,7 @@ export default function ChargesPage() {
               <span className="text-xs text-gray-500">solo míos</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-xl">
-              <span className="text-sm">🏠</span>
+              <span className="text-sm">👨‍👩‍👧</span>
               <span className="text-sm font-bold text-green-700">{allCharges?.filter((c) => c.is_shared).length ?? 0}</span>
               <span className="text-xs text-green-600">compartidos</span>
             </div>
