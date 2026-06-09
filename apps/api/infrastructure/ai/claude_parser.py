@@ -68,6 +68,13 @@ class ClaudeParser:
     # Internal
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _extract_year_from_filename(filename: str) -> int | None:
+        """Extract a 4-digit year from a filename like 'CC ABR 2026.pdf'."""
+        import re
+        m = re.search(r'20\d{2}', filename)
+        return int(m.group()) if m else None
+
     async def _call_claude(self, content: str, filename: str) -> list[ParsedCharge]:
         prompt = f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
 
@@ -80,7 +87,7 @@ Rules:
   - NEGATIVE = income / credit / money received — this includes: salary / remuneración / sueldo, deposits / abonos, incoming transfers / transferencias recibidas, refunds / devoluciones, interest earned, cashback
 - Skip: column headers, balance rows, section titles, page numbers, summary totals
 - Include: every individual transaction line, both expenses AND income
-- date: always YYYY-MM-DD regardless of the original format
+- date: always YYYY-MM-DD — if the statement only shows DD/MM without a year (common in Chilean bank statements like Itaú), infer the year from the period header (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026), the filename, or any header date. Never omit the year.
 - amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements use . as the thousands separator and , as the decimal separator (e.g. "$1.440" = 1440, "$28.260" = 28260, "$1.234.567" = 1234567). Remove ALL thousands-separator dots and output the raw integer value
 - cuota_numero / cuota_total: for installment purchases, extract the current and total installments from columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not an installment.
 - cuota_monto: the monthly installment amount from "VALOR CUOTA MENSUAL" column. Set null if not present.
@@ -99,7 +106,8 @@ Bank statement (file: {filename or "unknown"}):
             text_block = next((b for b in message.content if isinstance(b, TextBlock)), None)
             if text_block is None:
                 return []
-            return self._parse_response(text_block.text)
+            fallback_year = self._extract_year_from_filename(filename)
+            return self._parse_response(text_block.text, fallback_year)
         except Exception as exc:
             log.warning(
                 "claude_parser_error",
@@ -112,7 +120,7 @@ Bank statement (file: {filename or "unknown"}):
                 "Ensure ANTHROPIC_API_KEY is set and the account has credits."
             ) from exc
 
-    def _parse_response(self, text: str) -> list[ParsedCharge]:
+    def _parse_response(self, text: str, fallback_year: int | None = None) -> list[ParsedCharge]:
         """Parse Claude's JSON response into ParsedCharge objects."""
         import re
         start = text.find("[")
@@ -140,7 +148,7 @@ Bank statement (file: {filename or "unknown"}):
         charges: list[ParsedCharge] = []
         for item in data:
             try:
-                parsed_date = self._parse_date(str(item.get("date", "")))
+                parsed_date = self._parse_date(str(item.get("date", "")), fallback_year)
                 if parsed_date is None:
                     continue
                 description = str(item.get("description", "")).strip()
@@ -160,7 +168,7 @@ Bank statement (file: {filename or "unknown"}):
         return charges
 
     @staticmethod
-    def _parse_date(date_str: str) -> date | None:
+    def _parse_date(date_str: str, fallback_year: int | None = None) -> date | None:
         # Claude is instructed to always return YYYY-MM-DD.
         # Chilean banks use DD/MM/YYYY — never MM/DD/YYYY (US format), which we
         # intentionally omit to avoid ambiguous misparsing (e.g. "01/12/2025"
@@ -170,4 +178,11 @@ Bank statement (file: {filename or "unknown"}):
                 return datetime.strptime(date_str.strip(), fmt).date()
             except ValueError:
                 continue
+        # Fallback: DD/MM without year (e.g. Itaú cartolas show "01/04")
+        try:
+            parsed = datetime.strptime(date_str.strip(), "%d/%m")
+            year = fallback_year or datetime.now().year
+            return parsed.replace(year=year).date()
+        except ValueError:
+            pass
         return None

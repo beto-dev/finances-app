@@ -388,14 +388,26 @@ export default function UploadPage() {
                 const stmt = item.statementId ? statements?.find(s => s.id === item.statementId) : undefined
                 const ds = itemDisplayStatus(item, stmt)
                 const cfg = DISPLAY_CONFIG[ds]
+                const canRemove = item.status === 'duplicate' || item.status === 'error'
                 return (
                   <li key={`q-${i}`} className="text-sm">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-gray-800 truncate min-w-0">{item.file.name}</p>
-                      <span className={`shrink-0 flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
-                        {cfg.spinner && <Spinner size="sm" />}
-                        {cfg.label}
-                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
+                          {cfg.spinner && <Spinner size="sm" />}
+                          {cfg.label}
+                        </span>
+                        {canRemove && (
+                          <button
+                            onClick={() => setQueue((prev) => prev.filter((_, idx) => idx !== i))}
+                            className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
+                            title="Quitar de la lista"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {item.status === 'error' && item.error && (
                       <p className="text-xs text-red-500 mt-0.5 truncate">{item.error}</p>
