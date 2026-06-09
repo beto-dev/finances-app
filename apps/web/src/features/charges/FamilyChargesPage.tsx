@@ -32,24 +32,59 @@ function formatCLP(v: number) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v)
 }
 
+interface CollapsedCuota { description: string; count: number; totalAmount: number }
+interface PossibleDuplicate { description: string; count: number; amount: number }
+
 /**
- * For cuota charges, keep only the first occurrence per description and replace
- * the amount with the full purchase price (cuota_monto × cuota_total).
- * This avoids counting the same purchase N times when multiple months are visible.
+ * Deduplicates cuota charges (keeps first per description, shows total price)
+ * and detects possible duplicate non-cuota charges (same description + same amount).
  */
-function normalizeCuotas(charges: Charge[]): Charge[] {
-  const seen = new Set<string>()
-  return charges.reduce<Charge[]>((acc, charge) => {
+function analyzeCharges(charges: Charge[]): {
+  normalized: Charge[]
+  collapsedCuotas: CollapsedCuota[]
+  possibleDuplicates: PossibleDuplicate[]
+} {
+  // --- cuota normalization ---
+  const cuotaCounts = new Map<string, number>()
+  for (const c of charges) {
+    if (!c.cuota_total || c.cuota_total <= 1 || !c.cuota_monto) continue
+    const k = c.description.toLowerCase().trim()
+    cuotaCounts.set(k, (cuotaCounts.get(k) ?? 0) + 1)
+  }
+
+  const processedCuotas = new Set<string>()
+  const collapsedCuotas: CollapsedCuota[] = []
+  const normalized: Charge[] = []
+
+  for (const charge of charges) {
     if (!charge.cuota_total || charge.cuota_total <= 1 || !charge.cuota_monto) {
-      acc.push(charge)
-      return acc
+      normalized.push(charge)
+      continue
     }
-    const key = charge.description.toLowerCase().trim()
-    if (seen.has(key)) return acc
-    seen.add(key)
-    acc.push({ ...charge, amount: Number(charge.cuota_monto) * charge.cuota_total })
-    return acc
-  }, [])
+    const k = charge.description.toLowerCase().trim()
+    if (processedCuotas.has(k)) continue
+    processedCuotas.add(k)
+    const totalAmount = Number(charge.cuota_monto) * charge.cuota_total
+    normalized.push({ ...charge, amount: totalAmount })
+    const count = cuotaCounts.get(k) ?? 1
+    if (count > 1) collapsedCuotas.push({ description: charge.description, count, totalAmount })
+  }
+
+  // --- duplicate detection (non-cuota only) ---
+  const dupCounts = new Map<string, number>()
+  for (const c of normalized) {
+    if (c.cuota_total && c.cuota_total > 1) continue
+    const k = `${c.description.toLowerCase().trim()}|${c.amount}`
+    dupCounts.set(k, (dupCounts.get(k) ?? 0) + 1)
+  }
+  const possibleDuplicates: PossibleDuplicate[] = [...dupCounts.entries()]
+    .filter(([, n]) => n > 1)
+    .map(([k, count]) => {
+      const sep = k.lastIndexOf('|')
+      return { description: k.slice(0, sep), count, amount: Number(k.slice(sep + 1)) }
+    })
+
+  return { normalized, collapsedCuotas, possibleDuplicates }
 }
 
 /** Greedy debt-settlement: returns list of {from, to, amount} transfers */
@@ -92,14 +127,15 @@ export default function FamilyChargesPage() {
   const [searchDesc, setSearchDesc] = useState('')
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
   const [filterBank, setFilterBank] = useState<string>('')
+  const [warningsOpen, setWarningsOpen] = useState(true)
 
   const { data: rawCharges, isLoading } = useFamilyCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
   const { data: members = [] } = useFamilyMembers()
   const { data: contribData } = useContributions()
 
-  // Deduplicate cuota charges and replace their amount with the full purchase price
-  const allCharges = normalizeCuotas(rawCharges ?? [])
+  const { normalized: allCharges, collapsedCuotas, possibleDuplicates } = analyzeCharges(rawCharges ?? [])
+  const totalWarnings = collapsedCuotas.length + possibleDuplicates.length
 
   const memberNameById = new Map(
     members.map((m) => [m.user_id, NAME_BY_EMAIL[m.email.toLowerCase()] ?? m.email])
@@ -178,6 +214,63 @@ export default function FamilyChargesPage() {
           {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
+
+      {/* Warnings panel */}
+      {!isLoading && totalWarnings > 0 && (
+        <div className="mb-4 border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
+          <button
+            onClick={() => setWarningsOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{totalWarnings} situación{totalWarnings !== 1 ? 'es' : ''} para revisar</span>
+            </span>
+            <span className="text-amber-500 text-xs">{warningsOpen ? '▲ Ocultar' : '▼ Ver'}</span>
+          </button>
+          {warningsOpen && (
+            <div className="border-t border-amber-200 px-4 py-3 space-y-4">
+              {collapsedCuotas.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
+                    Cuotas unificadas ({collapsedCuotas.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {collapsedCuotas.map((w) => (
+                      <div key={w.description} className="text-sm text-amber-800 flex items-start gap-2">
+                        <span className="shrink-0 mt-0.5">🔗</span>
+                        <span>
+                          <strong>{w.description}</strong> — se encontraron {w.count} cuotas en distintos meses,
+                          unificadas en 1 pago total de <strong>{formatCLP(w.totalAmount)}</strong>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {possibleDuplicates.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
+                    Posibles duplicados ({possibleDuplicates.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {possibleDuplicates.map((w) => (
+                      <div key={`${w.description}|${w.amount}`} className="text-sm text-amber-800 flex items-start gap-2">
+                        <span className="shrink-0 mt-0.5">🔁</span>
+                        <span>
+                          <strong>{w.description}</strong> aparece {w.count} veces
+                          con el mismo monto (<strong>{formatCLP(w.amount)}</strong>).
+                          ¿La cartola fue cargada más de una vez?
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Settlement panel — only when there's data and contributions configured */}
       {totalExpense > 0 && memberStats.some((s) => s.pct > 0) && (
