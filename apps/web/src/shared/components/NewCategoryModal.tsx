@@ -16,6 +16,7 @@ interface Props {
 export default function NewCategoryModal({ onConfirm, onClose, isPending }: Props) {
   const [name, setName] = useState('')
   const [color, setColor] = useState(COLORS[5])
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -23,7 +24,13 @@ export default function NewCategoryModal({ onConfirm, onClose, isPending }: Prop
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    await onConfirm(name.trim(), color)
+    setError(null)
+    try {
+      await onConfirm(name.trim(), color)
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(detail || 'No se pudo crear la categoría')
+    }
   }
 
   return (
@@ -60,6 +67,9 @@ export default function NewCategoryModal({ onConfirm, onClose, isPending }: Prop
               ))}
             </div>
           </div>
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
               Cancelar

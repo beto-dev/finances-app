@@ -16,6 +16,7 @@ from presentation.schemas.charge import (
     ChargeResponse,
     ChargeUpdateCategory,
     ManualChargeRequest,
+    ShareSimilarRequest,
 )
 
 router = APIRouter(prefix="/api/charges", tags=["charges"])
@@ -42,7 +43,7 @@ async def list_charges(
             id=c.id, statement_id=c.statement_id, date=c.date, description=c.description,
             amount=c.amount, currency=c.currency, category_id=c.category_id,
             is_shared=c.is_shared, ai_suggested=c.ai_suggested, created_at=c.created_at,
-            statement_type=c.statement_type, uploaded_by=c.uploaded_by,
+            statement_type=c.statement_type, uploaded_by=c.uploaded_by, bank_hint=c.bank_hint,
             cuota_numero=c.cuota_numero, cuota_total=c.cuota_total, cuota_monto=c.cuota_monto,
         )
         for c in charges
@@ -67,7 +68,7 @@ async def list_family_charges(
             id=c.id, statement_id=c.statement_id, date=c.date, description=c.description,
             amount=c.amount, currency=c.currency, category_id=c.category_id,
             is_shared=c.is_shared, ai_suggested=c.ai_suggested, created_at=c.created_at,
-            statement_type=c.statement_type, uploaded_by=c.uploaded_by,
+            statement_type=c.statement_type, uploaded_by=c.uploaded_by, bank_hint=c.bank_hint,
             cuota_numero=c.cuota_numero, cuota_total=c.cuota_total, cuota_monto=c.cuota_monto,
         )
         for c in charges
@@ -98,6 +99,36 @@ async def update_charge_category(
         ai_suggested=charge.ai_suggested, created_at=charge.created_at,
         similar_count=similar_count, suggested_pattern=suggested_pattern,
     )
+
+
+@router.patch("/{charge_id}/share", response_model=dict)
+async def share_charge(
+    charge_id: UUID,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    charge_repo: SQLChargeRepository = Depends(get_charge_repo),
+    category_repo: SQLCategoryRepository = Depends(get_category_repo),
+):
+    await charge_repo.bulk_confirm([charge_id])
+    charge = await charge_repo.get_by_id(charge_id)
+    if not charge:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    uc = ReviewChargesUseCase(charge_repo, category_repo)
+    similar_count, suggested_pattern = await uc.count_similar_unshared(current_user_id, charge.description, charge_id)
+    return {"similar_count": similar_count, "suggested_pattern": suggested_pattern}
+
+
+@router.post("/share-similar", response_model=dict)
+async def share_similar_charges(
+    body: ShareSimilarRequest,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    charge_repo: SQLChargeRepository = Depends(get_charge_repo),
+    category_repo: SQLCategoryRepository = Depends(get_category_repo),
+):
+    uc = ReviewChargesUseCase(charge_repo, category_repo)
+    count = await uc.share_similar(current_user_id, body.pattern, body.exclude_charge_id)
+    return {"shared": count}
 
 
 @router.post("/apply-to-similar", response_model=dict)

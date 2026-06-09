@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory, useShareCharge, useShareSimilar, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
@@ -29,16 +29,23 @@ function MobileChargeCard({
   const updateCategory = useUpdateCategory()
   const createCategory = useCreateCategory()
   const applyToSimilar = useApplyToSimilar()
-  const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
+  const shareCharge = useShareCharge()
+  const shareSimilar = useShareSimilar()
   const deleteCharge = useDeleteCharge()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState<boolean | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [showNewModal, setShowNewModal] = useState(false)
   const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
+  const [similarSharePrompt, setSimilarSharePrompt] = useState<{ count: number; pattern: string } | null>(null)
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['charges'] })
+  const patchCacheCategory = (catId: string | null) => {
+    queryClient.setQueriesData<Charge[]>(
+      { queryKey: ['charges'] },
+      (old) => old?.map((c) => c.id === charge.id ? { ...c, category_id: catId } : c),
+    )
+  }
 
   const isShared = optimisticConfirmed ?? charge.is_shared
   const currentCatId = optimisticCatId ?? charge.category_id
@@ -54,7 +61,7 @@ function MobileChargeCard({
         const catName = categories.find((c) => c.id === categoryId)?.name ?? ''
         setSimilarPrompt({ count: result.similar_count, pattern: result.suggested_pattern, categoryId, categoryName: catName })
       } else {
-        invalidate()
+        patchCacheCategory(categoryId)
       }
     } catch {
       setOptimisticCatId(null)
@@ -72,7 +79,7 @@ function MobileChargeCard({
 
   const handleDismissPrompt = () => {
     setSimilarPrompt(null)
-    invalidate()
+    patchCacheCategory(optimisticCatId)
   }
 
   const handleCreateCategory = async (name: string, color: string) => {
@@ -81,14 +88,38 @@ function MobileChargeCard({
     await handleCategoryChange(newCat.id)
   }
 
+  const patchCacheShared = (shared: boolean) => {
+    queryClient.setQueriesData<Charge[]>(
+      { queryKey: ['charges'] },
+      (old) => old?.map((c) => c.id === charge.id ? { ...c, is_shared: shared } : c),
+    )
+  }
+
   const handleToggleShare = async () => {
-    if (bulkConfirm.isPending || bulkUnshare.isPending) return
+    if (shareCharge.isPending || bulkUnshare.isPending) return
     setOptimisticConfirmed(!isShared)
     try {
-      if (isShared) await bulkUnshare.mutateAsync([charge.id])
-      else await bulkConfirm.mutateAsync([charge.id])
+      if (isShared) {
+        await bulkUnshare.mutateAsync([charge.id])
+        patchCacheShared(false)
+      } else {
+        const result = await shareCharge.mutateAsync(charge.id)
+        patchCacheShared(true)
+        if (result.similar_count > 0) {
+          setSimilarSharePrompt({ count: result.similar_count, pattern: result.suggested_pattern })
+        }
+      }
     } catch {
       setOptimisticConfirmed(null)
+    }
+  }
+
+  const handleApplyShareToSimilar = async () => {
+    if (!similarSharePrompt) return
+    try {
+      await shareSimilar.mutateAsync({ pattern: similarSharePrompt.pattern, excludeChargeId: charge.id })
+    } finally {
+      setSimilarSharePrompt(null)
     }
   }
 
@@ -189,6 +220,29 @@ function MobileChargeCard({
         </div>
       )}
 
+      {similarSharePrompt && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 bg-green-600 text-white rounded-xl shadow-lg px-4 py-3 flex flex-col gap-2">
+          <p className="text-sm">
+            ¿Compartir también {similarSharePrompt.count} gasto{similarSharePrompt.count !== 1 ? 's' : ''} con <strong>"{similarSharePrompt.pattern}"</strong>?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleApplyShareToSimilar}
+              disabled={shareSimilar.isPending}
+              className="flex-1 py-2 text-sm font-medium bg-white text-green-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              {shareSimilar.isPending ? <Spinner size="sm" /> : 'Sí, compartir todos'}
+            </button>
+            <button
+              onClick={() => setSimilarSharePrompt(null)}
+              className="flex-1 py-2 text-sm font-medium border border-white/40 rounded-lg"
+            >
+              Solo este
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tap-to-confirm button — 44px touch target */}
       <button
         onClick={handleToggleShare}
@@ -249,6 +303,7 @@ export default function ChargesPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'shared' | 'personal'>('all')
   const [filterType, setFilterType] = useState<string>('')
   const [filterKind, setFilterKind] = useState<'all' | 'income' | 'expense'>('all')
+  const [filterBank, setFilterBank] = useState<string>('')
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -258,8 +313,10 @@ export default function ChargesPage() {
   const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
 
+  const availableBanks = [...new Set((allCharges || []).map((c) => c.bank_hint).filter((b): b is string => !!b && b !== 'manual'))].sort()
+
   let charges = allCharges || []
-  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind)
+  charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind, filterBank || undefined)
   charges = sortCharges(charges, sortField, sortOrder)
 
   const handleSelect = (id: string, checked: boolean) => {
@@ -417,8 +474,17 @@ export default function ChargesPage() {
               <option value="personal">⊘ Solo míos</option>
             </select>
           </div>
+          {availableBanks.length > 0 && (
+            <div>
+              <label className="label text-xs">Banco</label>
+              <select className="input" value={filterBank} onChange={(e) => setFilterBank(e.target.value)}>
+                <option value="">Todos los bancos</option>
+                {availableBanks.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+          )}
         </div>
-        {(filterKind !== 'all' || searchDesc || filterCategoryId || filterStatus !== 'all' || filterType) && (
+        {(filterKind !== 'all' || searchDesc || filterCategoryId || filterStatus !== 'all' || filterType || filterBank) && (
           <div className="text-xs text-gray-600 pt-1">
             Mostrando {charges.length} de {allCharges?.length || 0} movimientos
           </div>
@@ -484,6 +550,7 @@ export default function ChargesPage() {
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('status')}>Estado <SortIcon field="status" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Banco</th>
                   <th className="w-20" />
                 </tr>
               </thead>

@@ -71,6 +71,7 @@ export default function FamilyChargesPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [searchDesc, setSearchDesc] = useState('')
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
+  const [filterBank, setFilterBank] = useState<string>('')
 
   const { data: allCharges, isLoading } = useFamilyCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
@@ -104,9 +105,11 @@ export default function FamilyChargesPage() {
 
   const transfers = settleDebts(memberStats.map((s) => ({ userId: s.userId, balance: s.balance })))
 
+  const availableBanks = [...new Set((allCharges ?? []).map((c) => c.bank_hint).filter((b): b is string => !!b && b !== 'manual'))].sort()
+
   // Filtered charges for table
   let charges = allCharges ?? []
-  charges = filterCharges(charges, searchDesc, filterCategoryId, 'all')
+  charges = filterCharges(charges, searchDesc, filterCategoryId, 'all', undefined, undefined, filterBank || undefined)
   charges = sortCharges(charges, sortField, sortOrder)
 
   const handleSort = (field: SortField) => {
@@ -230,7 +233,7 @@ export default function FamilyChargesPage() {
 
       {/* Search and filter */}
       <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
             <label className="label text-xs">Buscar descripción</label>
             <input
@@ -254,6 +257,15 @@ export default function FamilyChargesPage() {
               ))}
             </select>
           </div>
+          {availableBanks.length > 0 && (
+            <div>
+              <label className="label text-xs">Banco</label>
+              <select className="input" value={filterBank} onChange={(e) => setFilterBank(e.target.value)}>
+                <option value="">Todos los bancos</option>
+                {availableBanks.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -295,6 +307,9 @@ export default function FamilyChargesPage() {
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span className="text-xs text-gray-400">{formattedDate}</span>
                       <span className="text-xs text-gray-400">· {memberName}</span>
+                      {charge.bank_hint && charge.bank_hint !== 'manual' && (
+                        <span className="text-xs text-gray-400">· {charge.bank_hint}</span>
+                      )}
                       {cat && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
                           style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>
@@ -338,6 +353,7 @@ export default function FamilyChargesPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Banco</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Miembro</th>
                 </tr>
               </thead>
@@ -355,6 +371,9 @@ export default function FamilyChargesPage() {
                         {cat ? (
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>{cat.name}</span>
                         ) : <span className="text-xs text-gray-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
+                        {charge.bank_hint && charge.bank_hint !== 'manual' ? charge.bank_hint : '—'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{memberName}</td>
                     </tr>

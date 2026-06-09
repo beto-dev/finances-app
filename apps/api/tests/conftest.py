@@ -150,6 +150,12 @@ class MockChargeRepo(ChargeRepository):
     async def apply_category_by_pattern(self, uploaded_by: UUID, pattern: str, category_id: UUID, exclude_id: UUID) -> int:
         return 0
 
+    async def count_similar_unshared(self, uploaded_by: UUID, pattern: str, exclude_id: UUID) -> int:
+        return 0
+
+    async def bulk_share_by_pattern(self, uploaded_by: UUID, pattern: str, exclude_id: UUID) -> int:
+        return 0
+
 
 class MockCategoryRepo(CategoryRepository):
     def __init__(self, categories: list[Category] | None = None) -> None:

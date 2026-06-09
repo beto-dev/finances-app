@@ -141,6 +141,12 @@ class MockChargeRepo(ChargeRepository):
     ) -> int:
         return 0
 
+    async def count_similar_unshared(self, uploaded_by: uuid.UUID, pattern: str, exclude_id: uuid.UUID) -> int:
+        return 0
+
+    async def bulk_share_by_pattern(self, uploaded_by: uuid.UUID, pattern: str, exclude_id: uuid.UUID) -> int:
+        return 0
+
 
 class MockParser:
     def __init__(self, result: list[ParsedCharge] | None = None, raise_exc: Exception | None = None) -> None:

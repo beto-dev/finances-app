@@ -32,6 +32,7 @@ export interface Charge {
   created_at: string
   statement_type: string
   uploaded_by: string | null
+  bank_hint: string | null
   cuota_numero: number | null
   cuota_total: number | null
   cuota_monto: number | null

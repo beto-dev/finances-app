@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Charge, Category } from '../../shared/types'
-import { useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory } from './useCharges'
+import { useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory, useShareCharge, useShareSimilar, useBulkUnshare } from './useCharges'
 import Spinner from '../../shared/components/Spinner'
 import NewCategoryModal from '../../shared/components/NewCategoryModal'
 
@@ -21,17 +21,32 @@ interface SimilarPrompt {
   categoryName: string
 }
 
+interface SimilarSharePrompt {
+  count: number
+  pattern: string
+}
+
 export default function ChargeRow({ charge, categories, selected, onSelect, viewMonth, viewYear }: ChargeRowProps) {
   const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
   const createCategory = useCreateCategory()
   const applyToSimilar = useApplyToSimilar()
   const deleteCharge = useDeleteCharge()
+  const shareCharge = useShareCharge()
+  const shareSimilar = useShareSimilar()
+  const bulkUnshare = useBulkUnshare()
   const [optimisticCatId, setOptimisticCatId] = useState<string | null>(null)
+  const [optimisticShared, setOptimisticShared] = useState<boolean | null>(null)
+  const [similarSharePrompt, setSimilarSharePrompt] = useState<SimilarSharePrompt | null>(null)
   const [similarPrompt, setSimilarPrompt] = useState<SimilarPrompt | null>(null)
   const [showNewModal, setShowNewModal] = useState(false)
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['charges'] })
+  const patchCacheCategory = (catId: string | null) => {
+    queryClient.setQueriesData<Charge[]>(
+      { queryKey: ['charges'] },
+      (old) => old?.map((c) => c.id === charge.id ? { ...c, category_id: catId } : c),
+    )
+  }
 
   const currentCatId = optimisticCatId ?? charge.category_id
   const currentCat = categories.find((c) => c.id === currentCatId)
@@ -49,7 +64,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
         const catName = categories.find((c) => c.id === categoryId)?.name ?? ''
         setSimilarPrompt({ count: result.similar_count, pattern: result.suggested_pattern, categoryId, categoryName: catName })
       } else {
-        invalidate()
+        patchCacheCategory(categoryId || null)
       }
     } catch {
       setOptimisticCatId(null)
@@ -74,7 +89,48 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
 
   const handleDismissPrompt = () => {
     setSimilarPrompt(null)
-    invalidate()
+    patchCacheCategory(optimisticCatId)
+  }
+
+  const isShared = optimisticShared ?? charge.is_shared
+
+  const handleShare = async () => {
+    setOptimisticShared(true)
+    try {
+      const result = await shareCharge.mutateAsync(charge.id)
+      patchCacheShared(true)
+      if (result.similar_count > 0) {
+        setSimilarSharePrompt({ count: result.similar_count, pattern: result.suggested_pattern })
+      }
+    } catch {
+      setOptimisticShared(null)
+    }
+  }
+
+  const handleUnshare = async () => {
+    setOptimisticShared(false)
+    try {
+      await bulkUnshare.mutateAsync([charge.id])
+      patchCacheShared(false)
+    } catch {
+      setOptimisticShared(null)
+    }
+  }
+
+  const handleApplyShareToSimilar = async () => {
+    if (!similarSharePrompt) return
+    try {
+      await shareSimilar.mutateAsync({ pattern: similarSharePrompt.pattern, excludeChargeId: charge.id })
+    } finally {
+      setSimilarSharePrompt(null)
+    }
+  }
+
+  const patchCacheShared = (isShared: boolean) => {
+    queryClient.setQueriesData<Charge[]>(
+      { queryKey: ['charges'] },
+      (old) => old?.map((c) => c.id === charge.id ? { ...c, is_shared: isShared } : c),
+    )
   }
 
   const isIncome = Number(charge.amount) < 0
@@ -141,11 +197,26 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
           </div>
         </td>
         <td className="px-4 py-3 text-center">
-          {charge.is_shared ? (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">Compartido</span>
+          {isShared ? (
+            <button
+              onClick={handleUnshare}
+              disabled={bulkUnshare.isPending || shareCharge.isPending}
+              className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium hover:bg-green-200 disabled:opacity-60 transition-colors"
+            >
+              Compartido
+            </button>
           ) : (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Solo mío</span>
+            <button
+              onClick={handleShare}
+              disabled={shareCharge.isPending || bulkUnshare.isPending}
+              className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-60 transition-colors"
+            >
+              {shareCharge.isPending ? <Spinner size="sm" /> : 'Solo mío'}
+            </button>
           )}
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
+          {charge.bank_hint && charge.bank_hint !== 'manual' ? charge.bank_hint : '—'}
         </td>
         <td className="px-2 py-3 text-center">
           {charge.statement_type === 'manual' && (
@@ -161,7 +232,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
       </tr>
       {similarPrompt && (
         <tr className="bg-indigo-50 border-t border-indigo-100">
-          <td colSpan={7} className="px-4 py-2">
+          <td colSpan={8} className="px-4 py-2">
             <div className="flex items-center gap-3 text-sm">
               <span className="text-indigo-700">
                 ¿Aplicar <strong>{similarPrompt.categoryName}</strong> a {similarPrompt.count} cargo{similarPrompt.count !== 1 ? 's' : ''} con <strong>"{similarPrompt.pattern}"</strong>?
@@ -176,6 +247,30 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
               <button
                 onClick={handleDismissPrompt}
                 className="px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                Solo este
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
+      {similarSharePrompt && (
+        <tr className="bg-green-50 border-t border-green-100">
+          <td colSpan={8} className="px-4 py-2">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-green-700">
+                ¿Compartir también {similarSharePrompt.count} gasto{similarSharePrompt.count !== 1 ? 's' : ''} con <strong>"{similarSharePrompt.pattern}"</strong>?
+              </span>
+              <button
+                onClick={handleApplyShareToSimilar}
+                disabled={shareSimilar.isPending}
+                className="px-3 py-1 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {shareSimilar.isPending ? <Spinner size="sm" /> : 'Sí, compartir todos'}
+              </button>
+              <button
+                onClick={() => setSimilarSharePrompt(null)}
+                className="px-3 py-1 text-xs font-medium text-green-600 hover:text-green-800"
               >
                 Solo este
               </button>

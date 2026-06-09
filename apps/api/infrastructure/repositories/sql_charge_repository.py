@@ -43,7 +43,7 @@ class SQLChargeRepository(ChargeRepository):
     ) -> list[Charge]:
         from sqlalchemy import extract
         stmt = (
-            select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)
+            select(ChargeModel, StatementModel.type, StatementModel.uploaded_by, StatementModel.bank_hint)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
             .where(StatementModel.family_id == family_id)
         )
@@ -59,6 +59,7 @@ class SQLChargeRepository(ChargeRepository):
             charge = _to_entity(row[0])
             charge.statement_type = row[1] or ""
             charge.uploaded_by = row[2]
+            charge.bank_hint = row[3]
             charges.append(charge)
         return charges
 
@@ -81,13 +82,14 @@ class SQLChargeRepository(ChargeRepository):
             bank_hint = row[3]
             charge.statement_type = "manual" if bank_hint == "manual" else (row[1] or "")
             charge.uploaded_by = row[2]
+            charge.bank_hint = bank_hint
             charges.append(charge)
         return charges
 
     async def get_confirmed_by_family(self, family_id: UUID, month: int | None, year: int | None) -> list[Charge]:
         from sqlalchemy import extract
         stmt = (
-            select(ChargeModel, StatementModel.type, StatementModel.uploaded_by)
+            select(ChargeModel, StatementModel.type, StatementModel.uploaded_by, StatementModel.bank_hint)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
             .where(StatementModel.family_id == family_id)
             .where(ChargeModel.is_shared == True)  # noqa: E712
@@ -102,6 +104,7 @@ class SQLChargeRepository(ChargeRepository):
             charge = _to_entity(row[0])
             charge.statement_type = row[1] or ""
             charge.uploaded_by = row[2]
+            charge.bank_hint = row[3]
             charges.append(charge)
         return charges
 
@@ -204,5 +207,35 @@ class SQLChargeRepository(ChargeRepository):
         if not ids:
             return 0
         await self._session.execute(update(ChargeModel).where(ChargeModel.id.in_(ids)).values(category_id=category_id))
+        await self._session.commit()
+        return len(ids)
+
+    async def count_similar_unshared(self, uploaded_by: UUID, pattern: str, exclude_id: UUID) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(ChargeModel)
+            .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
+            .where(StatementModel.uploaded_by == uploaded_by)
+            .where(ChargeModel.id != exclude_id)
+            .where(ChargeModel.description.ilike(f"%{pattern}%"))
+            .where(ChargeModel.is_shared == False)  # noqa: E712
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar() or 0
+
+    async def bulk_share_by_pattern(self, uploaded_by: UUID, pattern: str, exclude_id: UUID) -> int:
+        id_query = (
+            select(ChargeModel.id)
+            .join(StatementModel, ChargeModel.statement_id == StatementModel.id)
+            .where(StatementModel.uploaded_by == uploaded_by)
+            .where(ChargeModel.id != exclude_id)
+            .where(ChargeModel.description.ilike(f"%{pattern}%"))
+            .where(ChargeModel.is_shared == False)  # noqa: E712
+        )
+        id_result = await self._session.execute(id_query)
+        ids = [row[0] for row in id_result.all()]
+        if not ids:
+            return 0
+        await self._session.execute(update(ChargeModel).where(ChargeModel.id.in_(ids)).values(is_shared=True))
         await self._session.commit()
         return len(ids)

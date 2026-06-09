@@ -50,5 +50,13 @@ class ReviewChargesUseCase:
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int:
         return await self._charges.bulk_confirm(charge_ids)
 
+    async def count_similar_unshared(self, uploaded_by: UUID, description: str, exclude_id: UUID) -> tuple[int, str]:
+        pattern = extract_pattern(description)
+        count = await self._charges.count_similar_unshared(uploaded_by, pattern, exclude_id)
+        return count, pattern
+
+    async def share_similar(self, uploaded_by: UUID, pattern: str, exclude_id: UUID) -> int:
+        return await self._charges.bulk_share_by_pattern(uploaded_by, pattern, exclude_id)
+
     async def learn_rule(self, family_id: UUID, description: str, category_id: UUID) -> None:
         await self._categories.create_rule(family_id, description, category_id)

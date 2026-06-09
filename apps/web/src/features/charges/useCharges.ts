@@ -64,6 +64,28 @@ export function useCreateCategory() {
   })
 }
 
+export function useShareCharge() {
+  return useMutation({
+    mutationFn: async (chargeId: string) => {
+      const res = await client.patch(`/api/charges/${chargeId}/share`)
+      return res.data as { similar_count: number; suggested_pattern: string }
+    },
+  })
+}
+
+export function useShareSimilar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ pattern, excludeChargeId }: { pattern: string; excludeChargeId: string }) => {
+      const res = await client.post('/api/charges/share-similar', { pattern, exclude_charge_id: excludeChargeId })
+      return res.data as { shared: number }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
 export function useApplyToSimilar() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -149,6 +171,7 @@ export function filterCharges(
   status: 'all' | 'shared' | 'personal',
   type?: string,
   kind?: 'all' | 'income' | 'expense',
+  bank?: string,
 ): Charge[] {
   return charges.filter((c) => {
     if (searchDesc && !c.description.toLowerCase().includes(searchDesc.toLowerCase())) return false
@@ -159,6 +182,7 @@ export function filterCharges(
     if (type && c.statement_type !== type) return false
     if (kind === 'income' && Number(c.amount) >= 0) return false
     if (kind === 'expense' && Number(c.amount) < 0) return false
+    if (bank && c.bank_hint !== bank) return false
     return true
   })
 }
