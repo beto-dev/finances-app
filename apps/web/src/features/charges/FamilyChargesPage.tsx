@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useFamilyCharges, useCategories, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
-import { FamilyMember } from '../../shared/types'
+import { Charge, FamilyMember } from '../../shared/types'
 import { NAME_BY_EMAIL } from '../../shared/utils/memberNames'
 import client from '../../shared/api/client'
 import Skeleton from '../../shared/components/Skeleton'
@@ -30,6 +30,26 @@ function useContributions() {
 
 function formatCLP(v: number) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v)
+}
+
+/**
+ * For cuota charges, keep only the first occurrence per description and replace
+ * the amount with the full purchase price (cuota_monto × cuota_total).
+ * This avoids counting the same purchase N times when multiple months are visible.
+ */
+function normalizeCuotas(charges: Charge[]): Charge[] {
+  const seen = new Set<string>()
+  return charges.reduce<Charge[]>((acc, charge) => {
+    if (!charge.cuota_total || charge.cuota_total <= 1 || !charge.cuota_monto) {
+      acc.push(charge)
+      return acc
+    }
+    const key = charge.description.toLowerCase().trim()
+    if (seen.has(key)) return acc
+    seen.add(key)
+    acc.push({ ...charge, amount: Number(charge.cuota_monto) * charge.cuota_total })
+    return acc
+  }, [])
 }
 
 /** Greedy debt-settlement: returns list of {from, to, amount} transfers */
@@ -73,10 +93,13 @@ export default function FamilyChargesPage() {
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
   const [filterBank, setFilterBank] = useState<string>('')
 
-  const { data: allCharges, isLoading } = useFamilyCharges(filterMonth, filterYear)
+  const { data: rawCharges, isLoading } = useFamilyCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
   const { data: members = [] } = useFamilyMembers()
   const { data: contribData } = useContributions()
+
+  // Deduplicate cuota charges and replace their amount with the full purchase price
+  const allCharges = normalizeCuotas(rawCharges ?? [])
 
   const memberNameById = new Map(
     members.map((m) => [m.user_id, NAME_BY_EMAIL[m.email.toLowerCase()] ?? m.email])
@@ -85,11 +108,11 @@ export default function FamilyChargesPage() {
     (contribData?.contributions ?? []).map((c) => [c.user_id, Number(c.percentage)])
   )
 
-  // Settlement calculation (uses all unfiltered charges for the period)
-  const totalExpense = (allCharges ?? []).reduce((s, c) => s + Number(c.amount), 0)
+  // Settlement calculation (uses all normalized charges for the period)
+  const totalExpense = allCharges.reduce((s, c) => s + Number(c.amount), 0)
 
   const actualById = new Map<string, number>()
-  for (const c of allCharges ?? []) {
+  for (const c of allCharges) {
     if (c.uploaded_by) {
       actualById.set(c.uploaded_by, (actualById.get(c.uploaded_by) ?? 0) + Number(c.amount))
     }
@@ -105,10 +128,10 @@ export default function FamilyChargesPage() {
 
   const transfers = settleDebts(memberStats.map((s) => ({ userId: s.userId, balance: s.balance })))
 
-  const availableBanks = [...new Set((allCharges ?? []).map((c) => c.bank_hint).filter((b): b is string => !!b && b !== 'manual'))].sort()
+  const availableBanks = [...new Set(allCharges.map((c) => c.bank_hint).filter((b): b is string => !!b && b !== 'manual'))].sort()
 
   // Filtered charges for table
-  let charges = allCharges ?? []
+  let charges = allCharges
   charges = filterCharges(charges, searchDesc, filterCategoryId, 'all', undefined, undefined, filterBank || undefined)
   charges = sortCharges(charges, sortField, sortOrder)
 
