@@ -245,20 +245,20 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
           <td colSpan={8} className="px-4 py-2">
             <div className="flex items-center gap-3 text-sm">
               <span className="text-indigo-700">
-                ¿Aplicar <strong>{similarPrompt.categoryName}</strong> a {similarPrompt.count} cargo{similarPrompt.count !== 1 ? 's' : ''} con <strong>"{similarPrompt.pattern}"</strong>?
+                ¿Aplicar <strong>{similarPrompt.categoryName}</strong> a {similarPrompt.count} cargo{similarPrompt.count !== 1 ? 's' : ''} con <strong>"{similarPrompt.pattern}"</strong> en todos los meses? Las próximas cartolas también se categorizarán automáticamente.
               </span>
               <button
                 onClick={handleApplyToSimilar}
                 disabled={applyToSimilar.isPending}
-                className="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
               >
                 {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
               </button>
               <button
                 onClick={handleDismissPrompt}
-                className="px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                className="px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0"
               >
-                Solo este
+                No, solo este
               </button>
             </div>
           </td>
