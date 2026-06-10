@@ -158,8 +158,8 @@ export function sortCharges(charges: Charge[], field: SortField, order: SortOrde
     let bVal: any = b[key as keyof Charge]
 
     if (field === 'amount') {
-      aVal = Number(aVal) || 0
-      bVal = Number(bVal) || 0
+      aVal = Math.abs(Number(aVal) || 0)
+      bVal = Math.abs(Number(bVal) || 0)
     } else if (field === 'date') {
       aVal = new Date(aVal).getTime()
       bVal = new Date(bVal).getTime()
