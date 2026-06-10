@@ -1,5 +1,5 @@
 import { useState, DragEvent, ChangeEvent, useRef, useEffect } from 'react'
-import { useStatements, useUploadStatement, useDeleteAllStatements, useUpdateStatement } from './useUpload'
+import { useStatements, useUploadStatement, useDeleteAllStatements, useUpdateStatement, useStatementsSummary } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
 import { Statement } from '../../shared/types'
@@ -175,6 +175,7 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: statements, isLoading } = useStatements()
+  const { data: summaries } = useStatementsSummary()
   const upload = useUploadStatement()
   const deleteAll = useDeleteAllStatements()
   const updateStatement = useUpdateStatement()
@@ -428,6 +429,7 @@ export default function UploadPage() {
               {pastStatements.map((s) => {
                 const ds = stmtDisplayStatus(s)
                 const cfg = DISPLAY_CONFIG[ds]
+                const summary = summaries?.find(sm => sm.id === s.id)
                 return (
                   <li key={s.id} className="text-sm">
                     {editingId === s.id ? (
@@ -458,7 +460,14 @@ export default function UploadPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium text-gray-800 truncate">{s.filename}</p>
-                          <p className="text-gray-400 text-xs">{TYPE_LABELS[s.type]}{s.bank_hint ? ` · ${s.bank_hint}` : ''}</p>
+                          <p className="text-gray-400 text-xs">
+                            {TYPE_LABELS[s.type]}{s.bank_hint ? ` · ${s.bank_hint}` : ''}
+                            {summary && ds === 'done' && (
+                              <span className={summary.total_charges === 0 ? 'text-red-400 font-medium' : 'text-gray-400'}>
+                                {' · '}{summary.total_charges} gastos
+                              </span>
+                            )}
+                          </p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
