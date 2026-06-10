@@ -10,8 +10,10 @@ from domain.entities.charge import ParsedCharge
 
 log = structlog.get_logger()
 
-# Max pages per Claude call — keeps prompts well within Haiku's context window
-_PAGE_CHUNK = 15
+# Max pages per Claude call. Haiku caps output at 8192 tokens; a dense cartola
+# can produce ~50 transactions per page × 40 tokens each, so 3 pages ≈ 6000 tokens
+# of output — safely within the limit. 15 pages was too many for long statements.
+_PAGE_CHUNK = 3
 
 
 class ClaudeParser:
@@ -130,13 +132,18 @@ Bank statement (file: {filename or "unknown"}):
         import re
         start = text.find("[")
         end = text.rfind("]") + 1
-        if start == -1 or end == 0:
+        # end == 0 means no closing ] — response was truncated at max_tokens.
+        # Fall through to partial recovery instead of returning empty.
+        if start == -1:
             log.warning("claude_parser_no_json_array", response_preview=text[:200])
             return []
-        try:
-            data = json.loads(text[start:end])
-        except json.JSONDecodeError as exc:
-            log.warning("claude_parser_invalid_json", error=str(exc), response_preview=text[:200])
+        data: list[Any] = []
+        if end > start:
+            try:
+                data = json.loads(text[start:end])
+            except json.JSONDecodeError as exc:
+                log.warning("claude_parser_invalid_json", error=str(exc), response_preview=text[:200])
+        if not data:
             # Partial recovery: extract complete {...} objects from truncated JSON
             partial: list[Any] = []
             for m in re.finditer(r'\{[^{}]*\}', text[start:]):

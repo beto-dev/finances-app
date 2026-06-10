@@ -344,56 +344,65 @@ async def parse_preview(
     if not chosen_pages:
         return {"extraction_log": extraction_log, "chosen_method": "none", "charges": []}
 
-    # Call Claude directly to capture raw response
-    from infrastructure.ai.claude_parser import ClaudeParser
-    import os
+    from infrastructure.ai.claude_parser import ClaudeParser, _PAGE_CHUNK
 
     claude = ClaudeParser()
     if not claude.is_available:
         return {"extraction_log": extraction_log, "chosen_method": chosen_method, "error": "Claude not available"}
 
-    chunk_text = "\n\n--- PAGE BREAK ---\n\n".join(chosen_pages)
-    try:
-        from anthropic.types import TextBlock as _TextBlock
-        message = await claude._client.messages.create(  # type: ignore[union-attr]
-            model="claude-haiku-4-5-20251001",
-            max_tokens=8192,
-            messages=[{"role": "user", "content": f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
+    fallback_year = ClaudeParser._extract_year_from_filename(filename)
+    all_charges = []
+    chunk_log = []
+
+    # Process in same page chunks as production parser to get accurate charge count
+    for i in range(0, len(chosen_pages), _PAGE_CHUNK):
+        chunk_pages = chosen_pages[i : i + _PAGE_CHUNK]
+        chunk_text = "\n\n--- PAGE BREAK ---\n\n".join(chunk_pages)
+        try:
+            from anthropic.types import TextBlock as _TextBlock
+            message = await claude._client.messages.create(  # type: ignore[union-attr]
+                model="claude-haiku-4-5-20251001",
+                max_tokens=8192,
+                messages=[{"role": "user", "content": f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
 
 Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Each element:
 {{"date": "YYYY-MM-DD", "description": "string", "amount": number}}
 
 Rules:
-- date: always YYYY-MM-DD. Dates show as DD/MM — infer year from Período header (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026)
-- amount: positive=expense, negative=income. Chilean format: "$8.398" = 8398, "$1.234.567" = 1234567
-- Skip: headers, balance rows, "Saldo", "Resumen"
+- date: always YYYY-MM-DD. Dates show as DD/MM without year — infer year from Período header (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026), filename, or any date with year in the text.
+- amount: positive=expense/cargo, negative=income/abono. Chilean format: "$8.398"=8398, "$1.234.567"=1234567
+- Skip: headers, balance rows, "Saldo", "Resumen", "Sin Movimientos"
+- Include ALL transactions: cargos AND abonos
 
 Bank statement (file: {filename}):
-{chunk_text[:8000]}"""}],
-        )
-        tb = next((b for b in message.content if isinstance(b, _TextBlock)), None)
-        raw_response = tb.text if tb else "(no text block)"
-        stop_reason = message.stop_reason
-    except Exception as exc:
-        return {"extraction_log": extraction_log, "chosen_method": chosen_method, "claude_error": str(exc)}
+{chunk_text}"""}],
+            )
+            tb = next((b for b in message.content if isinstance(b, _TextBlock)), None)
+            raw = tb.text if tb else ""
+            stop_reason = message.stop_reason
+        except Exception as exc:
+            return {"extraction_log": extraction_log, "chosen_method": chosen_method, "claude_error": str(exc)}
 
-    # Parse the response
-    charges = claude._parse_response(raw_response, fallback_year=ClaudeParser._extract_year_from_filename(filename))
+        chunk_charges = claude._parse_response(raw, fallback_year=fallback_year)
+        all_charges.extend(chunk_charges)
+        chunk_log.append({
+            "pages": f"{i+1}-{i+len(chunk_pages)}",
+            "stop_reason": stop_reason,
+            "charges": len(chunk_charges),
+        })
+
     charges_out = [
         {"date": str(c.date), "description": c.description, "amount": str(c.amount)}
-        for c in charges[:20]
+        for c in all_charges
     ]
 
     return {
         "extraction_log": extraction_log,
         "chosen_method": chosen_method,
-        "text_sent_to_claude_chars": len(chunk_text),
-        "text_preview_sent": chunk_text[:500],
-        "claude_stop_reason": stop_reason,
-        "claude_raw_response_chars": len(raw_response),
-        "claude_raw_response_preview": raw_response[:500],
-        "total_charges": len(charges),
-        "charges_preview": charges_out,
+        "total_pages": len(chosen_pages),
+        "chunk_log": chunk_log,
+        "total_charges": len(all_charges),
+        "charges": charges_out,
     }
 
 
