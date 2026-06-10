@@ -44,7 +44,7 @@ export default function BankBadge({ bank, showName = true }: Props) {
   const [imgFailed, setImgFailed] = useState(false)
 
   const logoUrl = config.domain
-    ? `https://www.google.com/s2/favicons?domain=${config.domain}&sz=32`
+    ? `https://logo.clearbit.com/${config.domain}?size=32`
     : null
 
   return (
