@@ -308,12 +308,29 @@ export default function ChargesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
+  const [warningsOpen, setWarningsOpen] = useState(true)
+
   const { data: allCharges, isLoading } = useCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
   const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
 
   const availableBanks = [...new Set((allCharges || []).map((c) => c.bank_hint).filter((b): b is string => !!b && b !== 'manual'))].sort()
+
+  const possibleDuplicates = (() => {
+    const counts = new Map<string, number>()
+    for (const c of allCharges ?? []) {
+      if (c.cuota_total && c.cuota_total > 1) continue
+      const k = `${c.description.toLowerCase().trim()}|${c.amount}`
+      counts.set(k, (counts.get(k) ?? 0) + 1)
+    }
+    return [...counts.entries()]
+      .filter(([, n]) => n > 1)
+      .map(([k, count]) => {
+        const sep = k.lastIndexOf('|')
+        return { description: k.slice(0, sep), count, amount: Number(k.slice(sep + 1)) }
+      })
+  })()
 
   let charges = allCharges || []
   charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind, filterBank || undefined)
@@ -432,6 +449,38 @@ export default function ChargesPage() {
           </>
         )}
       </div>
+
+      {/* Duplicate charges warning */}
+      {!isLoading && possibleDuplicates.length > 0 && (
+        <div className="mb-4 border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
+          <button
+            onClick={() => setWarningsOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <span>⚠️</span>
+              <span>
+                {possibleDuplicates.length} posible{possibleDuplicates.length !== 1 ? 's' : ''} duplicado{possibleDuplicates.length !== 1 ? 's' : ''}
+              </span>
+            </span>
+            <span className="text-amber-500 text-xs">{warningsOpen ? '▲ Ocultar' : '▼ Ver'}</span>
+          </button>
+          {warningsOpen && (
+            <div className="border-t border-amber-200 px-4 py-3 space-y-1.5">
+              {possibleDuplicates.map((w) => (
+                <div key={`${w.description}|${w.amount}`} className="text-sm text-amber-800 flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">🔁</span>
+                  <span>
+                    <strong className="capitalize">{w.description}</strong> aparece {w.count} veces
+                    con el mismo monto (<strong>{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Math.abs(w.amount))}</strong>).
+                    ¿La cartola fue cargada más de una vez?
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search and filter controls */}
       <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
