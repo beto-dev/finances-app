@@ -347,9 +347,13 @@ export default function ChargesPage() {
 
   const handleDeleteExtras = useCallback(async (group: DuplicateGroup) => {
     const toDelete = group.instances.slice(1).map((c) => c.id)
-    await bulkDelete.mutateAsync(toDelete)
-    setToast({ message: `${toDelete.length} gasto${toDelete.length !== 1 ? 's' : ''} duplicado${toDelete.length !== 1 ? 's' : ''} eliminado${toDelete.length !== 1 ? 's' : ''}`, type: 'success' })
-    setExpandedDupKey(null)
+    try {
+      await bulkDelete.mutateAsync(toDelete)
+      setToast({ message: `${toDelete.length} gasto${toDelete.length !== 1 ? 's' : ''} duplicado${toDelete.length !== 1 ? 's' : ''} eliminado${toDelete.length !== 1 ? 's' : ''}`, type: 'success' })
+      setExpandedDupKey(null)
+    } catch (err) {
+      setToast({ message: 'Error al eliminar duplicados. Intenta de nuevo.', type: 'error' })
+    }
   }, [bulkDelete])
 
   const handleIgnoreDup = useCallback((key: string) => {
