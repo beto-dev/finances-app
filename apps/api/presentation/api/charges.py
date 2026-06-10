@@ -168,8 +168,6 @@ async def delete_charge(
     if not row:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
     _, stmt = row
-    if stmt.bank_hint != "manual":
-        raise HTTPException(status_code=400, detail="Solo se pueden eliminar gastos manuales")
     if stmt.uploaded_by != current_user_id:
         raise HTTPException(status_code=403, detail="No puedes eliminar gastos de otro usuario")
     await charge_repo.delete(charge_id)
