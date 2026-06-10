@@ -11,7 +11,9 @@
     { "key": "password", "value": "" },
     { "key": "chargeId", "value": "" },
     { "key": "categoryId", "value": "" },
-    { "key": "statementId", "value": "" }
+    { "key": "statementId", "value": "" },
+    { "key": "creditId", "value": "" },
+    { "key": "userId", "value": "" }
   ],
   "item": [
     {
@@ -44,6 +46,37 @@
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/api/health/openrouter-models", "host": ["{{baseUrl}}"], "path": ["api", "health", "openrouter-models"] }
           }
+        },
+        {
+          "name": "Gemini Models",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health/gemini-models", "host": ["{{baseUrl}}"], "path": ["api", "health", "gemini-models"] }
+          }
+        },
+        {
+          "name": "PDF Text Extract",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/health/pdf-text", "host": ["{{baseUrl}}"], "path": ["api", "health", "pdf-text"] }
+          }
+        },
+        {
+          "name": "Cuota Parse Test",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/health/cuota-parse-test", "host": ["{{baseUrl}}"], "path": ["api", "health", "cuota-parse-test"] }
+          }
         }
       ]
     },
@@ -74,6 +107,25 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Google OAuth — Redirect",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/google", "host": ["{{baseUrl}}"], "path": ["api", "auth", "google"] }
+          }
+        },
+        {
+          "name": "Google OAuth — Callback",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/callback?code=AUTH_CODE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google", "callback"],
+              "query": [{ "key": "code", "value": "AUTH_CODE" }]
+            }
           }
         }
       ]
@@ -106,11 +158,26 @@
               "mode": "formdata",
               "formdata": [
                 { "key": "file", "type": "file", "src": "" },
-                { "key": "statement_type", "value": "checking", "type": "text" },
-                { "key": "bank_hint", "value": "santander", "type": "text" }
+                { "key": "statement_type", "value": "checking", "type": "text", "description": "checking | credit_card | credit_line | manual" },
+                { "key": "bank_hint", "value": "santander", "type": "text", "description": "Optional. One of 21 Chilean banks or 'manual'" }
               ]
             },
             "url": { "raw": "{{baseUrl}}/api/statements/", "host": ["{{baseUrl}}"], "path": ["api", "statements", ""] }
+          }
+        },
+        {
+          "name": "Update Statement Type",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "statement_type", "value": "credit_card", "type": "text", "description": "checking | credit_card | credit_line | manual" },
+                { "key": "bank_hint", "value": "falabella", "type": "text", "description": "Optional" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/statements/{{statementId}}", "host": ["{{baseUrl}}"], "path": ["api", "statements", "{{statementId}}"] }
           }
         },
         {
@@ -119,6 +186,18 @@
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": { "raw": "{{baseUrl}}/api/statements/{{statementId}}", "host": ["{{baseUrl}}"], "path": ["api", "statements", "{{statementId}}"] }
+          }
+        },
+        {
+          "name": "Parse Preview (Debug)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/statements/parse-preview", "host": ["{{baseUrl}}"], "path": ["api", "statements", "parse-preview"] }
           }
         }
       ]
@@ -132,11 +211,11 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
-              "raw": "{{baseUrl}}/api/charges/?month=5&year=2026",
+              "raw": "{{baseUrl}}/api/charges/?month=6&year=2026",
               "host": ["{{baseUrl}}"],
               "path": ["api", "charges", ""],
               "query": [
-                { "key": "month", "value": "5" },
+                { "key": "month", "value": "6" },
                 { "key": "year", "value": "2026" }
               ]
             }
@@ -148,18 +227,18 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
-              "raw": "{{baseUrl}}/api/charges/family?month=5&year=2026",
+              "raw": "{{baseUrl}}/api/charges/family?month=6&year=2026",
               "host": ["{{baseUrl}}"],
               "path": ["api", "charges", "family"],
               "query": [
-                { "key": "month", "value": "5" },
+                { "key": "month", "value": "6" },
                 { "key": "year", "value": "2026" }
               ]
             }
           }
         },
         {
-          "name": "Create Manual Charge (Efectivo)",
+          "name": "Create Manual Charge",
           "request": {
             "method": "POST",
             "header": [
@@ -168,7 +247,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Almuerzo\",\n  \"amount\": 5000,\n  \"currency\": \"CLP\",\n  \"date\": \"2026-05-27\",\n  \"category_id\": null\n}",
+              "raw": "{\n  \"description\": \"Almuerzo\",\n  \"amount\": 5000,\n  \"currency\": \"CLP\",\n  \"date\": \"2026-06-01\",\n  \"category_id\": null\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{baseUrl}}/api/charges/manual", "host": ["{{baseUrl}}"], "path": ["api", "charges", "manual"] }
@@ -191,7 +270,47 @@
           }
         },
         {
-          "name": "Delete Manual Charge",
+          "name": "Share Charge with Family",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/charges/{{chargeId}}/share", "host": ["{{baseUrl}}"], "path": ["api", "charges", "{{chargeId}}", "share"] }
+          }
+        },
+        {
+          "name": "Share Similar Charges",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pattern\": \"UBER\",\n  \"exclude_charge_id\": \"{{chargeId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/share-similar", "host": ["{{baseUrl}}"], "path": ["api", "charges", "share-similar"] }
+          }
+        },
+        {
+          "name": "Apply Category to Similar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pattern\": \"UBER\",\n  \"category_id\": \"{{categoryId}}\",\n  \"exclude_charge_id\": \"{{chargeId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/charges/apply-to-similar", "host": ["{{baseUrl}}"], "path": ["api", "charges", "apply-to-similar"] }
+          }
+        },
+        {
+          "name": "Delete Charge",
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
@@ -244,7 +363,7 @@
           }
         },
         {
-          "name": "Create Category (Admin)",
+          "name": "Create Category",
           "request": {
             "method": "POST",
             "header": [
@@ -260,7 +379,7 @@
           }
         },
         {
-          "name": "Update Category (Admin)",
+          "name": "Update Category",
           "request": {
             "method": "PATCH",
             "header": [
@@ -276,11 +395,109 @@
           }
         },
         {
-          "name": "Delete Category (Admin)",
+          "name": "Delete Category",
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": { "raw": "{{baseUrl}}/api/charges/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "charges", "categories", "{{categoryId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Budgets",
+      "item": [
+        {
+          "name": "List Budgets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/budgets/", "host": ["{{baseUrl}}"], "path": ["api", "budgets", ""] }
+          }
+        },
+        {
+          "name": "Upsert Budget",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 150000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/budgets/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "budgets", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Get Budget Suggestions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/budgets/suggestions", "host": ["{{baseUrl}}"], "path": ["api", "budgets", "suggestions"] }
+          }
+        },
+        {
+          "name": "Delete Budget",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/budgets/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "budgets", "{{categoryId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Credits",
+      "item": [
+        {
+          "name": "List Credits",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/credits/", "host": ["{{baseUrl}}"], "path": ["api", "credits", ""] }
+          }
+        },
+        {
+          "name": "Create Credit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Auto 2024\",\n  \"bank\": \"santander\",\n  \"cuota_monto\": 250000,\n  \"cuota_numero\": 6,\n  \"cuota_total\": 48\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/credits/", "host": ["{{baseUrl}}"], "path": ["api", "credits", ""] }
+          }
+        },
+        {
+          "name": "Update Credit",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Auto 2024\",\n  \"bank\": \"santander\",\n  \"cuota_monto\": 250000,\n  \"cuota_numero\": 7,\n  \"cuota_total\": 48\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/credits/{{creditId}}", "host": ["{{baseUrl}}"], "path": ["api", "credits", "{{creditId}}"] }
+          }
+        },
+        {
+          "name": "Delete Credit",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/credits/{{creditId}}", "host": ["{{baseUrl}}"], "path": ["api", "credits", "{{creditId}}"] }
           }
         }
       ]
@@ -309,6 +526,22 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me", "host": ["{{baseUrl}}"], "path": ["api", "families", "me"] }
+          }
+        },
+        {
+          "name": "Update Family Name",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Familia Tejos 2\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
             "url": { "raw": "{{baseUrl}}/api/families/me", "host": ["{{baseUrl}}"], "path": ["api", "families", "me"] }
           }
         },
@@ -345,10 +578,66 @@
           }
         },
         {
+          "name": "Toggle Member Active",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/families/me/members/{{userId}}/active", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "members", "{{userId}}", "active"] }
+          }
+        },
+        {
+          "name": "Set Member Role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"member\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/families/me/members/{{userId}}/role", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "members", "{{userId}}", "role"] }
+          }
+        },
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me/members/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "members", "{{userId}}"] }
+          }
+        },
+        {
           "name": "Get Contributions",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/families/me/contributions", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "contributions"] }
+          }
+        },
+        {
+          "name": "Update Contributions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"user_id\": \"{{userId}}\", \"percentage\": \"60.00\" }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
             "url": { "raw": "{{baseUrl}}/api/families/me/contributions", "host": ["{{baseUrl}}"], "path": ["api", "families", "me", "contributions"] }
           }
         }
@@ -371,6 +660,50 @@
             "method": "POST",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": { "raw": "{{baseUrl}}/api/google/sync", "host": ["{{baseUrl}}"], "path": ["api", "google", "sync"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Debug (dev only — requires ENABLE_DEBUG_ENDPOINTS)",
+      "item": [
+        {
+          "name": "Parse All Tables",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/debug/parse-all-tables", "host": ["{{baseUrl}}"], "path": ["api", "debug", "parse-all-tables"] }
+          }
+        },
+        {
+          "name": "Inspect Page",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "page", "value": "1", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/debug/inspect-page", "host": ["{{baseUrl}}"], "path": ["api", "debug", "inspect-page"] }
+          }
+        },
+        {
+          "name": "Parse Page 2 Full",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/debug/parse-page-2-full", "host": ["{{baseUrl}}"], "path": ["api", "debug", "parse-page-2-full"] }
           }
         }
       ]
