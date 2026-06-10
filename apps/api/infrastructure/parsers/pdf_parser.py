@@ -3,8 +3,12 @@ import os
 import subprocess
 import tempfile
 
+import structlog
+
 from domain.entities.charge import ParsedCharge
 from infrastructure.parsers.base_parser import BaseParser
+
+log = structlog.get_logger()
 
 # Minimum ratio of readable characters to detect garbled extraction
 _MIN_READABLE_RATIO = 0.4
@@ -31,11 +35,19 @@ def _extract_pages_pdftotext(file_bytes: bytes) -> list[str]:
         if result.returncode == 0 and result.stdout.strip():
             pages = [p.strip() for p in result.stdout.split("\f") if p.strip()]
             return pages
+        log.warning("pdf_pdftotext_failed", returncode=result.returncode, stderr=result.stderr[:200])
         return []
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+    except FileNotFoundError:
+        log.warning("pdf_pdftotext_not_found")
+        return []
+    except subprocess.TimeoutExpired:
+        log.warning("pdf_pdftotext_timeout")
         return []
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 def _extract_pages_pypdfium2(file_bytes: bytes) -> list[str]:
@@ -50,12 +62,15 @@ def _extract_pages_pypdfium2(file_bytes: bytes) -> list[str]:
     return pages
 
 
-def _extract_pages_pdfplumber(file_bytes: bytes) -> list[str]:
+def _extract_pages_pdfplumber(file_bytes: bytes, layout: bool = False) -> list[str]:
     import pdfplumber
     pages: list[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
-            text = page.extract_text() or ""
+            if layout:
+                text = page.extract_text(layout=True) or ""
+            else:
+                text = page.extract_text() or ""
             if text.strip():
                 pages.append(text)
     return pages
@@ -69,22 +84,39 @@ class PDFParser(BaseParser):
         # 1. pdftotext -layout: best for table-heavy bank statements
         pages = _extract_pages_pdftotext(file_bytes)
         if pages and _looks_readable(pages):
+            total_chars = sum(len(p) for p in pages)
+            log.info("pdf_extractor_selected", method="pdftotext", pages=len(pages), chars=total_chars, preview=pages[0][:300])
             return await self._llm.parse_pdf_pages(pages, filename)
 
-        # 2. pypdfium2: Chrome engine, good font/encoding support
+        # 2. pdfplumber with layout=True (pdfminer layout analysis — no external binary)
+        try:
+            pages = _extract_pages_pdfplumber(file_bytes, layout=True)
+            if pages and _looks_readable(pages):
+                total_chars = sum(len(p) for p in pages)
+                log.info("pdf_extractor_selected", method="pdfplumber_layout", pages=len(pages), chars=total_chars, preview=pages[0][:300])
+                return await self._llm.parse_pdf_pages(pages, filename)
+        except Exception as exc:
+            log.warning("pdf_pdfplumber_layout_failed", error=str(exc))
+
+        # 3. pypdfium2: Chrome engine, good font/encoding support
         try:
             pages = _extract_pages_pypdfium2(file_bytes)
             if pages and _looks_readable(pages):
+                total_chars = sum(len(p) for p in pages)
+                log.info("pdf_extractor_selected", method="pypdfium2", pages=len(pages), chars=total_chars, preview=pages[0][:300])
                 return await self._llm.parse_pdf_pages(pages, filename)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("pdf_pypdfium2_failed", error=str(exc))
 
-        # 3. pdfplumber: fallback
+        # 4. pdfplumber default: last resort
         try:
-            pages = _extract_pages_pdfplumber(file_bytes)
+            pages = _extract_pages_pdfplumber(file_bytes, layout=False)
             if pages and _looks_readable(pages):
+                total_chars = sum(len(p) for p in pages)
+                log.info("pdf_extractor_selected", method="pdfplumber_default", pages=len(pages), chars=total_chars, preview=pages[0][:300])
                 return await self._llm.parse_pdf_pages(pages, filename)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("pdf_pdfplumber_failed", error=str(exc))
 
+        log.error("pdf_extraction_failed", filename=filename, file_size=len(file_bytes))
         raise RuntimeError("No se pudo extraer texto legible del PDF.")

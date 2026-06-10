@@ -96,6 +96,7 @@ Rules:
 Bank statement (file: {filename or "unknown"}):
 {content}"""
 
+        log.info("claude_parser_calling", filename=filename, content_chars=len(content), content_preview=content[:200])
         try:
             from anthropic.types import TextBlock
             message = await self._client.messages.create(
@@ -105,9 +106,13 @@ Bank statement (file: {filename or "unknown"}):
             )
             text_block = next((b for b in message.content if isinstance(b, TextBlock)), None)
             if text_block is None:
+                log.warning("claude_parser_no_text_block", stop_reason=message.stop_reason)
                 return []
+            log.info("claude_parser_response", stop_reason=message.stop_reason, response_chars=len(text_block.text), response_preview=text_block.text[:300])
             fallback_year = self._extract_year_from_filename(filename)
-            return self._parse_response(text_block.text, fallback_year)
+            charges = self._parse_response(text_block.text, fallback_year)
+            log.info("claude_parser_done", filename=filename, charges=len(charges))
+            return charges
         except Exception as exc:
             log.warning(
                 "claude_parser_error",
