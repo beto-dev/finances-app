@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory, useShareCharge, useShareSimilar, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
+import { useCharges, useCategories, useBulkConfirm, useBulkUnshare, useUpdateCategory, useDeleteCharge, useBulkDeleteCharges, useApplyToSimilar, useCreateCategory, useShareCharge, useShareSimilar, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, Category } from '../../shared/types'
 import ChargeRow from './ChargeRow'
 import Spinner from '../../shared/components/Spinner'
@@ -309,28 +309,53 @@ export default function ChargesPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const [warningsOpen, setWarningsOpen] = useState(true)
+  const [expandedDupKey, setExpandedDupKey] = useState<string | null>(null)
+  const [ignoredDupKeys, setIgnoredDupKeys] = useState<Set<string>>(new Set())
 
   const { data: allCharges, isLoading } = useCharges(filterMonth, filterYear)
   const { data: categories = [] } = useCategories()
   const bulkConfirm = useBulkConfirm()
   const bulkUnshare = useBulkUnshare()
+  const bulkDelete = useBulkDeleteCharges()
 
   const availableBanks = [...new Set((allCharges || []).map((c) => c.bank_hint).filter((b): b is string => !!b && b !== 'manual'))].sort()
 
-  const possibleDuplicates = (() => {
-    const counts = new Map<string, number>()
+  interface DuplicateGroup {
+    key: string
+    description: string
+    amount: number
+    instances: Charge[]
+  }
+
+  const duplicateGroups: DuplicateGroup[] = (() => {
+    const buckets = new Map<string, Charge[]>()
     for (const c of allCharges ?? []) {
       if (c.cuota_total && c.cuota_total > 1) continue
-      const k = `${c.description.toLowerCase().trim()}|${c.amount}`
-      counts.set(k, (counts.get(k) ?? 0) + 1)
+      const k = `${c.date}|${c.description.toLowerCase().trim()}|${c.amount}`
+      if (!buckets.has(k)) buckets.set(k, [])
+      buckets.get(k)!.push(c)
     }
-    return [...counts.entries()]
-      .filter(([, n]) => n > 1)
-      .map(([k, count]) => {
+    return [...buckets.entries()]
+      .filter(([, arr]) => arr.length > 1)
+      .map(([k, arr]) => {
         const sep = k.lastIndexOf('|')
-        return { description: k.slice(0, sep), count, amount: Number(k.slice(sep + 1)) }
+        const sorted = [...arr].sort((a, b) => a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at))
+        return { key: k, description: sorted[0].description, amount: Number(k.slice(sep + 1)), instances: sorted }
       })
+      .filter((g) => !ignoredDupKeys.has(g.key))
   })()
+
+  const handleDeleteExtras = useCallback(async (group: DuplicateGroup) => {
+    const toDelete = group.instances.slice(1).map((c) => c.id)
+    await bulkDelete.mutateAsync(toDelete)
+    setToast({ message: `${toDelete.length} gasto${toDelete.length !== 1 ? 's' : ''} duplicado${toDelete.length !== 1 ? 's' : ''} eliminado${toDelete.length !== 1 ? 's' : ''}`, type: 'success' })
+    setExpandedDupKey(null)
+  }, [bulkDelete])
+
+  const handleIgnoreDup = useCallback((key: string) => {
+    setIgnoredDupKeys((prev) => new Set([...prev, key]))
+    setExpandedDupKey(null)
+  }, [])
 
   let charges = allCharges || []
   charges = filterCharges(charges, searchDesc, filterCategoryId, filterStatus, filterType, filterKind, filterBank || undefined)
@@ -451,32 +476,104 @@ export default function ChargesPage() {
       </div>
 
       {/* Duplicate charges warning */}
-      {!isLoading && possibleDuplicates.length > 0 && (
-        <div className="mb-4 border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
+      {!isLoading && duplicateGroups.length > 0 && (
+        <div className="mb-4 border border-amber-200 bg-amber-50 rounded-xl overflow-hidden shadow-sm">
+          {/* Header */}
           <button
             onClick={() => setWarningsOpen((o) => !o)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-amber-800 hover:bg-amber-100/70 transition-colors"
           >
             <span className="flex items-center gap-2">
-              <span>⚠️</span>
-              <span>
-                {possibleDuplicates.length} posible{possibleDuplicates.length !== 1 ? 's' : ''} duplicado{possibleDuplicates.length !== 1 ? 's' : ''}
-              </span>
+              <span className="text-base">⚠️</span>
+              <span>{duplicateGroups.length} posible{duplicateGroups.length !== 1 ? 's' : ''} duplicado{duplicateGroups.length !== 1 ? 's' : ''} — ¿cargaste la misma cartola dos veces?</span>
             </span>
-            <span className="text-amber-500 text-xs">{warningsOpen ? '▲ Ocultar' : '▼ Ver'}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+              strokeLinecap="round" strokeLinejoin="round"
+              className={`w-4 h-4 text-amber-500 transition-transform duration-200 ${warningsOpen ? 'rotate-180' : ''}`}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </button>
+
+          {/* Groups list */}
           {warningsOpen && (
-            <div className="border-t border-amber-200 px-4 py-3 space-y-1.5">
-              {possibleDuplicates.map((w) => (
-                <div key={`${w.description}|${w.amount}`} className="text-sm text-amber-800 flex items-start gap-2">
-                  <span className="shrink-0 mt-0.5">🔁</span>
-                  <span>
-                    <strong className="capitalize">{w.description}</strong> aparece {w.count} veces
-                    con el mismo monto (<strong>{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Math.abs(w.amount))}</strong>).
-                    ¿La cartola fue cargada más de una vez?
-                  </span>
-                </div>
-              ))}
+            <div className="border-t border-amber-200 divide-y divide-amber-100">
+              {duplicateGroups.map((group) => {
+                const isExpanded = expandedDupKey === group.key
+                const isDeleting = bulkDelete.isPending && expandedDupKey === group.key
+                const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Math.abs(n))
+                const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+
+                return (
+                  <div key={group.key} className="transition-all duration-200">
+                    {/* Group summary row */}
+                    <button
+                      onClick={() => setExpandedDupKey(isExpanded ? null : group.key)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-amber-100/50 transition-colors"
+                    >
+                      <span className="text-base shrink-0">🔁</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-amber-900 truncate block">{group.description}</span>
+                        <span className="text-xs text-amber-700">
+                          {group.instances.length} veces · {fmt(group.amount)} cada una
+                        </span>
+                      </div>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+                        strokeLinecap="round" strokeLinejoin="round"
+                        className={`w-4 h-4 text-amber-400 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    {/* Expanded: instances + actions */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 space-y-3 bg-amber-50/80">
+                        {/* Instance list */}
+                        <div className="rounded-lg border border-amber-200 overflow-hidden text-sm">
+                          {group.instances.map((c, i) => (
+                            <div key={c.id} className={`flex items-center gap-3 px-3 py-2.5 ${i === 0 ? 'bg-green-50 border-b border-amber-100' : i < group.instances.length - 1 ? 'border-b border-amber-100 bg-white' : 'bg-white'}`}>
+                              {i === 0 ? (
+                                <span className="w-16 shrink-0 text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2 py-0.5 text-center">Mantener</span>
+                              ) : (
+                                <span className="w-16 shrink-0 text-xs font-semibold text-red-600 bg-red-50 rounded-full px-2 py-0.5 text-center">Extra</span>
+                              )}
+                              <span className="text-gray-600 shrink-0">{fmtDate(c.date)}</span>
+                              <span className="text-gray-400 text-xs truncate flex-1">{c.bank_hint ?? c.statement_type}</span>
+                              <span className="font-medium text-gray-700 shrink-0">{fmt(c.amount)}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleDeleteExtras(group)}
+                            disabled={isDeleting}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-wait"
+                          >
+                            {isDeleting ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+                                </svg>
+                                Eliminar {group.instances.length - 1} extra{group.instances.length - 1 !== 1 ? 's' : ''}
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleIgnoreDup(group.key)}
+                            disabled={isDeleting}
+                            className="flex-1 py-2.5 px-3 border border-amber-300 text-amber-800 text-sm font-medium rounded-lg hover:bg-amber-100 active:bg-amber-200 transition-colors disabled:opacity-60"
+                          >
+                            Son gastos reales, ignorar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

@@ -126,6 +126,17 @@ export function useDeleteCharge() {
   })
 }
 
+export function useBulkDeleteCharges() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chargeIds: string[]) =>
+      Promise.all(chargeIds.map((id) => client.delete(`/api/charges/${id}`))),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
 export function useBulkUnshare() {
   const queryClient = useQueryClient()
   return useMutation({
