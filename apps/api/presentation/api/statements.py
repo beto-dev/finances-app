@@ -335,29 +335,63 @@ async def parse_preview(
                 chosen_pages = pages if readable else []
                 chosen_method = "pdfplumber_default" if readable else "none"
 
+    # Use pdftotext first regardless of readable check (it uses layout spacing)
+    pdftotext_pages = next((e["pages"] for e in extraction_log if e.get("method") == "pdftotext" and e.get("pages", 0) > 0), 0)
+    if pdftotext_pages:
+        chosen_pages = _extract_pages_pdftotext(file_bytes)
+        chosen_method = "pdftotext (forced)"
+
     if not chosen_pages:
         return {"extraction_log": extraction_log, "chosen_method": "none", "charges": []}
 
-    # Run the full Claude parsing pipeline
-    svc = ParserService()
+    # Call Claude directly to capture raw response
+    from infrastructure.ai.claude_parser import ClaudeParser
+    import os
+
+    claude = ClaudeParser()
+    if not claude.is_available:
+        return {"extraction_log": extraction_log, "chosen_method": chosen_method, "error": "Claude not available"}
+
+    chunk_text = "\n\n--- PAGE BREAK ---\n\n".join(chosen_pages)
     try:
-        charges = await svc.parse(file_bytes, filename)
-        charges_out = [
-            {"date": str(c.date), "description": c.description, "amount": str(c.amount)}
-            for c in charges[:20]
-        ]
+        from anthropic.types import TextBlock as _TextBlock
+        message = await claude._client.messages.create(  # type: ignore[union-attr]
+            model="claude-haiku-4-5-20251001",
+            max_tokens=8192,
+            messages=[{"role": "user", "content": f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
+
+Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Each element:
+{{"date": "YYYY-MM-DD", "description": "string", "amount": number}}
+
+Rules:
+- date: always YYYY-MM-DD. Dates show as DD/MM — infer year from Período header (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026)
+- amount: positive=expense, negative=income. Chilean format: "$8.398" = 8398, "$1.234.567" = 1234567
+- Skip: headers, balance rows, "Saldo", "Resumen"
+
+Bank statement (file: {filename}):
+{chunk_text[:8000]}"""}],
+        )
+        tb = next((b for b in message.content if isinstance(b, _TextBlock)), None)
+        raw_response = tb.text if tb else "(no text block)"
+        stop_reason = message.stop_reason
     except Exception as exc:
-        charges_out = []
-        return {
-            "extraction_log": extraction_log,
-            "chosen_method": chosen_method,
-            "parse_error": str(exc),
-            "charges": [],
-        }
+        return {"extraction_log": extraction_log, "chosen_method": chosen_method, "claude_error": str(exc)}
+
+    # Parse the response
+    charges = claude._parse_response(raw_response, fallback_year=ClaudeParser._extract_year_from_filename(filename))
+    charges_out = [
+        {"date": str(c.date), "description": c.description, "amount": str(c.amount)}
+        for c in charges[:20]
+    ]
 
     return {
         "extraction_log": extraction_log,
         "chosen_method": chosen_method,
+        "text_sent_to_claude_chars": len(chunk_text),
+        "text_preview_sent": chunk_text[:500],
+        "claude_stop_reason": stop_reason,
+        "claude_raw_response_chars": len(raw_response),
+        "claude_raw_response_preview": raw_response[:500],
         "total_charges": len(charges),
         "charges_preview": charges_out,
     }
