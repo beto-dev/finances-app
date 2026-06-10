@@ -79,4 +79,5 @@ export interface AuthUser {
   id: string
   email: string
   token: string
+  full_name: string | null
 }

@@ -16,6 +16,7 @@ def _to_entity(m: UserModel) -> User:
         created_at=m.created_at,
         updated_at=m.updated_at,
         hashed_password=m.hashed_password,
+        full_name=m.full_name,
     )
 
 
@@ -44,6 +45,14 @@ class SQLUserRepository(UserRepository):
         result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.family_id = family_id
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_entity(m)
+
+    async def update_name(self, user_id: UUID, full_name: str | None) -> User:
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
+        m = result.scalar_one()
+        m.full_name = full_name
         await self._session.commit()
         await self._session.refresh(m)
         return _to_entity(m)

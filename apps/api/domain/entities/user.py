@@ -11,3 +11,4 @@ class User:
     created_at: datetime
     updated_at: datetime
     hashed_password: str | None = field(default=None, repr=False)
+    full_name: str | None = None

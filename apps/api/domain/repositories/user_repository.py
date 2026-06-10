@@ -16,3 +16,6 @@ class UserRepository(ABC):
 
     @abstractmethod
     async def update_family(self, user_id: UUID, family_id: UUID) -> User: ...
+
+    @abstractmethod
+    async def update_name(self, user_id: UUID, full_name: str | None) -> User: ...

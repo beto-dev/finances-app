@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 
 from infrastructure.auth.supabase_middleware import create_access_token
 from infrastructure.repositories.sql_user_repository import SQLUserRepository
-from presentation.dependencies import DbSession, get_user_repo
+from presentation.dependencies import CurrentUserId, DbSession, get_user_repo
 from presentation.middleware.rate_limit import limiter
 from presentation.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
@@ -135,7 +135,33 @@ async def google_callback(
     if not user:
         user = await user_repo.create(email, None, None)
 
+    # Persist the Google display name if available
+    full_name: str | None = userinfo.get("name") or None
+    if full_name and (not user.full_name or user.full_name != full_name):
+        user_repo2 = SQLUserRepository(db)
+        await user_repo2.update_name(user.id, full_name)
+
     token = create_access_token(str(user.id))
+    name_param = f"&name={full_name}" if full_name else ""
     return RedirectResponse(
-        url=f"{frontend_url}/auth/callback?token={token}&email={email}&id={user.id}"
+        url=f"{frontend_url}/auth/callback?token={token}&email={email}&id={user.id}{name_param}"
     )
+
+
+@router.get("/me")
+async def get_me(current_user_id: CurrentUserId, db: DbSession):
+    user = await SQLUserRepository(db).get_by_id(current_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"id": str(user.id), "email": user.email, "full_name": user.full_name}
+
+
+@router.patch("/me")
+async def update_me(
+    body: dict,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+):
+    full_name = body.get("full_name", "").strip() or None
+    user = await SQLUserRepository(db).update_name(current_user_id, full_name)
+    return {"id": str(user.id), "email": user.email, "full_name": user.full_name}

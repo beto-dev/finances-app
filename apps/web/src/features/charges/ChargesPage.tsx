@@ -8,6 +8,7 @@ import Skeleton from '../../shared/components/Skeleton'
 import Toast from '../../shared/components/Toast'
 import CategorySheet from '../../shared/components/CategorySheet'
 import NewCategoryModal from '../../shared/components/NewCategoryModal'
+import { useAuth } from '../auth/useAuth'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -291,6 +292,7 @@ function groupChargesByDate(charges: Charge[]) {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function ChargesPage() {
+  const { user } = useAuth()
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
@@ -706,7 +708,7 @@ export default function ChargesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {charges.map((charge) => (
-                  <ChargeRow key={charge.id} charge={charge} categories={categories} selected={selectedIds.has(charge.id)} onSelect={handleSelect} viewMonth={filterMonth} viewYear={filterYear} />
+                  <ChargeRow key={charge.id} charge={charge} categories={categories} selected={selectedIds.has(charge.id)} onSelect={handleSelect} viewMonth={filterMonth} viewYear={filterYear} userFullName={user?.full_name} />
                 ))}
               </tbody>
             </table>

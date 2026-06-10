@@ -12,9 +12,10 @@ export default function AuthCallbackPage() {
     const token = searchParams.get('token')
     const email = searchParams.get('email')
     const id = searchParams.get('id')
+    const name = searchParams.get('name')
 
     if (token && email && id) {
-      login(token, email, id)
+      login(token, email, id, name)
       navigate('/resumen', { replace: true })
     } else {
       navigate('/login?error=invalid_state', { replace: true })

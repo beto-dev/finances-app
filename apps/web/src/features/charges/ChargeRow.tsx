@@ -4,6 +4,7 @@ import { Charge, Category } from '../../shared/types'
 import { useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategory, useShareCharge, useShareSimilar, useBulkUnshare } from './useCharges'
 import Spinner from '../../shared/components/Spinner'
 import NewCategoryModal from '../../shared/components/NewCategoryModal'
+import { isSelfTransfer } from '../../shared/utils/selfTransfer'
 
 interface ChargeRowProps {
   charge: Charge
@@ -12,6 +13,7 @@ interface ChargeRowProps {
   onSelect: (id: string, checked: boolean) => void
   viewMonth?: number
   viewYear?: number
+  userFullName?: string | null
 }
 
 interface SimilarPrompt {
@@ -26,7 +28,7 @@ interface SimilarSharePrompt {
   pattern: string
 }
 
-export default function ChargeRow({ charge, categories, selected, onSelect, viewMonth, viewYear }: ChargeRowProps) {
+export default function ChargeRow({ charge, categories, selected, onSelect, viewMonth, viewYear, userFullName }: ChargeRowProps) {
   const queryClient = useQueryClient()
   const updateCategory = useUpdateCategory()
   const createCategory = useCreateCategory()
@@ -134,6 +136,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
   }
 
   const isIncome = Number(charge.amount) < 0
+  const selfTransfer = isSelfTransfer(charge, userFullName)
   const formattedAmount = new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency: charge.currency || 'CLP',
@@ -171,11 +174,18 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
             )}
           </span>
         </td>
-        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={charge.description}>
-          {isIncome && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 shrink-0" />}
-          {charge.description}
+        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs" title={charge.description}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            {isIncome && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
+            <span className="truncate">{charge.description}</span>
+            {selfTransfer && (
+              <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 whitespace-nowrap">
+                Transf. propia
+              </span>
+            )}
+          </div>
         </td>
-        <td className={`px-4 py-3 text-sm font-medium text-right whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-gray-900'}`}>
+        <td className={`px-4 py-3 text-sm font-medium text-right whitespace-nowrap ${isIncome ? 'text-emerald-600' : selfTransfer ? 'text-blue-500' : 'text-gray-900'}`}>
           {isIncome ? '+' : ''}{formattedAmount}
         </td>
         <td className="px-4 py-3">
