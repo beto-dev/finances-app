@@ -151,15 +151,29 @@ Bank statement (file: {filename or "unknown"}):
                 return []
 
         charges: list[ParsedCharge] = []
+        skipped = 0
         for item in data:
             try:
                 parsed_date = self._parse_date(str(item.get("date", "")), fallback_year)
                 if parsed_date is None:
+                    log.debug("claude_parser_skip_bad_date", date=item.get("date"))
+                    skipped += 1
                     continue
                 description = str(item.get("description", "")).strip()
                 if not description:
+                    skipped += 1
                     continue
-                amount = Decimal(str(item.get("amount", 0)))
+                # Parse amount: handle int, float, or string with currency symbols/Chilean format
+                raw = item.get("amount", 0)
+                if isinstance(raw, (int, float)):
+                    amount = Decimal(str(int(raw) if isinstance(raw, float) and raw == int(raw) else raw))
+                else:
+                    import re as _re
+                    raw_str = str(raw).replace("$", "").strip()
+                    # Chilean thousands separator: "8.398" or "1.234.567" → no decimal
+                    if _re.match(r'^\d{1,3}(\.\d{3})+$', raw_str):
+                        raw_str = raw_str.replace(".", "")
+                    amount = Decimal(raw_str)
                 cuota_numero = int(item["cuota_numero"]) if item.get("cuota_numero") else None
                 cuota_total = int(item["cuota_total"]) if item.get("cuota_total") else None
                 cuota_monto = Decimal(str(item["cuota_monto"])) if item.get("cuota_monto") else None
@@ -167,8 +181,12 @@ Bank statement (file: {filename or "unknown"}):
                     date=parsed_date, description=description, amount=amount,
                     cuota_numero=cuota_numero, cuota_total=cuota_total, cuota_monto=cuota_monto,
                 ))
-            except (InvalidOperation, TypeError, KeyError):
+            except (InvalidOperation, TypeError, KeyError) as exc:
+                log.debug("claude_parser_skip_item", error=str(exc), item=str(item)[:100])
+                skipped += 1
                 continue
+        if skipped:
+            log.warning("claude_parser_items_skipped", skipped=skipped, total=len(data))
 
         return charges
 

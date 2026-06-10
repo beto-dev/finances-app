@@ -243,6 +243,126 @@ async def statements_summary(
     ]
 
 
+@router.post("/parse-preview")
+async def parse_preview(
+    current_user_id: CurrentUserId,
+    file: UploadFile = File(...),
+):
+    """Diagnostic endpoint: extract text from a PDF without storing anything.
+
+    Returns the extraction method used, a text preview, and the list of charges
+    that would be created — useful for debugging parsers without touching the DB.
+    """
+    from infrastructure.parsers.pdf_parser import (
+        _extract_pages_pdfplumber,
+        _extract_pages_pdftotext,
+        _extract_pages_pypdfium2,
+        _looks_readable,
+    )
+    from application.services.parser_service import ParserService
+
+    file_bytes = await file.read()
+    filename = file.filename or ""
+
+    # Run each extractor in order and report results
+    extraction_log: list[dict] = []
+    chosen_pages: list[str] = []
+    chosen_method: str = "none"
+
+    pages = _extract_pages_pdftotext(file_bytes)
+    readable = pages and _looks_readable(pages)
+    extraction_log.append({
+        "method": "pdftotext",
+        "pages": len(pages),
+        "chars": sum(len(p) for p in pages),
+        "readable": bool(readable),
+        "preview": pages[0][:200] if pages else "",
+    })
+    if readable:
+        chosen_pages = pages
+        chosen_method = "pdftotext"
+    else:
+        try:
+            pages = _extract_pages_pdfplumber(file_bytes, layout=True)
+            readable = pages and _looks_readable(pages)
+            extraction_log.append({
+                "method": "pdfplumber_layout",
+                "pages": len(pages),
+                "chars": sum(len(p) for p in pages),
+                "readable": bool(readable),
+                "preview": pages[0][:200] if pages else "",
+            })
+        except Exception as exc:
+            extraction_log.append({"method": "pdfplumber_layout", "error": str(exc)})
+            pages = []
+            readable = False
+        if readable:
+            chosen_pages = pages
+            chosen_method = "pdfplumber_layout"
+        else:
+            try:
+                pages = _extract_pages_pypdfium2(file_bytes)
+                readable = pages and _looks_readable(pages)
+                extraction_log.append({
+                    "method": "pypdfium2",
+                    "pages": len(pages),
+                    "chars": sum(len(p) for p in pages),
+                    "readable": bool(readable),
+                    "preview": pages[0][:200] if pages else "",
+                })
+            except Exception as exc:
+                extraction_log.append({"method": "pypdfium2", "error": str(exc)})
+                pages = []
+                readable = False
+            if readable:
+                chosen_pages = pages
+                chosen_method = "pypdfium2"
+            else:
+                try:
+                    pages = _extract_pages_pdfplumber(file_bytes, layout=False)
+                    readable = pages and _looks_readable(pages)
+                    extraction_log.append({
+                        "method": "pdfplumber_default",
+                        "pages": len(pages),
+                        "chars": sum(len(p) for p in pages),
+                        "readable": bool(readable),
+                        "preview": pages[0][:200] if pages else "",
+                    })
+                except Exception as exc:
+                    extraction_log.append({"method": "pdfplumber_default", "error": str(exc)})
+                    pages = []
+                    readable = False
+                chosen_pages = pages if readable else []
+                chosen_method = "pdfplumber_default" if readable else "none"
+
+    if not chosen_pages:
+        return {"extraction_log": extraction_log, "chosen_method": "none", "charges": []}
+
+    # Run the full Claude parsing pipeline
+    svc = ParserService()
+    try:
+        charges = await svc.parse(file_bytes, filename)
+        charges_out = [
+            {"date": str(c.date), "description": c.description, "amount": str(c.amount)}
+            for c in charges[:20]
+        ]
+    except Exception as exc:
+        charges_out = []
+        return {
+            "extraction_log": extraction_log,
+            "chosen_method": chosen_method,
+            "parse_error": str(exc),
+            "charges": [],
+        }
+
+    return {
+        "extraction_log": extraction_log,
+        "chosen_method": chosen_method,
+        "total_charges": len(charges),
+        "charges_preview": charges_out,
+    }
+
+
 @router.get("/", response_model=list[StatementResponse])
 async def list_statements(
     current_user_id: CurrentUserId,
