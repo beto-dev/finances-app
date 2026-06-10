@@ -81,9 +81,11 @@ class PDFParser(BaseParser):
         self._llm = llm
 
     async def parse(self, file_bytes: bytes, filename: str = "") -> list[ParsedCharge]:
-        # 1. pdftotext -layout: best for table-heavy bank statements
+        # 1. pdftotext -layout: most reliable for table-heavy statements.
+        # pdftotext -layout preserves column positions with many spaces, which legitimately
+        # lowers the readable-char ratio below _MIN_READABLE_RATIO — skip that check here.
         pages = _extract_pages_pdftotext(file_bytes)
-        if pages and _looks_readable(pages):
+        if pages:
             total_chars = sum(len(p) for p in pages)
             log.info("pdf_extractor_selected", method="pdftotext", pages=len(pages), chars=total_chars, preview=pages[0][:300])
             return await self._llm.parse_pdf_pages(pages, filename)
