@@ -5,6 +5,7 @@ import { Charge, FamilyMember } from '../../shared/types'
 import { NAME_BY_EMAIL } from '../../shared/utils/memberNames'
 import client from '../../shared/api/client'
 import Skeleton from '../../shared/components/Skeleton'
+import BankBadge from '../../shared/components/BankBadge'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -424,7 +425,7 @@ export default function FamilyChargesPage() {
                       <span className="text-xs text-gray-400">{formattedDate}</span>
                       <span className="text-xs text-gray-400">· {memberName}</span>
                       {charge.bank_hint && charge.bank_hint !== 'manual' && (
-                        <span className="text-xs text-gray-400">· {charge.bank_hint}</span>
+                        <BankBadge bank={charge.bank_hint} showName={false} />
                       )}
                       {cat && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
@@ -488,8 +489,10 @@ export default function FamilyChargesPage() {
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>{cat.name}</span>
                         ) : <span className="text-xs text-gray-400">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
-                        {charge.bank_hint && charge.bank_hint !== 'manual' ? charge.bank_hint : '—'}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {charge.bank_hint && charge.bank_hint !== 'manual'
+                          ? <BankBadge bank={charge.bank_hint} />
+                          : <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{memberName}</td>
                     </tr>

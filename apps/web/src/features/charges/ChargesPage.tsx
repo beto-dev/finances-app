@@ -9,6 +9,7 @@ import Toast from '../../shared/components/Toast'
 import CategorySheet from '../../shared/components/CategorySheet'
 import NewCategoryModal from '../../shared/components/NewCategoryModal'
 import { useAuth } from '../auth/useAuth'
+import BankBadge from '../../shared/components/BankBadge'
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -543,7 +544,11 @@ export default function ChargesPage() {
                                 <span className="w-16 shrink-0 text-xs font-semibold text-red-600 bg-red-50 rounded-full px-2 py-0.5 text-center">Extra</span>
                               )}
                               <span className="text-gray-600 shrink-0">{fmtDate(c.date)}</span>
-                              <span className="text-gray-400 text-xs truncate flex-1">{c.bank_hint ?? c.statement_type}</span>
+                              <span className="truncate flex-1">
+                                {c.bank_hint && c.bank_hint !== 'manual'
+                                  ? <BankBadge bank={c.bank_hint} showName={false} />
+                                  : <span className="text-gray-400 text-xs">{c.statement_type}</span>}
+                              </span>
                               <span className="font-medium text-gray-700 shrink-0">{fmt(c.amount)}</span>
                             </div>
                           ))}

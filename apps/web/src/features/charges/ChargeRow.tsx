@@ -5,6 +5,7 @@ import { useUpdateCategory, useDeleteCharge, useApplyToSimilar, useCreateCategor
 import Spinner from '../../shared/components/Spinner'
 import NewCategoryModal from '../../shared/components/NewCategoryModal'
 import { isSelfTransfer } from '../../shared/utils/selfTransfer'
+import BankBadge from '../../shared/components/BankBadge'
 
 interface ChargeRowProps {
   charge: Charge
@@ -225,8 +226,10 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
             </button>
           )}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
-          {charge.bank_hint && charge.bank_hint !== 'manual' ? charge.bank_hint : '—'}
+        <td className="px-4 py-3 whitespace-nowrap">
+          {charge.bank_hint && charge.bank_hint !== 'manual'
+            ? <BankBadge bank={charge.bank_hint} />
+            : <span className="text-gray-300">—</span>}
         </td>
         <td className="px-2 py-3 text-center">
           {charge.statement_type === 'manual' && (
