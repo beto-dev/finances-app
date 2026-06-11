@@ -242,7 +242,7 @@ export default function DashboardPage() {
         <div className="card">
           <p className="text-sm text-gray-500">Créditos/mes</p>
           <p className="text-2xl font-bold text-orange-500 mt-1">{formatCurrency(dashboard.totalCredits)}</p>
-          <p className="text-xs text-gray-400 mt-1">dividendos activos</p>
+          <p className="text-xs text-gray-400 mt-1">cuotas y créditos activos</p>
         </div>
         <div className="card">
           <p className="text-sm text-gray-500">Balance neto</p>

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import client from '../../shared/api/client'
 import { Charge, Category, Credit } from '../../shared/types'
 import { isSelfTransfer } from '../../shared/utils/selfTransfer'
+import { groupCuotas } from '../../shared/utils/cuotas'
 import { useAuth } from '../auth/useAuth'
 
 interface CategoryBreakdown {
@@ -56,10 +57,27 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     },
   })
 
-  // Sum of active credit monthly payments (cuota_numero < cuota_total)
-  const activeCreditsTotal = credits
+  // All charges (no month filter) — needed to detect active tarjeta cuotas across history
+  const { data: allCharges } = useQuery<Charge[]>({
+    queryKey: ['charges', undefined, undefined],
+    queryFn: async () => {
+      const res = await client.get('/api/charges/')
+      return res.data
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Sum of active bank credit monthly payments (cuota_numero < cuota_total)
+  const activeBankCreditsTotal = credits
     .filter((c) => c.cuota_numero < c.cuota_total)
     .reduce((sum, c) => sum + c.cuota_monto, 0)
+
+  // Sum of active tarjeta cuotas detected from uploaded statements
+  const activeTarjetaCuotasTotal = groupCuotas(allCharges)
+    .filter((g) => g.cuota_numero < g.cuota_total)
+    .reduce((sum, g) => sum + g.cuota_monto, 0)
+
+  const activeCreditsTotal = activeBankCreditsTotal + activeTarjetaCuotasTotal
 
   const dashboard: DashboardData = {
     totalAmount: 0,
