@@ -187,23 +187,25 @@ async def parser_test():
             from groq import Groq  # type: ignore[import-untyped]
             from infrastructure.ai.groq_parser import _MODEL as GROQ_MODEL  # noqa: N811
             groq_client = Groq(api_key=groq_key)
-            response = await asyncio.to_thread(
-                lambda: groq_client.chat.completions.create(  # type: ignore[union-attr]
-                    model=GROQ_MODEL,
-                    messages=[{"role": "user", "content": "Reply with the number 1"}],
-                    max_tokens=10,
-                )
+            groq_response = await asyncio.to_thread(  # type: ignore[misc]
+                groq_client.chat.completions.create,  # type: ignore[union-attr]
+                model=GROQ_MODEL,
+                messages=[{"role": "user", "content": "Reply with the number 1"}],
+                max_tokens=10,
             )
-            return {"ok": True, "parser": "groq", "model": GROQ_MODEL, "response": response.choices[0].message.content}  # type: ignore[union-attr]  # noqa: E501
+            groq_text = groq_response.choices[0].message.content  # type: ignore[union-attr]
+            return {"ok": True, "parser": "groq", "model": GROQ_MODEL, "response": groq_text}
         elif anthropic_key:
             import anthropic  # noqa: I001
+            from anthropic.types import TextBlock as _TextBlock  # noqa: I001
             anthropic_client = anthropic.AsyncAnthropic(api_key=anthropic_key)
             msg = await anthropic_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=10,
                 messages=[{"role": "user", "content": "Reply with the number 1"}],
             )
-            return {"ok": True, "parser": "claude", "response": msg.content[0].text if msg.content else ""}
+            text = next((b.text for b in msg.content if isinstance(b, _TextBlock)), "")
+            return {"ok": True, "parser": "claude", "response": text}
         else:
             return {"ok": False, "parser": "none", "error": "No API key configured"}
     except Exception as e:
