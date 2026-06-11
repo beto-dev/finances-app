@@ -75,6 +75,9 @@ class MockUserRepo(UserRepository):
         self.update_family_calls.append((user_id, family_id))
         return next(u for u in self._users if u.id == user_id)
 
+    async def update_name(self, user_id: uuid.UUID, full_name: str | None) -> User:
+        return next(u for u in self._users if u.id == user_id)
+
 
 # ── create_family ─────────────────────────────────────────────────────────────
 
