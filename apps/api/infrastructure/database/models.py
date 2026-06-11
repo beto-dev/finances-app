@@ -173,7 +173,9 @@ class ChargeModel(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="CLP")
-    category_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL"))
+    category_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL")
+    )
     is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     ai_suggested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     cuota_numero: Mapped[int | None] = mapped_column(nullable=True)

@@ -34,12 +34,16 @@ class ReviewChargesUseCase:
         await self._categories.upsert_rule(family_id, pattern, category_id)
         return charge
 
-    async def count_similar(self, uploaded_by: UUID, description: str, exclude_id: UUID, exclude_category_id: UUID) -> tuple[int, str]:
+    async def count_similar(
+        self, uploaded_by: UUID, description: str, exclude_id: UUID, exclude_category_id: UUID
+    ) -> tuple[int, str]:
         pattern = extract_pattern(description)
         count = await self._charges.count_similar(uploaded_by, pattern, exclude_id, exclude_category_id)
         return count, pattern
 
-    async def apply_to_similar(self, uploaded_by: UUID, family_id: UUID, pattern: str, category_id: UUID, exclude_id: UUID) -> int:
+    async def apply_to_similar(
+        self, uploaded_by: UUID, family_id: UUID, pattern: str, category_id: UUID, exclude_id: UUID
+    ) -> int:
         category = await self._categories.get_by_id(category_id)
         if category is None:
             raise ValueError(f"Category {category_id} not found")

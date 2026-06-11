@@ -354,7 +354,7 @@ export default function ChargesPage() {
       await bulkDelete.mutateAsync(toDelete)
       setToast({ message: `${toDelete.length} gasto${toDelete.length !== 1 ? 's' : ''} duplicado${toDelete.length !== 1 ? 's' : ''} eliminado${toDelete.length !== 1 ? 's' : ''}`, type: 'success' })
       setExpandedDupKey(null)
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al eliminar duplicados. Intenta de nuevo.', type: 'error' })
     }
   }, [bulkDelete])

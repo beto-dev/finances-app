@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from application.use_cases.upload_statement import UploadStatementUseCase
 from domain.entities.statement import Statement
 from domain.repositories.statement_repository import StatementRepository
+from infrastructure.storage.supabase_storage import SupabaseStorage
 from tests.conftest import TEST_FAMILY_ID, TEST_USER_ID
 
 
@@ -69,7 +70,7 @@ class MockStatementRepo(StatementRepository):
         return _make_statement()
 
 
-class MockStorage:
+class MockStorage(SupabaseStorage):
     def __init__(self, path: str = "statements/family/jan.pdf") -> None:
         self._path = path
         self.upload_calls: list[dict] = []

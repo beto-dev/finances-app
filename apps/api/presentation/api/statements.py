@@ -61,7 +61,7 @@ async def _parse_and_categorize(
     from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
     from presentation.dependencies import get_categorizer
 
-    log = structlog.get_logger()
+    log = structlog.get_logger()  # noqa: I001
 
     # Phase 1: Parse — isolated session so any post-parse error can't roll it back
     async with AsyncSessionLocal() as session:
@@ -72,7 +72,7 @@ async def _parse_and_categorize(
         try:
             await parse_uc.execute(statement_id, file_bytes, filename)
         except Exception as exc:
-            log.error("parse_failed", error=str(exc), error_type=type(exc).__name__, filename=filename, statement_id=str(statement_id))
+            log.error("parse_failed", error=str(exc), error_type=type(exc).__name__, filename=filename, statement_id=str(statement_id))  # noqa: E501
             return  # status already set to 'error' by ParseStatementUseCase
 
     # Phase 2: Categorize — fresh session, parse result is already committed and safe
@@ -80,7 +80,7 @@ async def _parse_and_categorize(
         statement_repo = SQLStatementRepository(session)
         charge_repo = SQLChargeRepository(session)
         stmt = await statement_repo.get_by_id(statement_id)
-        if not stmt:
+        if not stmt or not stmt.family_id:
             return
 
         categorizer = get_categorizer()
@@ -193,9 +193,9 @@ async def statements_summary(
     db: DbSession,
 ):
     """Return all statements with charge counts and categorization status."""
-    from sqlalchemy import func, select
-    from infrastructure.database.models import ChargeModel, StatementModel
+    from infrastructure.database.models import ChargeModel, StatementModel  # noqa: I001
     from infrastructure.repositories.sql_user_repository import SQLUserRepository
+    from sqlalchemy import func, select
 
     user = await SQLUserRepository(db).get_by_id(current_user_id)
     if not user or not user.family_id:
@@ -253,13 +253,12 @@ async def parse_preview(
     Returns the extraction method used, a text preview, and the list of charges
     that would be created — useful for debugging parsers without touching the DB.
     """
-    from infrastructure.parsers.pdf_parser import (
+    from infrastructure.parsers.pdf_parser import (  # noqa: I001
         _extract_pages_pdfplumber,
         _extract_pages_pdftotext,
         _extract_pages_pypdfium2,
         _looks_readable,
     )
-    from application.services.parser_service import ParserService
 
     file_bytes = await file.read()
     filename = file.filename or ""
@@ -336,7 +335,7 @@ async def parse_preview(
                 chosen_method = "pdfplumber_default" if readable else "none"
 
     # Use pdftotext first regardless of readable check (it uses layout spacing)
-    pdftotext_pages = next((e["pages"] for e in extraction_log if e.get("method") == "pdftotext" and e.get("pages", 0) > 0), 0)
+    pdftotext_pages = next((e["pages"] for e in extraction_log if e.get("method") == "pdftotext" and e.get("pages", 0) > 0), 0)  # noqa: E501
     if pdftotext_pages:
         chosen_pages = _extract_pages_pdftotext(file_bytes)
         chosen_method = "pdftotext (forced)"
@@ -344,7 +343,7 @@ async def parse_preview(
     if not chosen_pages:
         return {"extraction_log": extraction_log, "chosen_method": "none", "charges": []}
 
-    from infrastructure.ai.claude_parser import ClaudeParser, _PAGE_CHUNK
+    from infrastructure.ai.claude_parser import ClaudeParser, _PAGE_CHUNK  # noqa: I001
 
     claude = ClaudeParser()
     if not claude.is_available:
@@ -359,8 +358,8 @@ async def parse_preview(
         chunk_pages = chosen_pages[i : i + _PAGE_CHUNK]
         chunk_text = "\n\n--- PAGE BREAK ---\n\n".join(chunk_pages)
         try:
-            from anthropic.types import TextBlock as _TextBlock
-            message = await claude._client.messages.create(  # type: ignore[union-attr]
+            from anthropic.types import TextBlock as _TextBlock  # noqa: I001
+            message = await claude._client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=8192,
                 messages=[{"role": "user", "content": f"""You are a bank statement parser. Extract every individual financial transaction from the text below.

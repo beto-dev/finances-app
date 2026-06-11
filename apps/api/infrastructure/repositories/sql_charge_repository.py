@@ -194,7 +194,9 @@ class SQLChargeRepository(ChargeRepository):
         result = await self._session.execute(stmt)
         return result.scalar() or 0
 
-    async def apply_category_by_pattern(self, uploaded_by: UUID, pattern: str, category_id: UUID, exclude_id: UUID) -> int:
+    async def apply_category_by_pattern(
+        self, uploaded_by: UUID, pattern: str, category_id: UUID, exclude_id: UUID
+    ) -> int:
         id_query = (
             select(ChargeModel.id)
             .join(StatementModel, ChargeModel.statement_id == StatementModel.id)

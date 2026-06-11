@@ -156,8 +156,8 @@ async def delete_charge(
     db: DbSession,
     charge_repo: SQLChargeRepository = Depends(get_charge_repo),
 ):
+    from sqlalchemy import select  # noqa: I001
     from infrastructure.database.models import ChargeModel, StatementModel
-    from sqlalchemy import select
 
     result = await db.execute(
         select(ChargeModel, StatementModel)

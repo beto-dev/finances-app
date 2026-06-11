@@ -56,7 +56,9 @@ class SQLCategoryRepository(CategoryRepository):
 
     async def delete(self, category_id: UUID) -> None:
         # Use raw SQL to bypass ORM relationship handling which conflicts with the FK constraint
-        await self._session.execute(text("UPDATE charges SET category_id = NULL WHERE category_id = :id"), {"id": category_id})
+        await self._session.execute(
+            text("UPDATE charges SET category_id = NULL WHERE category_id = :id"), {"id": category_id}
+        )
         await self._session.execute(text("DELETE FROM categories WHERE id = :id"), {"id": category_id})
         await self._session.commit()
 

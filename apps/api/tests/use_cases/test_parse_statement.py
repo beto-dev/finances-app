@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import pytest
 
+from application.services.parser_service import ParserService
 from application.use_cases.parse_statement import ParseStatementUseCase
 from domain.entities.charge import Charge, ParsedCharge
 from domain.entities.statement import Statement
@@ -148,7 +149,7 @@ class MockChargeRepo(ChargeRepository):
         return 0
 
 
-class MockParser:
+class MockParser(ParserService):
     def __init__(self, result: list[ParsedCharge] | None = None, raise_exc: Exception | None = None) -> None:
         self._result = result or []
         self._raise = raise_exc

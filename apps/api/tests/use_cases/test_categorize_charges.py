@@ -4,8 +4,6 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-import pytest
-
 from application.services.categorization_service import CategorizationService
 from application.use_cases.categorize_charges import CategorizeChargesUseCase
 from domain.entities.category import Category, CategoryRule

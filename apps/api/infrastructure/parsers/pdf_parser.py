@@ -87,7 +87,7 @@ class PDFParser(BaseParser):
         pages = _extract_pages_pdftotext(file_bytes)
         if pages:
             total_chars = sum(len(p) for p in pages)
-            log.info("pdf_extractor_selected", method="pdftotext", pages=len(pages), chars=total_chars, preview=pages[0][:300])
+            log.info("pdf_extractor_selected", method="pdftotext", pages=len(pages), chars=total_chars, preview=pages[0][:300])  # noqa: E501
             return await self._llm.parse_pdf_pages(pages, filename)
 
         # 2. pdfplumber with layout=True (pdfminer layout analysis — no external binary)
@@ -95,7 +95,7 @@ class PDFParser(BaseParser):
             pages = _extract_pages_pdfplumber(file_bytes, layout=True)
             if pages and _looks_readable(pages):
                 total_chars = sum(len(p) for p in pages)
-                log.info("pdf_extractor_selected", method="pdfplumber_layout", pages=len(pages), chars=total_chars, preview=pages[0][:300])
+                log.info("pdf_extractor_selected", method="pdfplumber_layout", pages=len(pages), chars=total_chars, preview=pages[0][:300])  # noqa: E501
                 return await self._llm.parse_pdf_pages(pages, filename)
         except Exception as exc:
             log.warning("pdf_pdfplumber_layout_failed", error=str(exc))
@@ -105,7 +105,7 @@ class PDFParser(BaseParser):
             pages = _extract_pages_pypdfium2(file_bytes)
             if pages and _looks_readable(pages):
                 total_chars = sum(len(p) for p in pages)
-                log.info("pdf_extractor_selected", method="pypdfium2", pages=len(pages), chars=total_chars, preview=pages[0][:300])
+                log.info("pdf_extractor_selected", method="pypdfium2", pages=len(pages), chars=total_chars, preview=pages[0][:300])  # noqa: E501
                 return await self._llm.parse_pdf_pages(pages, filename)
         except Exception as exc:
             log.warning("pdf_pypdfium2_failed", error=str(exc))
@@ -115,7 +115,7 @@ class PDFParser(BaseParser):
             pages = _extract_pages_pdfplumber(file_bytes, layout=False)
             if pages and _looks_readable(pages):
                 total_chars = sum(len(p) for p in pages)
-                log.info("pdf_extractor_selected", method="pdfplumber_default", pages=len(pages), chars=total_chars, preview=pages[0][:300])
+                log.info("pdf_extractor_selected", method="pdfplumber_default", pages=len(pages), chars=total_chars, preview=pages[0][:300])  # noqa: E501
                 return await self._llm.parse_pdf_pages(pages, filename)
         except Exception as exc:
             log.warning("pdf_pdfplumber_failed", error=str(exc))

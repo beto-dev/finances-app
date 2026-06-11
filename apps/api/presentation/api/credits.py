@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from infrastructure.repositories.sql_credit_repository import SQLCreditRepository
 from presentation.dependencies import CurrentUserId, DbSession

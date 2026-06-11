@@ -154,7 +154,7 @@ Bank statement (file: debug):
             messages=[{"role": "user", "content": prompt}],
         )
         raw = next((b.text for b in msg.content if isinstance(b, TextBlock)), "")
-        return {"ok": True, "raw_response": raw, "input_tokens": msg.usage.input_tokens, "output_tokens": msg.usage.output_tokens}
+        return {"ok": True, "raw_response": raw, "input_tokens": msg.usage.input_tokens, "output_tokens": msg.usage.output_tokens}  # noqa: E501
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -169,37 +169,36 @@ async def parser_test():
 
     try:
         if openrouter_key:
-            from infrastructure.ai.openrouter_parser import _MODEL as openrouter_model
-            # Don't make a real API call — just verify the key is configured (avoids burning the 20 RPM free limit)
-            return {"ok": True, "parser": "openrouter", "model": openrouter_model, "note": "key configured, skipping live call"}
+            from infrastructure.ai.openrouter_parser import _MODEL as OPENROUTER_MODEL  # noqa: N811
+            return {"ok": True, "parser": "openrouter", "model": OPENROUTER_MODEL, "note": "key configured, skipping live call"}  # noqa: E501
         elif gemini_key:
-            import asyncio
-            from google import genai
-            from infrastructure.ai.gemini_parser import _MODEL as gemini_model
-            client = genai.Client(api_key=gemini_key)
+            import asyncio  # noqa: I001
+            from google import genai  # type: ignore[import-untyped]
+            from infrastructure.ai.gemini_parser import _MODEL as GEMINI_MODEL  # noqa: N811
+            gemini_client = genai.Client(api_key=gemini_key)
             response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=gemini_model,
+                gemini_client.models.generate_content,
+                model=GEMINI_MODEL,
                 contents="Reply with the number 1",
             )
-            return {"ok": True, "parser": "gemini", "model": gemini_model, "response": response.text}
+            return {"ok": True, "parser": "gemini", "model": GEMINI_MODEL, "response": response.text}
         elif groq_key:
-            from groq import Groq
-            import asyncio
-            from infrastructure.ai.groq_parser import _MODEL as groq_model
-            client = Groq(api_key=groq_key)
+            import asyncio  # noqa: I001
+            from groq import Groq  # type: ignore[import-untyped]
+            from infrastructure.ai.groq_parser import _MODEL as GROQ_MODEL  # noqa: N811
+            groq_client = Groq(api_key=groq_key)
             response = await asyncio.to_thread(
-                lambda: client.chat.completions.create(
-                    model=groq_model,
+                lambda: groq_client.chat.completions.create(  # type: ignore[union-attr]
+                    model=GROQ_MODEL,
                     messages=[{"role": "user", "content": "Reply with the number 1"}],
                     max_tokens=10,
                 )
             )
-            return {"ok": True, "parser": "groq", "model": groq_model, "response": response.choices[0].message.content}
+            return {"ok": True, "parser": "groq", "model": GROQ_MODEL, "response": response.choices[0].message.content}  # type: ignore[union-attr]  # noqa: E501
         elif anthropic_key:
-            import anthropic
-            client = anthropic.AsyncAnthropic(api_key=anthropic_key)
-            msg = await client.messages.create(
+            import anthropic  # noqa: I001
+            anthropic_client = anthropic.AsyncAnthropic(api_key=anthropic_key)
+            msg = await anthropic_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=10,
                 messages=[{"role": "user", "content": "Reply with the number 1"}],
