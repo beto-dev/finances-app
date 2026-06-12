@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Auth + Storage | Supabase (Auth + Storage) |
 | AI | Claude API (charge categorization) |
 | Infra | Docker + docker-compose (dev) |
-| Deploy | Vercel (frontend) + Koyeb (API) |
+| Deploy | Vercel (frontend) + Koyeb (API prod) + Railway (API staging) |
 | CI | GitHub Actions |
 
 Architecture: **Clean Architecture** — `domain/` → `application/` → `infrastructure/` → `presentation/`
@@ -153,6 +153,7 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | # | Task | Status |
 |---|---|---|
 | 4.1 | Production deployment | ✅ Done (Vercel + Koyeb) |
+| 4.1b | Staging environment | ✅ Done (Vercel Preview + Railway + Supabase beta) |
 | 4.2 | Monitoring | ⏳ Pending |
 | 4.3–4.5 | Mobile (React Native) | ⏳ Pending |
 
@@ -175,9 +176,17 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ---
 
+## Authentication
+
+- **Google OAuth**: primary login method. OAuth app is published (External, no test user restriction). Authorized redirect URIs in Google Console include production (Koyeb) and staging (Railway) callback URLs.
+- **Email/password**: secondary login, available via hidden link on the login page ("Iniciar sesión con email"). Useful for staging where Google OAuth redirect URI is environment-specific.
+- **`ALLOWED_EMAILS`**: backend env var that restricts which emails can log in regardless of auth method.
+
+---
+
 ## CI / Quality
 
-- **GitHub Actions** runs on every push to `main`
+- **GitHub Actions** runs on every push to `main` and `beta`
 - Jobs: API lint (ruff), API type check (mypy), API tests (pytest), Web build, Web type check + lint, E2E tests (Playwright), Security audit
 - **Ruff** config: `line-length = 120`, rules E/F/I/N/W/UP, `known-first-party` includes all local packages
 - **Mypy**: `check_untyped_defs = true`, `warn_unused_ignores = true` — this means any unnecessary `# type: ignore` will cause CI to fail
@@ -190,13 +199,13 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 ### Branch strategy
 
 ```
-feature/* ──PR──▶ beta ──auto-deploy──▶ staging
+feature/* ──PR──▶ beta ──auto-deploy──▶ staging (Railway API + Vercel Preview)
                       │
-                      └──(PR manual)──▶ main ──auto-deploy──▶ producción
+                      └──(PR manual)──▶ main ──auto-deploy──▶ producción (Koyeb + Vercel)
 ```
 
-- **`beta` branch** → staging (Vercel preview + Koyeb `finances-api-beta`) — auto-deploy
-- **`main` branch** → production (Vercel + Koyeb `finances-api`) — auto-deploy, but triggered manually by merging `beta` → `main` via PR
+- **`beta` branch** → staging — auto-deploy on push
+- **`main` branch** → production — auto-deploy, triggered manually by merging `beta` → `main` via PR
 
 ### Promoting to production
 
@@ -207,22 +216,31 @@ gh pr create --base main --head beta --title "Release: <descripción>"
 
 ### Platform config
 
-- **Frontend**: Vercel — `beta` branch auto-deploys as Preview environment; `main` is Production
-- **API**: Koyeb — two services: `finances-api` (main) and `finances-api-beta` (beta branch)
-- **`ALLOWED_EMAILS`** in Koyeb env controls who can log in (staging and production each have their own)
+| Component | Staging | Production |
+|-----------|---------|------------|
+| Frontend | Vercel Preview (`finances-app-git-beta-*.vercel.app`) | Vercel (`finances-app-pi.vercel.app`) |
+| API | Railway (`finances-app-production-f04d.up.railway.app`) | Koyeb (`annoyed-janice-beto-dev-org-80e2dfa8.koyeb.app`) |
+| Database | Supabase beta project | Supabase production project |
+
+- **`ALLOWED_EMAILS`** controls who can log in (set separately in Railway and Koyeb)
 - **`ENABLE_DEBUG_ENDPOINTS`** must NOT be set in production (debug routes return 404 without it)
+- **Google OAuth redirect URI** for staging: `https://finances-app-production-f04d.up.railway.app/api/auth/google/callback` — registered in Google Cloud Console
+- **Railway note**: uses `PORT=8080` env var injected automatically; Dockerfile builder must be set explicitly (not Railpack); build context must be repo root (not `apps/api`)
+- **Supabase staging DB**: use Session pooler URL (`aws-1-us-east-2.pooler.supabase.com:5432`) — Railway doesn't support IPv6 (Direct connection resolves to IPv6)
 
 ---
 
 ## Environment Variables
 
-| Variable | Where |
-|---|---|
-| `VITE_API_URL` | Vercel |
-| `APP_ANTHROPIC_API_KEY` | Koyeb |
-| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | Koyeb |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Koyeb |
-| `GOOGLE_LOGIN_REDIRECT_URI`, `GOOGLE_REDIRECT_URI` | Koyeb |
-| `JWT_SECRET` | Koyeb |
-| `FRONTEND_URL` | Koyeb |
-| `ALLOWED_EMAILS` | Koyeb |
+| Variable | Production (Koyeb) | Staging (Railway) |
+|---|---|---|
+| `VITE_API_URL` | Vercel (Production env) | Vercel (Preview env) |
+| `APP_ANTHROPIC_API_KEY` | ✅ | ✅ same value |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | production project | beta project |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ | ✅ same value |
+| `GOOGLE_LOGIN_REDIRECT_URI` | Koyeb callback URL | Railway callback URL |
+| `GOOGLE_REDIRECT_URI` | ✅ | ✅ |
+| `JWT_SECRET` | ✅ | ✅ same value |
+| `FRONTEND_URL` | `https://finances-app-pi.vercel.app` | Vercel beta preview URL |
+| `ALLOWED_EMAILS` | production list | staging list |
+| `DATABASE_URL` | Supabase production (Session pooler) | Supabase beta (Session pooler) |
