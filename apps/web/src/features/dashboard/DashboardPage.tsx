@@ -242,7 +242,12 @@ export default function DashboardPage() {
         <div className="card">
           <p className="text-sm text-gray-500">Créditos/mes</p>
           <p className="text-2xl font-bold text-orange-500 mt-1">{formatCurrency(dashboard.totalCredits)}</p>
-          <p className="text-xs text-gray-400 mt-1">cuotas y créditos activos</p>
+          {dashboard.totalDebt > 0 && (
+            <p className="text-xs text-gray-400 mt-1">Deuda total: {formatCurrency(dashboard.totalDebt)}</p>
+          )}
+          {dashboard.totalDebt === 0 && (
+            <p className="text-xs text-gray-400 mt-1">cuotas y créditos activos</p>
+          )}
         </div>
         <div className="card">
           <p className="text-sm text-gray-500">Balance neto</p>
@@ -275,6 +280,53 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* ── Deuda total ── */}
+      {dashboard.creditItems.length > 0 && (
+        <div className="card mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-800">Deuda Total</h2>
+            <div className="text-right">
+              <p className="text-xl font-bold text-orange-500">{formatCurrency(dashboard.totalDebt)}</p>
+              <p className="text-xs text-gray-400">{formatCurrency(dashboard.totalCredits)}/mes</p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {dashboard.creditItems.map((item, i) => {
+              const remaining = item.cuota_total - item.cuota_numero
+              const deuda = remaining * item.cuota_monto
+              const pct = Math.min(100, Math.round((item.cuota_numero / item.cuota_total) * 100))
+              return (
+                <div key={i} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate uppercase">{item.description}</p>
+                      {item.bank && <p className="text-xs text-gray-400">{item.bank}</p>}
+                    </div>
+                    <span className={`text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full ${item.tipo === 'banco' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                      {item.tipo === 'banco' ? 'Crédito' : 'Tarjeta'}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-bold text-gray-900">{formatCurrency(deuda)}</span>
+                    <span className="text-xs text-gray-500">restantes</span>
+                    <span className="text-gray-200 mx-0.5">·</span>
+                    <span className="text-xs text-gray-500">{remaining} cuotas</span>
+                    <span className="text-gray-200 mx-0.5">·</span>
+                    <span className="text-xs text-gray-500">{formatCurrency(item.cuota_monto)}/mes</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">{pct}%</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {dashboard.byCategory.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
