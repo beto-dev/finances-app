@@ -37,7 +37,8 @@ export default function LoginPage() {
       })
       if (!res.ok) throw new Error()
       const { access_token } = await res.json()
-      const payload = JSON.parse(atob(access_token.split('.')[1]))
+      const b64 = access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+      const payload = JSON.parse(atob(b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=')))
       login(access_token, email, payload.sub)
       window.location.href = '/resumen'
     } catch {
