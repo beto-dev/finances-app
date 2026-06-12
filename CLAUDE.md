@@ -187,12 +187,30 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ## Deployment
 
-- **Frontend**: Vercel, auto-deploy on push to `main`
-- **API**: Koyeb, Docker-based, auto-deploy on push to `main`
-- **`ALLOWED_EMAILS`** in Koyeb env controls who can log in during beta
-- **`ENABLE_DEBUG_ENDPOINTS`** must NOT be set in production (debug routes return 404 without it)
+### Branch strategy
 
-See `BETA_LAUNCH.md` for full deployment guide and ops runbook.
+```
+feature/* ──PR──▶ beta ──auto-deploy──▶ staging
+                      │
+                      └──(PR manual)──▶ main ──auto-deploy──▶ producción
+```
+
+- **`beta` branch** → staging (Vercel preview + Koyeb `finances-api-beta`) — auto-deploy
+- **`main` branch** → production (Vercel + Koyeb `finances-api`) — auto-deploy, but triggered manually by merging `beta` → `main` via PR
+
+### Promoting to production
+
+```bash
+gh pr create --base main --head beta --title "Release: <descripción>"
+# Review, approve, merge → production auto-deploys
+```
+
+### Platform config
+
+- **Frontend**: Vercel — `beta` branch auto-deploys as Preview environment; `main` is Production
+- **API**: Koyeb — two services: `finances-api` (main) and `finances-api-beta` (beta branch)
+- **`ALLOWED_EMAILS`** in Koyeb env controls who can log in (staging and production each have their own)
+- **`ENABLE_DEBUG_ENDPOINTS`** must NOT be set in production (debug routes return 404 without it)
 
 ---
 
