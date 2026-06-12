@@ -221,14 +221,11 @@ async def remove_member(
         raise HTTPException(status_code=400, detail="No puedes eliminarte a ti mismo")
     current_user, family = await _assert_admin(current_user_id, user_repo, family_repo)
     await db.execute(
-        sql_delete(StatementModel).where(
-            StatementModel.uploaded_by == user_id,
-        )
+        sql_delete(StatementModel).where(StatementModel.uploaded_by == user_id)
     )
-    result = await db.execute(select(UserModel).where(UserModel.id == user_id))
-    target = result.scalar_one_or_none()
-    if target:
-        await db.delete(target)
+    await db.execute(
+        sql_delete(UserModel).where(UserModel.id == user_id)
+    )
     await db.commit()
 
 
