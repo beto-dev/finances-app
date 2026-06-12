@@ -91,9 +91,9 @@ Rules:
 - Include: every individual transaction line, both expenses AND income
 - date: always YYYY-MM-DD — if the statement only shows DD/MM without a year (common in Chilean bank statements like Itaú), infer the year from the period header (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026), the filename, or any header date. Never omit the year.
 - amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements use . as the thousands separator and , as the decimal separator (e.g. "$1.440" = 1440, "$28.260" = 28260, "$1.234.567" = 1234567). Remove ALL thousands-separator dots and output the raw integer value
-- cuota_numero / cuota_total: for installment purchases, extract the current and total installments from columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not an installment.
-- cuota_monto: the monthly installment amount from "VALOR CUOTA MENSUAL" column. Set null if not present.
-- amount should be the amount charged this billing period (cuota_monto if available, otherwise the total)
+- cuota_numero / cuota_total: ONLY extract from a dedicated installment-number column (labeled "Nº CUOTA", "N° CUOTA", "CUOTAS" or similar). Format is always current/total (e.g. "04/35" → cuota_numero=4, cuota_total=35). cuota_total can be a large number like 35, 48 or 60 — that is normal. NEVER derive cuota data from interest rates, percentages, page numbers, or any non-cuota field. If the row has no installment column, set both to null.
+- cuota_monto: the periodic installment amount from "VALOR CUOTA MENSUAL" or equivalent column. Set null if not present.
+- amount: for installment rows (cuota_numero is not null) use the cuota_monto (monthly payment), NOT the outstanding balance or "monto total a pagar". For non-installment rows use the actual charge amount.
 
 Bank statement (file: {filename or "unknown"}):
 {content}"""
