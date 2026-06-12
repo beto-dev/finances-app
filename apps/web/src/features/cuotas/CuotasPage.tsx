@@ -204,31 +204,36 @@ export default function CuotasPage() {
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium text-gray-900 truncate uppercase">{g.description}</p>
                       {correctingId === g.charge_id ? (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs text-gray-500">Cuota actual:</span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={g.cuota_total}
-                            value={correctingValue}
-                            onChange={(e) => setCorrectingValue(e.target.value)}
-                            className="input w-16 text-sm py-0.5 px-2"
-                            autoFocus
-                          />
-                          <span className="text-xs text-gray-400">/ {g.cuota_total}</span>
-                          <button
-                            className="text-xs text-brand-600 font-medium hover:text-brand-700 disabled:opacity-50"
-                            disabled={updateCuotaNumero.isPending || !correctingValue || Number(correctingValue) < 1 || Number(correctingValue) > g.cuota_total}
-                            onClick={() => {
-                              updateCuotaNumero.mutate(
-                                { chargeId: g.charge_id, cuotaNumero: Number(correctingValue) },
-                                { onSuccess: () => setCorrectingId(null) },
-                              )
-                            }}
-                          >
-                            {updateCuotaNumero.isPending ? '…' : 'Guardar'}
-                          </button>
-                          <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => setCorrectingId(null)}>Cancelar</button>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Cuota actual:</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={g.cuota_total}
+                              value={correctingValue}
+                              onChange={(e) => setCorrectingValue(e.target.value)}
+                              className="input w-16 text-sm py-0.5 px-2"
+                              autoFocus
+                            />
+                            <span className="text-xs text-gray-400">/ {g.cuota_total}</span>
+                            <button
+                              className="text-xs text-brand-600 font-medium hover:text-brand-700 disabled:opacity-50"
+                              disabled={updateCuotaNumero.isPending || !correctingValue || Number(correctingValue) < 1 || Number(correctingValue) > g.cuota_total}
+                              onClick={() => {
+                                updateCuotaNumero.mutate(
+                                  { chargeId: g.charge_id, cuotaNumero: Number(correctingValue) },
+                                  { onSuccess: () => setCorrectingId(null) },
+                                )
+                              }}
+                            >
+                              {updateCuotaNumero.isPending ? '…' : 'Guardar'}
+                            </button>
+                            <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => setCorrectingId(null)}>Cancelar</button>
+                          </div>
+                          {updateCuotaNumero.isError && (
+                            <span className="text-xs text-red-500">Error al guardar. Intenta de nuevo.</span>
+                          )}
                         </div>
                       ) : (
                         <button

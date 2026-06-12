@@ -26,7 +26,7 @@ export function groupCuotas(charges: Charge[] | undefined): CuotaGroup[] {
 
   const buckets = new Map<string, Charge[]>()
   for (const c of charges) {
-    if (c.cuota_numero == null || c.cuota_total == null) continue
+    if (c.cuota_numero == null || c.cuota_total == null || c.cuota_total <= 1) continue
     const key = `${normalizeDesc(c.description)}|${c.cuota_total}`
     if (!buckets.has(key)) buckets.set(key, [])
     buckets.get(key)!.push(c)
