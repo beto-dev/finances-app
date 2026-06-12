@@ -33,6 +33,7 @@ interface DashboardData {
   totalIncome: number
   totalCredits: number
   totalDebt: number
+  totalOriginalDebt: number
   creditItems: CreditItem[]
   currency: string
   byCategory: CategoryBreakdown[]
@@ -81,15 +82,20 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
   const activeCredits = credits.filter((c) => c.cuota_numero < c.cuota_total)
   const activeCuotaGroups = groupCuotas(allCharges).filter((g) => g.cuota_numero < g.cuota_total)
 
-  // Monthly payment totals
-  const activeBankCreditsTotal = activeCredits.reduce((sum, c) => sum + c.cuota_monto, 0)
-  const activeTarjetaCuotasTotal = activeCuotaGroups.reduce((sum, g) => sum + g.cuota_monto, 0)
+  // Monthly payment totals — Number() guards against Decimal-as-string from API
+  const activeBankCreditsTotal = activeCredits.reduce((sum, c) => sum + Number(c.cuota_monto), 0)
+  const activeTarjetaCuotasTotal = activeCuotaGroups.reduce((sum, g) => sum + Number(g.cuota_monto), 0)
   const activeCreditsTotal = activeBankCreditsTotal + activeTarjetaCuotasTotal
 
   // Total outstanding debt (remaining installments × monthly amount)
-  const bankDebt = activeCredits.reduce((sum, c) => sum + (c.cuota_total - c.cuota_numero) * c.cuota_monto, 0)
-  const tarjetaDebt = activeCuotaGroups.reduce((sum, g) => sum + (g.cuota_total - g.cuota_numero) * g.cuota_monto, 0)
+  const bankDebt = activeCredits.reduce((sum, c) => sum + (c.cuota_total - c.cuota_numero) * Number(c.cuota_monto), 0)
+  const tarjetaDebt = activeCuotaGroups.reduce((sum, g) => sum + (g.cuota_total - g.cuota_numero) * Number(g.cuota_monto), 0)
   const totalDebt = bankDebt + tarjetaDebt
+
+  // Original committed debt (total installments × monthly amount) — for overall progress %
+  const bankOriginal = activeCredits.reduce((sum, c) => sum + c.cuota_total * Number(c.cuota_monto), 0)
+  const tarjetaOriginal = activeCuotaGroups.reduce((sum, g) => sum + g.cuota_total * Number(g.cuota_monto), 0)
+  const totalOriginalDebt = bankOriginal + tarjetaOriginal
 
   const creditItems: CreditItem[] = [
     ...activeCredits.map((c) => ({
@@ -98,7 +104,7 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
       tipo: 'banco' as const,
       cuota_numero: c.cuota_numero,
       cuota_total: c.cuota_total,
-      cuota_monto: c.cuota_monto,
+      cuota_monto: Number(c.cuota_monto),
     })),
     ...activeCuotaGroups.map((g) => ({
       description: g.description,
@@ -106,7 +112,7 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
       tipo: 'tarjeta' as const,
       cuota_numero: g.cuota_numero,
       cuota_total: g.cuota_total,
-      cuota_monto: g.cuota_monto,
+      cuota_monto: Number(g.cuota_monto),
     })),
   ].sort((a, b) => (b.cuota_total - b.cuota_numero) * b.cuota_monto - (a.cuota_total - a.cuota_numero) * a.cuota_monto)
 
@@ -116,6 +122,7 @@ export function useDashboard(month: number | undefined, year: number): Dashboard
     totalIncome: 0,
     totalCredits: activeCreditsTotal,
     totalDebt,
+    totalOriginalDebt,
     creditItems,
     currency: 'CLP',
     byCategory: [],

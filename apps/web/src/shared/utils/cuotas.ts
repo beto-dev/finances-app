@@ -85,7 +85,7 @@ export function groupCuotas(charges: Charge[] | undefined): CuotaGroup[] {
         description: c.description,
         cuota_numero: c.cuota_numero!,
         cuota_total: c.cuota_total!,
-        cuota_monto: c.cuota_monto ?? c.amount,
+        cuota_monto: Number(c.cuota_monto ?? c.amount),
         date: c.date,
       })
     }
