@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Spinner from '../../shared/components/Spinner'
+import { useAuth } from './useAuth'
 
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 
@@ -8,16 +9,43 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams()
   const error = searchParams.get('error')
   const [loading, setLoading] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const { login } = useAuth()
 
   const handleGoogleLogin = async () => {
     setLoading(true)
     try {
-      // Wake up the API if it's cold-starting before doing the OAuth redirect
       await fetch(`${API_URL}/api/health`, { signal: AbortSignal.timeout(25000) })
     } catch {
       // Continue regardless — the redirect will handle errors
     }
     window.location.href = `${API_URL}/api/auth/google`
+  }
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      if (!res.ok) throw new Error()
+      const { access_token } = await res.json()
+      const b64 = access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+      const payload = JSON.parse(atob(b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=')))
+      login(access_token, email, payload.sub)
+      window.location.href = '/resumen'
+    } catch {
+      setEmailError('Correo o contraseña incorrectos')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -43,7 +71,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {loading && !showEmail ? (
               <>
                 <Spinner size="sm" />
                 Conectando…
@@ -60,6 +88,42 @@ export default function LoginPage() {
               </>
             )}
           </button>
+          <div className="mt-4">
+            <button
+              className="text-xs text-gray-400 hover:text-gray-600 w-full text-center"
+              onClick={() => setShowEmail(!showEmail)}
+            >
+              {showEmail ? 'Ocultar' : 'Iniciar sesión con email'}
+            </button>
+          </div>
+          {showEmail && (
+            <form onSubmit={handleEmailLogin} className="mt-4 space-y-3">
+              <input
+                type="email"
+                placeholder="Correo"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input w-full"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input w-full"
+                required
+              />
+              {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full"
+              >
+                {loading ? <Spinner size="sm" /> : 'Entrar'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
