@@ -52,6 +52,7 @@ interface StatementNotification {
 }
 
 export function useStatementNotifier() {
+  const queryClient = useQueryClient()
   const [notification, setNotification] = useState<StatementNotification | null>(null)
   const prevStatuses = useRef<Record<string, string>>({})
   const initialized = useRef(false)
@@ -75,12 +76,17 @@ export function useStatementNotifier() {
     for (const s of statements) {
       const prev = prevStatuses.current[s.id]
       if (prev && PROCESSING_STATUSES.has(prev)) {
-        if (s.status === 'parsed') setNotification({ filename: s.filename, type: 'success' })
-        else if (s.status === 'error') setNotification({ filename: s.filename, type: 'error' })
+        if (s.status === 'parsed') {
+          setNotification({ filename: s.filename, type: 'success' })
+          // Parsing finished — charges are now in the DB; invalidate so cuotas and dashboard refresh
+          queryClient.invalidateQueries({ queryKey: ['charges'] })
+        } else if (s.status === 'error') {
+          setNotification({ filename: s.filename, type: 'error' })
+        }
       }
       prevStatuses.current[s.id] = s.status
     }
-  }, [statements])
+  }, [statements, queryClient])
 
   return { notification, clearNotification: () => setNotification(null) }
 }
