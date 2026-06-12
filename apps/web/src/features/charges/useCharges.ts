@@ -137,6 +137,19 @@ export function useBulkDeleteCharges() {
   })
 }
 
+export function useUpdateCuotaNumero() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ chargeId, cuotaNumero }: { chargeId: string; cuotaNumero: number }) => {
+      const res = await client.patch(`/api/charges/${chargeId}/cuota-numero`, { cuota_numero: cuotaNumero })
+      return res.data as Charge
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] })
+    },
+  })
+}
+
 export function useBulkUnshare() {
   const queryClient = useQueryClient()
   return useMutation({

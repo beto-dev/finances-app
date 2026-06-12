@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useCharges } from '../charges/useCharges'
+import { useCharges, useUpdateCuotaNumero } from '../charges/useCharges'
 import { useCredits, useCreateCredit, useUpdateCredit, useDeleteCredit } from './useCredits'
 import Spinner from '../../shared/components/Spinner'
 import type { Credit } from '../../shared/types'
@@ -64,8 +64,12 @@ export default function CuotasPage() {
   const updateCredit = useUpdateCredit()
   const deleteCredit = useDeleteCredit()
 
+  const updateCuotaNumero = useUpdateCuotaNumero()
+
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [correctingId, setCorrectingId] = useState<string | null>(null)
+  const [correctingValue, setCorrectingValue] = useState('')
 
   const groups = groupCuotas(charges)
   const active = groups.filter((g) => g.cuota_numero < g.cuota_total)
@@ -197,7 +201,44 @@ export default function CuotasPage() {
               <div className="card p-0 divide-y divide-gray-100">
                 {active.map((g, i) => (
                   <div key={i} className="px-4 py-3.5">
-                    <p className="text-sm font-medium text-gray-900 truncate uppercase">{g.description}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-900 truncate uppercase">{g.description}</p>
+                      {correctingId === g.charge_id ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-gray-500">Cuota actual:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={g.cuota_total}
+                            value={correctingValue}
+                            onChange={(e) => setCorrectingValue(e.target.value)}
+                            className="input w-16 text-sm py-0.5 px-2"
+                            autoFocus
+                          />
+                          <span className="text-xs text-gray-400">/ {g.cuota_total}</span>
+                          <button
+                            className="text-xs text-brand-600 font-medium hover:text-brand-700 disabled:opacity-50"
+                            disabled={updateCuotaNumero.isPending || !correctingValue || Number(correctingValue) < 1 || Number(correctingValue) > g.cuota_total}
+                            onClick={() => {
+                              updateCuotaNumero.mutate(
+                                { chargeId: g.charge_id, cuotaNumero: Number(correctingValue) },
+                                { onSuccess: () => setCorrectingId(null) },
+                              )
+                            }}
+                          >
+                            {updateCuotaNumero.isPending ? '…' : 'Guardar'}
+                          </button>
+                          <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => setCorrectingId(null)}>Cancelar</button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-xs text-gray-400 hover:text-gray-600 shrink-0"
+                          onClick={() => { setCorrectingId(g.charge_id); setCorrectingValue(String(g.cuota_numero)) }}
+                        >
+                          Corregir
+                        </button>
+                      )}
+                    </div>
                     <div className="flex items-baseline gap-1.5 mt-1">
                       <span className="text-base font-bold text-gray-900">{fmt((g.cuota_total - g.cuota_numero) * g.cuota_monto)}</span>
                       <span className="text-xs text-gray-500">restantes</span>

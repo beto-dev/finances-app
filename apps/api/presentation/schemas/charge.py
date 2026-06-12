@@ -38,6 +38,10 @@ class ChargeUpdateCategory(BaseModel):
     category_id: UUID
 
 
+class CuotaNumeroUpdate(BaseModel):
+    cuota_numero: int
+
+
 class CategoryUpdateResponse(ChargeResponse):
     similar_count: int = 0
     suggested_pattern: str = ""

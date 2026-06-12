@@ -1,6 +1,7 @@
 import type { Charge } from '../types'
 
 export interface CuotaGroup {
+  charge_id: string
   description: string
   cuota_numero: number
   cuota_total: number
@@ -82,6 +83,7 @@ export function groupCuotas(charges: Charge[] | undefined): CuotaGroup[] {
     for (const run of runs) {
       const c = run.charge
       groups.push({
+        charge_id: c.id,
         description: c.description,
         cuota_numero: c.cuota_numero!,
         cuota_total: c.cuota_total!,

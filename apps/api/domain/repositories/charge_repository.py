@@ -24,6 +24,9 @@ class ChargeRepository(ABC):
     async def update_category(self, charge_id: UUID, category_id: UUID) -> Charge: ...
 
     @abstractmethod
+    async def update_cuota_numero(self, charge_id: UUID, cuota_numero: int) -> Charge: ...
+
+    @abstractmethod
     async def bulk_confirm(self, charge_ids: list[UUID]) -> int: ...
 
     @abstractmethod

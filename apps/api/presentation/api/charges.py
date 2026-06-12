@@ -15,6 +15,7 @@ from presentation.schemas.charge import (
     CategoryUpdateResponse,
     ChargeResponse,
     ChargeUpdateCategory,
+    CuotaNumeroUpdate,
     ManualChargeRequest,
     ShareSimilarRequest,
 )
@@ -98,6 +99,31 @@ async def update_charge_category(
         category_id=charge.category_id, is_shared=charge.is_shared,
         ai_suggested=charge.ai_suggested, created_at=charge.created_at,
         similar_count=similar_count, suggested_pattern=suggested_pattern,
+    )
+
+
+@router.patch("/{charge_id}/cuota-numero", response_model=ChargeResponse)
+async def update_cuota_numero(
+    charge_id: UUID,
+    body: CuotaNumeroUpdate,
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    charge_repo: SQLChargeRepository = Depends(get_charge_repo),
+):
+    charge = await charge_repo.get_by_id(charge_id)
+    if not charge:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    if charge.cuota_total is not None and body.cuota_numero > charge.cuota_total:
+        raise HTTPException(status_code=400, detail="cuota_numero no puede superar cuota_total")
+    updated = await charge_repo.update_cuota_numero(charge_id, body.cuota_numero)
+    return ChargeResponse(
+        id=updated.id, statement_id=updated.statement_id, date=updated.date,
+        description=updated.description, amount=updated.amount, currency=updated.currency,
+        category_id=updated.category_id, is_shared=updated.is_shared,
+        ai_suggested=updated.ai_suggested, created_at=updated.created_at,
+        statement_type=updated.statement_type, uploaded_by=updated.uploaded_by,
+        bank_hint=updated.bank_hint, cuota_numero=updated.cuota_numero,
+        cuota_total=updated.cuota_total, cuota_monto=updated.cuota_monto,
     )
 
 

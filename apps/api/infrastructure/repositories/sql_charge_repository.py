@@ -136,6 +136,14 @@ class SQLChargeRepository(ChargeRepository):
         await self._session.refresh(m)
         return _to_entity(m)
 
+    async def update_cuota_numero(self, charge_id: UUID, cuota_numero: int) -> Charge:
+        result = await self._session.execute(select(ChargeModel).where(ChargeModel.id == charge_id))
+        m = result.scalar_one()
+        m.cuota_numero = cuota_numero
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_entity(m)
+
     async def bulk_update_categories(self, charges: list[Charge]) -> None:
         for charge in charges:
             if charge.category_id is not None:
