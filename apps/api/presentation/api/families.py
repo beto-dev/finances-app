@@ -223,7 +223,6 @@ async def remove_member(
     await db.execute(
         sql_delete(StatementModel).where(
             StatementModel.uploaded_by == user_id,
-            StatementModel.family_id == family.id,
         )
     )
     result = await db.execute(select(UserModel).where(UserModel.id == user_id))
