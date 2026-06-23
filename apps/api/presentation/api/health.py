@@ -132,15 +132,19 @@ async def cuota_parse_test(body: dict):
     prompt = f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
 
 Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Each element:
-{{"date": "YYYY-MM-DD", "description": "string", "amount": number, "cuota_numero": number|null, "cuota_total": number|null, "cuota_monto": number|null}}
+{{"date": "YYYY-MM-DD", "description": "string", "amount": number,
+"cuota_numero": number|null, "cuota_total": number|null, "cuota_monto": number|null}}
 
 Rules:
 - amount: positive = expense / debit / charge; negative = credit / refund / payment received
 - Skip: column headers, balance rows, section titles, page numbers, summary totals
 - Include: every individual transaction line
 - date: always YYYY-MM-DD regardless of the original format
-- amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements use . as the thousands separator and , as the decimal separator (e.g. "$1.440" = 1440, "$28.260" = 28260, "$1.234.567" = 1234567). Remove ALL thousands-separator dots and output the raw integer value
-- cuota_numero / cuota_total: for installment purchases, extract the current and total installments from columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not an installment.
+- amount: plain integer or decimal, no currency symbols. IMPORTANT: many Latin American bank statements
+  use . as thousands separator and , as decimal (e.g. "$1.440"=1440, "$1.234.567"=1234567).
+  Remove ALL thousands-separator dots and output the raw integer value
+- cuota_numero / cuota_total: for installment purchases, extract current and total installments from
+  columns like "Nº CUOTA" (e.g. "02/03" → cuota_numero=2, cuota_total=3). Set null if not installment.
 - cuota_monto: the monthly installment amount from "VALOR CUOTA MENSUAL" column. Set null if not present.
 - amount should be the amount charged this billing period (cuota_monto if available, otherwise the total)
 
@@ -173,7 +177,7 @@ async def parser_test():
             return {"ok": True, "parser": "openrouter", "model": OPENROUTER_MODEL, "note": "key configured, skipping live call"}  # noqa: E501
         elif gemini_key:
             import asyncio  # noqa: I001
-            from google import genai  # type: ignore[import-untyped]
+            from google import genai
             from infrastructure.ai.gemini_parser import _MODEL as GEMINI_MODEL  # noqa: N811
             gemini_client = genai.Client(api_key=gemini_key)
             response = await asyncio.to_thread(
@@ -184,16 +188,16 @@ async def parser_test():
             return {"ok": True, "parser": "gemini", "model": GEMINI_MODEL, "response": response.text}
         elif groq_key:
             import asyncio  # noqa: I001
-            from groq import Groq  # type: ignore[import-untyped]
+            from groq import Groq
             from infrastructure.ai.groq_parser import _MODEL as GROQ_MODEL  # noqa: N811
             groq_client = Groq(api_key=groq_key)
-            groq_response = await asyncio.to_thread(  # type: ignore[misc]
-                groq_client.chat.completions.create,  # type: ignore[union-attr]
+            groq_response = await asyncio.to_thread(
+                groq_client.chat.completions.create,  # type: ignore[arg-type]
                 model=GROQ_MODEL,
                 messages=[{"role": "user", "content": "Reply with the number 1"}],
                 max_tokens=10,
             )
-            groq_text = groq_response.choices[0].message.content  # type: ignore[union-attr]
+            groq_text = groq_response.choices[0].message.content
             return {"ok": True, "parser": "groq", "model": GROQ_MODEL, "response": groq_text}
         elif anthropic_key:
             import anthropic  # noqa: I001

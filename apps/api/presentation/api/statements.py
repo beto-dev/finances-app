@@ -55,6 +55,7 @@ async def _parse_and_categorize(
 ) -> None:
     """Background task — parse then auto-categorize with AI."""
     import structlog
+
     from application.services.categorization_service import CategorizationService
     from application.use_cases.categorize_charges import CategorizeChargesUseCase
     from infrastructure.database.connection import AsyncSessionLocal
@@ -362,13 +363,15 @@ async def parse_preview(
             message = await claude._client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=8192,
-                messages=[{"role": "user", "content": f"""You are a bank statement parser. Extract every individual financial transaction from the text below.
+                messages=[{"role": "user", "content": f"""
+You are a bank statement parser. Extract every individual financial transaction from the text below.
 
 Return ONLY a valid JSON array — no markdown, no explanation, nothing else. Each element:
 {{"date": "YYYY-MM-DD", "description": "string", "amount": number}}
 
 Rules:
-- date: always YYYY-MM-DD. Dates show as DD/MM without year — infer year from Período header (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026), filename, or any date with year in the text.
+- date: always YYYY-MM-DD. Dates show as DD/MM without year — infer year from Período header
+  (e.g. "Período: 01-Abr-2026 - 30-Abr-2026" → year 2026), filename, or any date with year in the text.
 - amount: positive=expense/cargo, negative=income/abono. Chilean format: "$8.398"=8398, "$1.234.567"=1234567
 - Skip: headers, balance rows, "Saldo", "Resumen", "Sin Movimientos"
 - Include ALL transactions: cargos AND abonos

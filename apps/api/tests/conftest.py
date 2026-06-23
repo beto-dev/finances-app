@@ -147,6 +147,10 @@ class MockChargeRepo(ChargeRepository):
     async def count_similar(self, uploaded_by: UUID, pattern: str, exclude_id: UUID, exclude_category_id: UUID) -> int:
         return 0
 
+    async def update_cuota_numero(self, charge_id: UUID, cuota_numero: int) -> Charge:
+        charge = next(c for c in self.charges if c.id == charge_id)
+        return charge
+
     async def apply_category_by_pattern(
         self, uploaded_by: UUID, pattern: str, category_id: UUID, exclude_id: UUID
     ) -> int:
