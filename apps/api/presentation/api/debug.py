@@ -1,10 +1,34 @@
 import io
+import os
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from infrastructure.auth.supabase_middleware import create_access_token
+from infrastructure.database.connection import get_db
+from infrastructure.repositories.sql_user_repository import SQLUserRepository
 
 router = APIRouter(prefix="/api/debug", tags=["debug"])
+
+
+@router.post("/dev-login")
+async def dev_login(db: AsyncSession = Depends(get_db)) -> dict:
+    """Return a valid JWT for the configured dev user (staging only)."""
+    dev_email = (
+        os.environ.get("DEV_USER_EMAIL")
+        or os.environ.get("ALLOWED_EMAILS", "").split(",")[0].strip()
+    )
+    if not dev_email:
+        raise HTTPException(status_code=400, detail="DEV_USER_EMAIL not configured")
+
+    user = await SQLUserRepository(db).get_by_email(dev_email)
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {dev_email} not found — log in once manually first")
+
+    token = create_access_token(str(user.id))
+    return {"token": token, "email": user.email, "id": str(user.id), "full_name": user.full_name}
 
 
 @router.post("/parse-all-tables")

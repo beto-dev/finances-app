@@ -15,14 +15,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('ff_token')
-    const email = localStorage.getItem('ff_email')
-    const id = localStorage.getItem('ff_id')
-    const full_name = localStorage.getItem('ff_full_name')
-    if (token && email && id) {
-      setUser({ token, email, id, full_name })
+    const init = async () => {
+      const token = localStorage.getItem('ff_token')
+      const email = localStorage.getItem('ff_email')
+      const id = localStorage.getItem('ff_id')
+      const full_name = localStorage.getItem('ff_full_name')
+      if (token && email && id) {
+        setUser({ token, email, id, full_name })
+        setLoading(false)
+        return
+      }
+
+      if (import.meta.env.VITE_DEV_AUTO_LOGIN === 'true') {
+        try {
+          const base = import.meta.env.VITE_API_URL ?? ''
+          const res = await fetch(`${base}/api/debug/dev-login`, { method: 'POST' })
+          if (res.ok) {
+            const data = await res.json() as { token: string; email: string; id: string; full_name?: string }
+            localStorage.setItem('ff_token', data.token)
+            localStorage.setItem('ff_email', data.email)
+            localStorage.setItem('ff_id', data.id)
+            if (data.full_name) localStorage.setItem('ff_full_name', data.full_name)
+            setUser({ token: data.token, email: data.email, id: data.id, full_name: data.full_name ?? null })
+          }
+        } catch {
+          // silently fall through to login page
+        }
+      }
+
+      setLoading(false)
     }
-    setLoading(false)
+    init()
   }, [])
 
   const login = (token: string, email: string, id: string, full_name?: string | null) => {
