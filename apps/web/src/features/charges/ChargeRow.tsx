@@ -277,7 +277,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
               <button
                 onClick={handleApplyShareToSimilar}
                 disabled={shareSimilar.isPending}
-                className="px-3 py-1 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3 py-1 text-xs font-medium bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 flex items-center gap-1.5"
               >
                 {shareSimilar.isPending ? <Spinner size="sm" /> : 'Sí, compartir todos'}
               </button>

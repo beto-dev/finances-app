@@ -103,7 +103,7 @@ export default function DashboardPage() {
             <button
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'mensual'
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-brand-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
               onClick={() => setView('mensual')}
@@ -113,7 +113,7 @@ export default function DashboardPage() {
             <button
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'anual'
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-brand-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
               onClick={() => setView('anual')}
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${Number(v).toLocaleString('es-CL')}`} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Bar dataKey="monto" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="monto" fill="#0F6FEC" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -337,7 +337,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${Number(v).toLocaleString('es-CL')}`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Bar dataKey="monto" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="monto" fill="#0F6FEC" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
