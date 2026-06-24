@@ -227,14 +227,14 @@ export default function Layout() {
             </button>
             {profileOpen && (
               <div className="absolute right-0 top-11 w-60 bg-white border border-[#E4E4E7] rounded-2xl shadow-xl overflow-hidden z-50">
-                <div className="px-4 py-3 border-b border-[#F1F5F9]">
+                <div className="px-4 py-3 border-b border-[#F4F4F5]">
                   <p className="text-sm font-semibold text-[#18181B] truncate">{user?.full_name ?? 'Sin nombre'}</p>
-                  <p className="text-xs text-[#94A3B8] truncate">{user?.email}</p>
+                  <p className="text-xs text-[#A1A1AA] truncate">{user?.email}</p>
                 </div>
                 {!editingName ? (
                   <button onClick={() => { setNameInput(user?.full_name ?? ''); setEditingName(true) }}
                     className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#18181B] hover:bg-[#F4F4F5] transition-colors">
-                    <Pencil className="w-4 h-4 text-[#64748B]" /> Editar nombre
+                    <Pencil className="w-4 h-4 text-[#71717A]" /> Editar nombre
                   </button>
                 ) : (
                   <div className="px-4 py-3 space-y-2">
@@ -249,13 +249,13 @@ export default function Layout() {
                         {updateMe.isPending ? '...' : 'Guardar'}
                       </button>
                       <button onClick={() => setEditingName(false)}
-                        className="flex-1 text-xs py-1.5 border border-[#E4E4E7] text-[#64748B] rounded-lg">
+                        className="flex-1 text-xs py-1.5 border border-[#E4E4E7] text-[#71717A] rounded-lg">
                         Cancelar
                       </button>
                     </div>
                   </div>
                 )}
-                <div className="border-t border-[#F1F5F9]">
+                <div className="border-t border-[#F4F4F5]">
                   <button onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors">
                     <LogOut className="w-4 h-4" /> Cerrar sesión
@@ -325,7 +325,7 @@ export default function Layout() {
             <p className="text-sm font-semibold">
               {notification.type === 'success' ? 'Cartola procesada' : 'Error al procesar'}
             </p>
-            <p className="text-xs text-[#64748B] truncate mt-0.5">{notification.filename}</p>
+            <p className="text-xs text-[#71717A] truncate mt-0.5">{notification.filename}</p>
             {notification.type === 'success' && (
               <Link
                 to="/gastos"
@@ -336,7 +336,7 @@ export default function Layout() {
               </Link>
             )}
           </div>
-          <button onClick={clearNotification} className="text-[#94A3B8] hover:text-[#18181B] transition-colors shrink-0">
+          <button onClick={clearNotification} className="text-[#A1A1AA] hover:text-[#18181B] transition-colors shrink-0">
             <span className="text-lg leading-none">×</span>
           </button>
         </div>

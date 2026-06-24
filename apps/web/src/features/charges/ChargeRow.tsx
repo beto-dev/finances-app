@@ -153,16 +153,16 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
 
   return (
     <>
-      <tr className={`hover:bg-gray-50 ${selected ? 'bg-brand-50' : ''}`}>
+      <tr className={`transition-colors ${selected ? 'bg-brand-50' : 'hover:bg-[#FAFAFA]'}`}>
         <td className="px-4 py-3">
           <input
             type="checkbox"
             checked={selected}
             onChange={(e) => onSelect(charge.id, e.target.checked)}
-            className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+            className="rounded border-[#D4D4D8] text-brand-600 focus:ring-brand-500"
           />
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+        <td className="px-4 py-3 text-sm text-[#71717A] whitespace-nowrap">
           <span className="flex items-center gap-1.5">
             {formattedDate}
             {isOutOfMonth && (
@@ -175,18 +175,18 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
             )}
           </span>
         </td>
-        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs" title={charge.description}>
+        <td className="px-4 py-3 text-sm text-[#18181B] max-w-xs" title={charge.description}>
           <div className="flex items-center gap-1.5 min-w-0">
             {isIncome && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
             <span className="truncate">{charge.description}</span>
             {selfTransfer && (
-              <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 whitespace-nowrap">
+              <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-100 whitespace-nowrap">
                 Transf. propia
               </span>
             )}
           </div>
         </td>
-        <td className={`px-4 py-3 text-sm font-medium text-right whitespace-nowrap ${isIncome ? 'text-emerald-600' : selfTransfer ? 'text-blue-500' : 'text-gray-900'}`}>
+        <td className={`px-4 py-3 text-sm font-semibold text-right whitespace-nowrap tabular-nums ${isIncome ? 'text-emerald-600' : selfTransfer ? 'text-blue-500' : 'text-[#18181B]'}`}>
           {isIncome ? '+' : ''}{formattedAmount}
         </td>
         <td className="px-4 py-3">
@@ -195,7 +195,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
               value={currentCatId ?? ''}
               onChange={(e) => handleCategoryChange(e.target.value)}
               disabled={updateCategory.isPending}
-              className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 w-40 disabled:opacity-60 disabled:cursor-wait"
+              className="text-sm border border-[#E4E4E7] rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 w-40 disabled:opacity-60 disabled:cursor-wait bg-white"
               style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
             >
               <option value="">Sin categoría</option>
@@ -212,7 +212,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
             <button
               onClick={handleUnshare}
               disabled={bulkUnshare.isPending || shareCharge.isPending}
-              className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium hover:bg-green-200 disabled:opacity-60 transition-colors"
+              className="text-xs px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 font-medium border border-brand-200 hover:bg-brand-100 disabled:opacity-60 transition-colors"
             >
               Compartido
             </button>
@@ -220,7 +220,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
             <button
               onClick={handleShare}
               disabled={shareCharge.isPending || bulkUnshare.isPending}
-              className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-60 transition-colors"
+              className="text-xs px-2.5 py-1 rounded-full bg-[#F4F4F5] text-[#71717A] border border-[#E4E4E7] hover:bg-[#E4E4E7] disabled:opacity-60 transition-colors"
             >
               {shareCharge.isPending ? <Spinner size="sm" /> : 'Solo mío'}
             </button>
@@ -229,7 +229,7 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
         <td className="px-4 py-3 whitespace-nowrap">
           {charge.bank_hint && charge.bank_hint !== 'manual'
             ? <BankBadge bank={charge.bank_hint} />
-            : <span className="text-gray-300">—</span>}
+            : <span className="text-[#D4D4D8]">—</span>}
         </td>
         <td className="px-2 py-3 text-center">
           {charge.statement_type === 'manual' && (
@@ -244,22 +244,22 @@ export default function ChargeRow({ charge, categories, selected, onSelect, view
         </td>
       </tr>
       {similarPrompt && (
-        <tr className="bg-indigo-50 border-t border-indigo-100">
+        <tr className="bg-brand-50 border-t border-brand-100">
           <td colSpan={8} className="px-4 py-2">
             <div className="flex items-center gap-3 text-sm">
-              <span className="text-indigo-700">
+              <span className="text-brand-700">
                 ¿Aplicar <strong>{similarPrompt.categoryName}</strong> a {similarPrompt.count} cargo{similarPrompt.count !== 1 ? 's' : ''} con <strong>"{similarPrompt.pattern}"</strong> en todos los meses? Las próximas cartolas también se categorizarán automáticamente.
               </span>
               <button
                 onClick={handleApplyToSimilar}
                 disabled={applyToSimilar.isPending}
-                className="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                className="px-3 py-1 text-xs font-medium bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
               >
                 {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
               </button>
               <button
                 onClick={handleDismissPrompt}
-                className="px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0"
+                className="px-3 py-1 text-xs font-medium text-brand-600 hover:text-brand-800 shrink-0"
               >
                 No, solo este
               </button>
