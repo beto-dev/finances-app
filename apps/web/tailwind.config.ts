@@ -9,13 +9,13 @@ const config: Config = {
       },
       colors: {
         brand: {
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#0F6FEC',
-          700: '#1D4ED8',
-          900: '#1E3A8A',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+          600: '#7C3AED',
+          700: '#6D28D9',
+          900: '#2E1065',
         },
       },
       keyframes: {

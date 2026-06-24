@@ -94,17 +94,17 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+        <h1 className="text-2xl font-bold text-[#18181B] mb-3">
           {view === 'mensual' ? 'Resumen Mensual' : 'Resumen Anual'}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex rounded-lg border border-[#E4E4E7] overflow-hidden">
             <button
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'mensual'
                   ? 'bg-brand-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white text-[#475569] hover:bg-[#F4F4F5]'
               }`}
               onClick={() => setView('mensual')}
             >
@@ -114,7 +114,7 @@ export default function DashboardPage() {
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'anual'
                   ? 'bg-brand-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white text-[#475569] hover:bg-[#F4F4F5]'
               }`}
               onClick={() => setView('anual')}
             >
@@ -150,7 +150,7 @@ export default function DashboardPage() {
       {isError && !isLoading && (
         <div className="card text-center py-12">
           <p className="text-lg font-medium text-red-600">No se pudo conectar con el servidor</p>
-          <p className="text-sm text-gray-500 mt-1">Verifica tu conexión o intenta nuevamente en unos segundos</p>
+          <p className="text-sm text-[#64748B] mt-1">Verifica tu conexión o intenta nuevamente en unos segundos</p>
           <button
             className="mt-4 btn-primary"
             onClick={() => window.location.reload()}
@@ -225,52 +225,52 @@ export default function DashboardPage() {
       {/* Summary cards + charts */}
       {!isLoading && !isError && (<>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="card">
-          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(dashboard.totalExpenses)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50 shadow-sm p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-rose-400">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
+          <p className="text-3xl font-bold text-rose-900 mt-2 tabular-nums leading-none">{formatCurrency(dashboard.totalExpenses)}</p>
+          <p className="text-xs text-rose-300 mt-2">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Ingresos' : 'Ingresos del año'}</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCurrency(dashboard.totalIncome)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 shadow-sm p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500">{view === 'mensual' ? 'Ingresos' : 'Ingresos del año'}</p>
+          <p className="text-3xl font-bold text-emerald-800 mt-2 tabular-nums leading-none">{formatCurrency(dashboard.totalIncome)}</p>
+          <p className="text-xs text-emerald-400 mt-2">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Créditos/mes</p>
-          <p className="text-2xl font-bold text-orange-500 mt-1">{formatCurrency(dashboard.totalCredits)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="rounded-2xl border border-orange-100 bg-orange-50 shadow-sm p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-400">Créditos/mes</p>
+          <p className="text-3xl font-bold text-orange-800 mt-2 tabular-nums leading-none">{formatCurrency(dashboard.totalCredits)}</p>
+          <p className="text-xs text-orange-300 mt-2">
             {dashboard.totalDebt > 0 ? `${formatCurrency(dashboard.totalDebt)} total` : 'cuotas y créditos activos'}
           </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Balance neto</p>
+        <div className="rounded-2xl border border-violet-100 bg-violet-50 shadow-sm p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">Balance neto</p>
           {(() => {
             const net = dashboard.totalIncome - dashboard.totalExpenses - dashboard.totalCredits
             return (
               <>
-                <p className={`text-2xl font-bold mt-1 ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                <p className={`text-3xl font-bold mt-2 tabular-nums leading-none ${net >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {net >= 0 ? '+' : ''}{formatCurrency(net)}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">ingresos − gastos − créditos</p>
+                <p className="text-xs text-violet-300 mt-2">ingresos − gastos − créditos</p>
               </>
             )
           })()}
         </div>
-        <div className="card">
+        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm p-5">
           {view === 'mensual' ? (
             <>
-              <p className="text-sm text-gray-500">Categorías activas</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboard.byCategory.length}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Categorías activas</p>
+              <p className="text-3xl font-bold text-zinc-800 mt-2 leading-none">{dashboard.byCategory.length}</p>
             </>
           ) : (
             <>
-              <p className="text-sm text-gray-500">Promedio mensual</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(monthlyAverage)}</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Promedio mensual</p>
+              <p className="text-3xl font-bold text-zinc-800 mt-2 tabular-nums leading-none">{formatCurrency(monthlyAverage)}</p>
+              <p className="text-xs text-zinc-400 mt-2">
                 {activeMonthsCount} {activeMonthsCount === 1 ? 'mes con datos' : 'meses con datos'}
               </p>
             </>
@@ -287,28 +287,28 @@ export default function DashboardPage() {
           <div className="card mb-6">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
-                <h2 className="text-base font-semibold text-gray-800">Deuda Total</h2>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <h2 className="text-base font-semibold text-[#1E293B]">Deuda Total</h2>
+                <p className="text-xs text-[#94A3B8] mt-0.5">
                   {formatCurrency(dashboard.totalCredits)}/mes · {dashboard.creditItems.length} {dashboard.creditItems.length === 1 ? 'compromiso activo' : 'compromisos activos'}
                 </p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-xl font-bold text-orange-500">{formatCurrency(dashboard.totalDebt)}</p>
-                <p className="text-xs text-gray-400">{paidPct}% pagado</p>
+                <p className="text-xs text-[#94A3B8]">{paidPct}% pagado</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${paidPct}%` }} />
               </div>
-              <span className="text-xs text-gray-400 shrink-0 w-10 text-right">{paidPct}%</span>
+              <span className="text-xs text-[#94A3B8] shrink-0 w-10 text-right">{paidPct}%</span>
             </div>
           </div>
         )
       })()}
 
       {dashboard.byCategory.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">
+        <div className="card text-center py-12 text-[#94A3B8]">
           <p className="text-lg">Sin datos para este período</p>
           <p className="text-sm mt-1">Sube un estado de cuenta para ver tu resumen</p>
         </div>
@@ -317,13 +317,13 @@ export default function DashboardPage() {
           {/* Annual: monthly trend chart */}
           {view === 'anual' && (
             <div className="card lg:col-span-2">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">Gasto mensual</h2>
+              <h2 className="text-base font-semibold text-[#1E293B] mb-4">Gasto mensual</h2>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={monthlyBarData}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${Number(v).toLocaleString('es-CL')}`} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Bar dataKey="monto" fill="#0F6FEC" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="monto" fill="#7C3AED" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -331,20 +331,20 @@ export default function DashboardPage() {
 
           {/* Category bar chart */}
           <div className="card">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Gasto por categoría</h2>
+            <h2 className="text-base font-semibold text-[#1E293B] mb-4">Gasto por categoría</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={categoryBarData}>
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${Number(v).toLocaleString('es-CL')}`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Bar dataKey="monto" fill="#0F6FEC" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="monto" fill="#7C3AED" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Pie chart */}
           <div className="card">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Distribución</h2>
+            <h2 className="text-base font-semibold text-[#1E293B] mb-4">Distribución</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -368,7 +368,7 @@ export default function DashboardPage() {
           {/* Account type breakdown */}
           {accountTypes.length > 0 && (
             <div className="card lg:col-span-2">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">Movimientos por Tipo de Cuenta</h2>
+              <h2 className="text-base font-semibold text-[#1E293B] mb-4">Movimientos por Tipo de Cuenta</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                 {accountTypes.map((t) => {
                   const gastos = gastosPerType[t] ?? 0
@@ -376,26 +376,26 @@ export default function DashboardPage() {
                   const neto = gastos - abonos
                   const favorable = neto < 0
                   return (
-                    <div key={t} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                    <div key={t} className="bg-[#F4F4F5] rounded-xl p-3 space-y-2">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: TYPE_COLORS[t] ?? '#6b7280' }} />
-                        <p className="text-xs font-medium text-gray-600">{TYPE_LABELS[t] ?? t}</p>
+                        <p className="text-xs font-medium text-[#475569]">{TYPE_LABELS[t] ?? t}</p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-400">Gastos</span>
-                          <span className="text-xs font-medium text-gray-700">{formatCurrency(gastos)}</span>
+                          <span className="text-xs text-[#94A3B8]">Gastos</span>
+                          <span className="text-xs font-medium text-[#334155]">{formatCurrency(gastos)}</span>
                         </div>
                         {abonos > 0 && (
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-400">Abonos</span>
+                            <span className="text-xs text-[#94A3B8]">Abonos</span>
                             <span className="text-xs font-medium text-emerald-600">+{formatCurrency(abonos)}</span>
                           </div>
                         )}
                       </div>
-                      <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
-                        <span className="text-xs text-gray-500">Neto</span>
-                        <span className={`text-sm font-bold ${favorable ? 'text-emerald-600' : 'text-gray-900'}`}>
+                      <div className="border-t border-[#E4E4E7] pt-2 flex justify-between items-center">
+                        <span className="text-xs text-[#64748B]">Neto</span>
+                        <span className={`text-sm font-bold ${favorable ? 'text-emerald-600' : 'text-[#18181B]'}`}>
                           {favorable ? '+' : ''}{formatCurrency(Math.abs(neto))}{favorable ? ' a favor' : ''}
                         </span>
                       </div>
@@ -427,10 +427,10 @@ export default function DashboardPage() {
 
           {/* Breakdown table */}
           <div className="card lg:col-span-2">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Desglose por categoría</h2>
+            <h2 className="text-base font-semibold text-[#1E293B] mb-4">Desglose por categoría</h2>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-[#64748B] border-b border-[#F1F5F9]">
                   <th className="pb-2 font-medium">Categoría</th>
                   <th className="pb-2 font-medium text-right">Gastos</th>
                   <th className="pb-2 font-medium text-right">Total</th>
@@ -438,7 +438,7 @@ export default function DashboardPage() {
                   {view === 'mensual' && <th className="pb-2 font-medium text-right">Límite mensual</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-[#F8FAFC]">
                 {dashboard.byCategory.map((item) => {
                   const budget = budgets[item.category.id]
                   const pct = budget ? Math.min((item.amount / budget) * 100, 100) : null
@@ -452,33 +452,33 @@ export default function DashboardPage() {
                           {item.category.name}
                         </div>
                       </td>
-                      <td className="py-2 text-right text-gray-600">{item.count}</td>
+                      <td className="py-2 text-right text-[#475569]">{item.count}</td>
                       <td className={`py-2 text-right font-medium ${over ? 'text-red-600' : ''}`}>{formatCurrency(item.amount)}</td>
-                      <td className="py-2 text-right text-gray-500 hidden md:table-cell">
+                      <td className="py-2 text-right text-[#64748B] hidden md:table-cell">
                         {dashboard.totalAmount > 0 ? `${((item.amount / dashboard.totalAmount) * 100).toFixed(1)}%` : '—'}
                       </td>
                       {view === 'mensual' && (
                         <td className="py-2 text-right min-w-[120px]">
                           {budget != null ? (
                             <div className="flex flex-col items-end gap-1">
-                              <span className={`text-xs font-medium ${over ? 'text-red-600' : warn ? 'text-amber-600' : 'text-gray-500'}`}>
+                              <span className={`text-xs font-medium ${over ? 'text-red-600' : warn ? 'text-amber-600' : 'text-[#64748B]'}`}>
                                 {formatCurrency(budget)}
                                 {over && ' ⚠️'}
                               </span>
-                              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                              <div className="w-full bg-[#F1F5F9] rounded-full h-1.5">
                                 <div
                                   className={`h-1.5 rounded-full transition-all ${over ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-emerald-500'}`}
                                   style={{ width: `${pct}%` }}
                                 />
                               </div>
-                              <span className={`text-[10px] ${over ? 'text-red-500' : 'text-gray-400'}`}>
+                              <span className={`text-[10px] ${over ? 'text-red-500' : 'text-[#94A3B8]'}`}>
                                 {over
                                   ? `+${formatCurrency(item.amount - budget)} excedido`
                                   : `${Math.round((item.amount / budget) * 100)}% usado`}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-300">—</span>
+                            <span className="text-xs text-[#CBD5E1]">—</span>
                           )}
                         </td>
                       )}

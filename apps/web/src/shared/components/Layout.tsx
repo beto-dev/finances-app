@@ -85,7 +85,7 @@ export default function Layout() {
   const initial = (user?.full_name ?? user?.email ?? '?')[0].toUpperCase()
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen">
+    <div className="bg-[#FAFAFA] min-h-screen">
 
       {/* ── Desktop sidebar rail ── */}
       <aside className="group/sidebar hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-16 hover:w-56 transition-[width] duration-200 ease-in-out bg-[#111111] z-30 overflow-hidden">
@@ -216,8 +216,8 @@ export default function Layout() {
       <div className="md:pl-16 flex flex-col min-h-screen">
 
         {/* Mobile top bar */}
-        <header className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-[#E2E8F0] sticky top-0 z-10">
-          <span className="text-base font-bold text-[#0F172A]">Finanzas</span>
+        <header className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-[#E4E4E7] sticky top-0 z-10">
+          <span className="text-base font-bold text-[#18181B]">Finanzas</span>
           <div className="relative">
             <button
               onClick={() => { setProfileOpen((o) => !o); setEditingName(false) }}
@@ -226,14 +226,14 @@ export default function Layout() {
               {initial}
             </button>
             {profileOpen && (
-              <div className="absolute right-0 top-11 w-60 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl overflow-hidden z-50">
+              <div className="absolute right-0 top-11 w-60 bg-white border border-[#E4E4E7] rounded-2xl shadow-xl overflow-hidden z-50">
                 <div className="px-4 py-3 border-b border-[#F1F5F9]">
-                  <p className="text-sm font-semibold text-[#0F172A] truncate">{user?.full_name ?? 'Sin nombre'}</p>
+                  <p className="text-sm font-semibold text-[#18181B] truncate">{user?.full_name ?? 'Sin nombre'}</p>
                   <p className="text-xs text-[#94A3B8] truncate">{user?.email}</p>
                 </div>
                 {!editingName ? (
                   <button onClick={() => { setNameInput(user?.full_name ?? ''); setEditingName(true) }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#0F172A] hover:bg-[#F8FAFC] transition-colors">
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#18181B] hover:bg-[#F4F4F5] transition-colors">
                     <Pencil className="w-4 h-4 text-[#64748B]" /> Editar nombre
                   </button>
                 ) : (
@@ -242,14 +242,14 @@ export default function Layout() {
                       onChange={(e) => setNameInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false) }}
                       placeholder="Tu nombre completo"
-                      className="w-full text-sm border border-[#E2E8F0] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+                      className="w-full text-sm border border-[#E4E4E7] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-600" />
                     <div className="flex gap-1.5">
                       <button onClick={handleSaveName} disabled={updateMe.isPending}
                         className="flex-1 text-xs py-1.5 bg-brand-600 text-white rounded-lg disabled:opacity-60">
                         {updateMe.isPending ? '...' : 'Guardar'}
                       </button>
                       <button onClick={() => setEditingName(false)}
-                        className="flex-1 text-xs py-1.5 border border-[#E2E8F0] text-[#64748B] rounded-lg">
+                        className="flex-1 text-xs py-1.5 border border-[#E4E4E7] text-[#64748B] rounded-lg">
                         Cancelar
                       </button>
                     </div>
@@ -275,19 +275,17 @@ export default function Layout() {
 
       {/* ── Mobile bottom tab bar ── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E2E8F0] z-50 flex items-end"
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E4E4E7] z-50 flex items-end"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {mobileTabItems.map(({ to, icon: Icon, label, fab }) => (
           <NavLink
             key={to}
             to={to}
-            className={({ isActive }) =>
+            className={() =>
               fab
                 ? 'flex-1 flex flex-col items-center justify-center pb-3 pt-1'
-                : `flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-all active:scale-90 ${
-                    isActive ? 'opacity-100' : 'opacity-40'
-                  }`
+                : 'flex-1 flex flex-col items-center justify-center py-2 transition-all active:scale-90'
             }
           >
             {({ isActive }) =>
@@ -298,12 +296,14 @@ export default function Layout() {
                   <Icon className="w-6 h-6 text-white" />
                 </span>
               ) : (
-                <>
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-brand-600' : 'text-[#94A3B8]'}`} />
-                  <span className={`text-[11px] font-medium leading-none ${isActive ? 'text-brand-600' : 'text-[#94A3B8]'}`}>
+                <span className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors ${
+                  isActive ? 'bg-brand-50' : ''
+                }`}>
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-brand-600' : 'text-zinc-400'}`} />
+                  <span className={`text-[11px] font-medium leading-none ${isActive ? 'text-brand-600' : 'text-zinc-400'}`}>
                     {label}
                   </span>
-                </>
+                </span>
               )
             }
           </NavLink>
@@ -314,8 +314,8 @@ export default function Layout() {
       {notification && (
         <div className={`fixed bottom-20 md:bottom-6 right-4 z-50 flex items-start gap-3 rounded-2xl border shadow-xl px-4 py-3 max-w-sm animate-slide-up ${
           notification.type === 'success'
-            ? 'bg-white border-emerald-200 text-[#0F172A]'
-            : 'bg-white border-red-200 text-[#0F172A]'
+            ? 'bg-white border-emerald-200 text-[#18181B]'
+            : 'bg-white border-red-200 text-[#18181B]'
         }`}>
           {notification.type === 'success'
             ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
@@ -336,7 +336,7 @@ export default function Layout() {
               </Link>
             )}
           </div>
-          <button onClick={clearNotification} className="text-[#94A3B8] hover:text-[#0F172A] transition-colors shrink-0">
+          <button onClick={clearNotification} className="text-[#94A3B8] hover:text-[#18181B] transition-colors shrink-0">
             <span className="text-lg leading-none">×</span>
           </button>
         </div>
