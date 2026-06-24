@@ -138,19 +138,19 @@ function MobileChargeCard({
     <div className="flex items-center gap-3 px-4 py-3.5">
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium text-gray-900 line-clamp-2 break-words">{charge.description}</p>
-          <p className={`text-sm font-semibold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-gray-900'}`}>
+          <p className="text-sm font-medium text-[#18181B] line-clamp-2 break-words">{charge.description}</p>
+          <p className={`text-sm font-semibold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-[#18181B]'}`}>
             {isIncome ? '+' : ''}{formattedAmount}
           </p>
         </div>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <span className="text-xs text-gray-400">{formattedDate}</span>
+          <span className="text-xs text-[#A1A1AA]">{formattedDate}</span>
 
           {/* Category trigger — opens bottom sheet */}
           <button
             onClick={() => !updateCategory.isPending && setSheetOpen(true)}
             disabled={updateCategory.isPending}
-            className="flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 border border-gray-200 active:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-wait"
+            className="flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 border border-[#E4E4E7] active:bg-[#FAFAFA] transition-colors disabled:opacity-60 disabled:cursor-wait"
             style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
           >
             {updateCategory.isPending ? (
@@ -161,7 +161,7 @@ function MobileChargeCard({
             <span className="max-w-[110px] truncate">{currentCat?.name ?? 'Sin categoría'}</span>
             {!updateCategory.isPending && (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
-                strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 shrink-0 text-gray-400">
+                strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 shrink-0 text-[#A1A1AA]">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             )}
@@ -200,7 +200,7 @@ function MobileChargeCard({
       )}
 
       {similarPrompt && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 bg-indigo-600 text-white rounded-xl shadow-lg px-4 py-3 flex flex-col gap-2">
+        <div className="fixed bottom-20 left-4 right-4 z-50 bg-brand-600 text-white rounded-xl shadow-lg px-4 py-3 flex flex-col gap-2">
           <p className="text-sm">
             ¿Aplicar <strong>{similarPrompt.categoryName}</strong> a {similarPrompt.count} cargo{similarPrompt.count !== 1 ? 's' : ''} con "{similarPrompt.pattern}"?
           </p>
@@ -208,7 +208,7 @@ function MobileChargeCard({
             <button
               onClick={handleApplyToSimilar}
               disabled={applyToSimilar.isPending}
-              className="flex-1 py-2 text-sm font-medium bg-white text-indigo-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="flex-1 py-2 text-sm font-medium bg-white text-brand-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
             </button>
@@ -251,8 +251,8 @@ function MobileChargeCard({
         disabled={false}
         className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90 ${
           isShared
-            ? 'bg-green-500 text-white'
-            : 'border-2 border-gray-300 text-gray-300 hover:border-green-400 hover:text-green-400'
+            ? 'bg-brand-600 text-white'
+            : 'border-2 border-[#D4D4D8] text-[#D4D4D8] hover:border-brand-400 hover:text-brand-400'
         }`}
         aria-label={isShared ? 'Compartido con familia' : 'Compartir con familia'}
       >
@@ -410,14 +410,14 @@ export default function ChargesPage() {
   }
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>
+    if (sortField !== field) return <span className="text-[#D4D4D8] ml-1">↕</span>
     return <span className="text-brand-600 ml-1 font-bold">{sortOrder === 'asc' ? '↑' : '↓'}</span>
   }
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
 
   const emptyMessage = (
-    <div className="text-center py-12 text-gray-400 px-4">
+    <div className="text-center py-12 text-[#A1A1AA] px-4">
       <p className="text-base">{allCharges?.length === 0 ? 'No hay movimientos para el período seleccionado' : 'No hay resultados con los filtros aplicados'}</p>
       <p className="text-sm mt-1">Sube una cartola en "Subir"</p>
     </div>
@@ -426,7 +426,7 @@ export default function ChargesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-[#18181B]">
           {filterKind === 'income' ? 'Ingresos' : filterKind === 'expense' ? 'Gastos' : 'Movimientos'}
         </h1>
         {selectedIds.size > 0 && (
@@ -463,20 +463,17 @@ export default function ChargesPage() {
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl">
-              <span className="text-sm">📋</span>
-              <span className="text-sm font-bold text-gray-800">{allCharges?.length ?? 0}</span>
-              <span className="text-xs text-gray-500">movimientos</span>
+            <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F4F5] rounded-xl border border-[#E4E4E7]">
+              <span className="text-sm font-bold tabular-nums text-[#18181B]">{allCharges?.length ?? 0}</span>
+              <span className="text-xs text-[#71717A]">movimientos</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl">
-              <span className="text-sm">🙋</span>
-              <span className="text-sm font-bold text-gray-800">{allCharges?.filter((c) => !c.is_shared).length ?? 0}</span>
-              <span className="text-xs text-gray-500">solo míos</span>
+            <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F4F5] rounded-xl border border-[#E4E4E7]">
+              <span className="text-sm font-bold tabular-nums text-[#18181B]">{allCharges?.filter((c) => !c.is_shared).length ?? 0}</span>
+              <span className="text-xs text-[#71717A]">solo míos</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-xl">
-              <span className="text-sm">👨‍👩‍👧</span>
-              <span className="text-sm font-bold text-green-700">{allCharges?.filter((c) => c.is_shared).length ?? 0}</span>
-              <span className="text-xs text-green-600">compartidos</span>
+            <div className="flex items-center gap-2 px-3 py-2 bg-brand-50 rounded-xl border border-brand-200">
+              <span className="text-sm font-bold tabular-nums text-brand-700">{allCharges?.filter((c) => c.is_shared).length ?? 0}</span>
+              <span className="text-xs text-brand-600">compartidos</span>
             </div>
           </>
         )}
@@ -543,13 +540,13 @@ export default function ChargesPage() {
                               ) : (
                                 <span className="w-16 shrink-0 text-xs font-semibold text-red-600 bg-red-50 rounded-full px-2 py-0.5 text-center">Extra</span>
                               )}
-                              <span className="text-gray-600 shrink-0">{fmtDate(c.date)}</span>
+                              <span className="text-[#52525B] shrink-0">{fmtDate(c.date)}</span>
                               <span className="truncate flex-1">
                                 {c.bank_hint && c.bank_hint !== 'manual'
                                   ? <BankBadge bank={c.bank_hint} showName={false} />
-                                  : <span className="text-gray-400 text-xs">{c.statement_type}</span>}
+                                  : <span className="text-[#A1A1AA] text-xs">{c.statement_type}</span>}
                               </span>
-                              <span className="font-medium text-gray-700 shrink-0">{fmt(c.amount)}</span>
+                              <span className="font-medium text-[#3F3F46] shrink-0">{fmt(c.amount)}</span>
                             </div>
                           ))}
                         </div>
@@ -591,7 +588,7 @@ export default function ChargesPage() {
       )}
 
       {/* Search and filter controls */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
+      <div className="bg-[#FAFAFA] p-4 rounded-lg mb-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
             <label className="label text-xs">Tipo de movimiento</label>
@@ -642,7 +639,7 @@ export default function ChargesPage() {
           )}
         </div>
         {(filterKind !== 'all' || searchDesc || filterCategoryId || filterStatus !== 'all' || filterType || filterBank) && (
-          <div className="text-xs text-gray-600 pt-1">
+          <div className="text-xs text-[#52525B] pt-1">
             Mostrando {charges.length} de {allCharges?.length || 0} movimientos
           </div>
         )}
@@ -653,7 +650,7 @@ export default function ChargesPage() {
         {/* ── Mobile card list ── */}
         <div className="md:hidden">
           {isLoading ? (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#F4F4F5]">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="flex-1 space-y-2">
@@ -669,18 +666,18 @@ export default function ChargesPage() {
             </div>
           ) : !charges.length ? emptyMessage : (
             <div>
-              <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-                <span className="text-xs text-gray-500 font-medium">{charges.length} movimientos</span>
+              <div className="px-4 py-2.5 bg-[#FAFAFA] border-b border-[#E4E4E7]">
+                <span className="text-xs text-[#71717A] font-medium">{charges.length} movimientos</span>
               </div>
               {groupChargesByDate(charges).map((group) => (
                 <div key={group.date}>
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{group.label}</span>
-                    <span className={`text-xs font-medium ${group.total < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                  <div className="flex items-center justify-between px-4 py-2 bg-[#FAFAFA] border-b border-[#F4F4F5]">
+                    <span className="text-xs font-semibold text-[#71717A] uppercase tracking-wide">{group.label}</span>
+                    <span className={`text-xs font-medium ${group.total < 0 ? 'text-emerald-500' : 'text-[#A1A1AA]'}`}>
                       {group.total < 0 ? '+' : ''}{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Math.abs(group.total))}
                     </span>
                   </div>
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-[#F4F4F5]">
                     {group.charges.map((charge) => (
                       <MobileChargeCard key={charge.id} charge={charge} categories={categories} />
                     ))}
@@ -697,21 +694,21 @@ export default function ChargesPage() {
             <div className="flex justify-center py-12"><Spinner size="lg" /></div>
           ) : !charges.length ? emptyMessage : (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[#FAFAFA] border-b border-[#E4E4E7]">
                 <tr>
                   <th className="px-4 py-3 text-left w-12">
-                    <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={selectedIds.size === charges.length && charges.length > 0} className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                    <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={selectedIds.size === charges.length && charges.length > 0} className="rounded border-[#D4D4D8] text-brand-600 focus:ring-brand-500" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('date')}>Fecha <SortIcon field="date" /></th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('status')}>Estado <SortIcon field="status" /></th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Banco</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('date')}>Fecha <SortIcon field="date" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('status')}>Estado <SortIcon field="status" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide">Banco</th>
                   <th className="w-20" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[#F4F4F5]">
                 {charges.map((charge) => (
                   <ChargeRow key={charge.id} charge={charge} categories={categories} selected={selectedIds.has(charge.id)} onSelect={handleSelect} viewMonth={filterMonth} viewYear={filterYear} userFullName={user?.full_name} />
                 ))}

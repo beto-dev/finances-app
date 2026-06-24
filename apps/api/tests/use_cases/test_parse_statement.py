@@ -148,6 +148,9 @@ class MockChargeRepo(ChargeRepository):
     async def bulk_share_by_pattern(self, uploaded_by: uuid.UUID, pattern: str, exclude_id: uuid.UUID) -> int:
         return 0
 
+    async def update_cuota_numero(self, charge_id: uuid.UUID, cuota_numero: int) -> Charge:
+        raise NotImplementedError
+
 
 class MockParser(ParserService):
     def __init__(self, result: list[ParsedCharge] | None = None, raise_exc: Exception | None = None) -> None:

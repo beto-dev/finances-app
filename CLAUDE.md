@@ -82,6 +82,8 @@ apps/
 | `/familia` | FamilyPage | Family management (owner only, redirects members) |
 | `/hojas` | SheetsPage | Google Sheets sync |
 | `/nuevo-gasto` | QuickExpensePage | Quick manual charge entry |
+| `/cuotas` | CuotasPage | Installment tracker (cuotas grupales) |
+| `/categorias` | CategoriesPage | Category management + budget limits (admin only) |
 | `/login` | LoginPage | Auth |
 | `/auth/callback` | AuthCallbackPage | OAuth callback |
 
@@ -147,13 +149,16 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | 3.8 | Export & reports | ⏳ Pending |
 | 3.9 | Audit log | ⏳ Pending |
 | 3.10 | Créditos bancarios | ✅ Done — track bank loans on dashboard; shows cuotas paid/remaining and amount already paid per credit and per cuota row |
+| 3.11 | Monthly budget per category | ✅ Done — per-category spending limit set in CategoriesPage; dashboard shows progress bar + alert at 80% and 100% |
+| 3.12 | Statement processing notification | ✅ Done — toast in Layout via `useStatementNotifier`; shows success/error with link to charges when parsing completes |
+| 3.13 | UX Redesign "Family Warmth" | ✅ Done (beta) — violet brand `#7C3AED`, zinc palette, tonal KPI cards (Material You pattern), horizontal category bars with per-category colors, donut chart with center label |
 
 ### Phase 4 — Deploy & Mobile
 
 | # | Task | Status |
 |---|---|---|
-| 4.1 | Production deployment | ✅ Done (Vercel + Koyeb) |
-| 4.1b | Staging environment | ✅ Done (Vercel Preview + Railway + Supabase beta) |
+| 4.1 | Production deployment | ✅ Done — Vercel (frontend) + Koyeb (API) + Supabase production |
+| 4.1b | Staging environment | ✅ Done — Vercel Preview (frontend) + **Railway** (API) + Supabase beta project. `VITE_DEV_AUTO_LOGIN=true` bypasses login in staging. |
 | 4.2 | Monitoring | ⏳ Pending |
 | 4.3–4.5 | Mobile (React Native) | ⏳ Pending |
 
@@ -162,8 +167,6 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | Task | Notes |
 |---|---|
 | Edit statement type after upload | Today requires delete + re-upload if wrong type selected |
-| Monthly budget per category | Set a spending limit per category with progress bar and alert |
-| Notification when statement finishes processing | Currently user must refresh to know when parsing is done |
 
 ### Backlog — Medium Priority
 
@@ -235,6 +238,7 @@ gh pr create --base main --head beta --title "Release: <descripción>"
 | Variable | Production (Koyeb) | Staging (Railway) |
 |---|---|---|
 | `VITE_API_URL` | Vercel (Production env) | Vercel (Preview env) |
+| `VITE_DEV_AUTO_LOGIN` | — (not set) | `true` — bypasses login screen for testing |
 | `APP_ANTHROPIC_API_KEY` | ✅ | ✅ same value |
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | production project | beta project |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ | ✅ same value |

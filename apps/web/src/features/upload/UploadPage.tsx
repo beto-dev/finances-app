@@ -135,7 +135,7 @@ type DisplayStatus = 'waiting' | 'uploading' | 'processing' | 'done' | 'upload-e
 const DISPLAY_CONFIG: Record<DisplayStatus, { label: string; color: string; spinner?: boolean }> = {
   waiting:        { label: 'En cola',          color: 'bg-gray-100 text-gray-500' },
   uploading:      { label: 'Subiendo...',       color: 'bg-blue-100 text-blue-700', spinner: true },
-  processing:     { label: 'Procesando...',     color: 'bg-indigo-100 text-indigo-700', spinner: true },
+  processing:     { label: 'Procesando...',     color: 'bg-brand-100 text-brand-700', spinner: true },
   done:           { label: 'Listo',             color: 'bg-green-100 text-green-700' },
   'upload-error': { label: 'Error al subir',    color: 'bg-red-100 text-red-700' },
   'parse-error':  { label: 'Error al procesar', color: 'bg-red-100 text-red-700' },

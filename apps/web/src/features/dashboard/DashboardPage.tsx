@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, Label,
 } from 'recharts'
 import { useDashboard } from './useDashboard'
 import { useBudgets } from '../categories/useBudgets'
@@ -94,17 +94,17 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+        <h1 className="text-2xl font-bold text-[#18181B] mb-3">
           {view === 'mensual' ? 'Resumen Mensual' : 'Resumen Anual'}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex rounded-lg border border-[#E4E4E7] overflow-hidden">
             <button
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'mensual'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-[#52525B] hover:bg-[#F4F4F5]'
               }`}
               onClick={() => setView('mensual')}
             >
@@ -113,8 +113,8 @@ export default function DashboardPage() {
             <button
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 view === 'anual'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-[#52525B] hover:bg-[#F4F4F5]'
               }`}
               onClick={() => setView('anual')}
             >
@@ -150,7 +150,7 @@ export default function DashboardPage() {
       {isError && !isLoading && (
         <div className="card text-center py-12">
           <p className="text-lg font-medium text-red-600">No se pudo conectar con el servidor</p>
-          <p className="text-sm text-gray-500 mt-1">Verifica tu conexión o intenta nuevamente en unos segundos</p>
+          <p className="text-sm text-[#71717A] mt-1">Verifica tu conexión o intenta nuevamente en unos segundos</p>
           <button
             className="mt-4 btn-primary"
             onClick={() => window.location.reload()}
@@ -225,52 +225,52 @@ export default function DashboardPage() {
       {/* Summary cards + charts */}
       {!isLoading && !isError && (<>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="card">
-          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(dashboard.totalExpenses)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50 shadow-sm p-4 overflow-hidden">
+          <p className="text-xs font-semibold uppercase tracking-wider text-rose-400 truncate">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
+          <p className="text-xl font-bold text-rose-900 mt-2 tabular-nums leading-none truncate">{formatCurrency(dashboard.totalExpenses)}</p>
+          <p className="text-xs text-rose-300 mt-2 truncate">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">{view === 'mensual' ? 'Ingresos' : 'Ingresos del año'}</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCurrency(dashboard.totalIncome)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 shadow-sm p-4 overflow-hidden">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 truncate">{view === 'mensual' ? 'Ingresos' : 'Ingresos del año'}</p>
+          <p className="text-xl font-bold text-emerald-800 mt-2 tabular-nums leading-none truncate">{formatCurrency(dashboard.totalIncome)}</p>
+          <p className="text-xs text-emerald-400 mt-2 truncate">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Créditos/mes</p>
-          <p className="text-2xl font-bold text-orange-500 mt-1">{formatCurrency(dashboard.totalCredits)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="rounded-2xl border border-orange-100 bg-orange-50 shadow-sm p-4 overflow-hidden">
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-400 truncate">Créditos/mes</p>
+          <p className="text-xl font-bold text-orange-800 mt-2 tabular-nums leading-none truncate">{formatCurrency(dashboard.totalCredits)}</p>
+          <p className="text-xs text-orange-300 mt-2 truncate">
             {dashboard.totalDebt > 0 ? `${formatCurrency(dashboard.totalDebt)} total` : 'cuotas y créditos activos'}
           </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Balance neto</p>
+        <div className="rounded-2xl border border-violet-100 bg-violet-50 shadow-sm p-4 overflow-hidden">
+          <p className="text-xs font-semibold uppercase tracking-wider text-violet-400 truncate">Balance neto</p>
           {(() => {
             const net = dashboard.totalIncome - dashboard.totalExpenses - dashboard.totalCredits
             return (
               <>
-                <p className={`text-2xl font-bold mt-1 ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                <p className={`text-xl font-bold mt-2 tabular-nums leading-none truncate ${net >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {net >= 0 ? '+' : ''}{formatCurrency(net)}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">ingresos − gastos − créditos</p>
+                <p className="text-xs text-violet-300 mt-2 truncate">ingresos − gastos − créditos</p>
               </>
             )
           })()}
         </div>
-        <div className="card">
+        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm p-4 overflow-hidden">
           {view === 'mensual' ? (
             <>
-              <p className="text-sm text-gray-500">Categorías activas</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboard.byCategory.length}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 truncate">Categorías activas</p>
+              <p className="text-xl font-bold text-zinc-800 mt-2 leading-none">{dashboard.byCategory.length}</p>
             </>
           ) : (
             <>
-              <p className="text-sm text-gray-500">Promedio mensual</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(monthlyAverage)}</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 truncate">Promedio mensual</p>
+              <p className="text-xl font-bold text-zinc-800 mt-2 tabular-nums leading-none truncate">{formatCurrency(monthlyAverage)}</p>
+              <p className="text-xs text-zinc-400 mt-2 truncate">
                 {activeMonthsCount} {activeMonthsCount === 1 ? 'mes con datos' : 'meses con datos'}
               </p>
             </>
@@ -287,28 +287,28 @@ export default function DashboardPage() {
           <div className="card mb-6">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
-                <h2 className="text-base font-semibold text-gray-800">Deuda Total</h2>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <h2 className="text-base font-semibold text-[#27272A]">Deuda Total</h2>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
                   {formatCurrency(dashboard.totalCredits)}/mes · {dashboard.creditItems.length} {dashboard.creditItems.length === 1 ? 'compromiso activo' : 'compromisos activos'}
                 </p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-xl font-bold text-orange-500">{formatCurrency(dashboard.totalDebt)}</p>
-                <p className="text-xs text-gray-400">{paidPct}% pagado</p>
+                <p className="text-xs text-[#A1A1AA]">{paidPct}% pagado</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-[#F4F4F5] rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${paidPct}%` }} />
               </div>
-              <span className="text-xs text-gray-400 shrink-0 w-10 text-right">{paidPct}%</span>
+              <span className="text-xs text-[#A1A1AA] shrink-0 w-10 text-right">{paidPct}%</span>
             </div>
           </div>
         )
       })()}
 
       {dashboard.byCategory.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">
+        <div className="card text-center py-12 text-[#A1A1AA]">
           <p className="text-lg">Sin datos para este período</p>
           <p className="text-sm mt-1">Sube un estado de cuenta para ver tu resumen</p>
         </div>
@@ -317,34 +317,72 @@ export default function DashboardPage() {
           {/* Annual: monthly trend chart */}
           {view === 'anual' && (
             <div className="card lg:col-span-2">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">Gasto mensual</h2>
+              <h2 className="text-base font-semibold text-[#27272A] mb-4">Gasto mensual</h2>
               <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={monthlyBarData}>
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${Number(v).toLocaleString('es-CL')}`} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Bar dataKey="monto" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <BarChart data={monthlyBarData} barCategoryGap="30%">
+                  <defs>
+                    <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#A78BFA" stopOpacity={0.5} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#A1A1AA' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#A1A1AA' }} axisLine={false} tickLine={false}
+                    tickFormatter={(v: number) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
+                  <Tooltip
+                    cursor={{ fill: '#F4F4F5', radius: 6 }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      return (
+                        <div className="bg-white border border-[#E4E4E7] rounded-xl shadow-lg px-3 py-2.5">
+                          <p className="text-[11px] text-[#71717A] mb-1 font-medium">{label}</p>
+                          <p className="text-sm font-bold text-[#18181B] tabular-nums">{formatCurrency(Number(payload[0]?.value ?? 0))}</p>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Bar dataKey="monto" fill="url(#violetGrad)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* Category bar chart */}
+          {/* Category horizontal bar chart */}
           <div className="card">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Gasto por categoría</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={categoryBarData}>
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${Number(v).toLocaleString('es-CL')}`} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Bar dataKey="monto" fill="#16a34a" radius={[4, 4, 0, 0]} />
+            <h2 className="text-base font-semibold text-[#27272A] mb-4">Gasto por categoría</h2>
+            <ResponsiveContainer width="100%" height={Math.max(240, dashboard.byCategory.length * 44)}>
+              <BarChart data={categoryBarData} layout="vertical" barCategoryGap="25%">
+                <XAxis type="number" tick={{ fontSize: 11, fill: '#A1A1AA' }} axisLine={false} tickLine={false}
+                  tickFormatter={(v: number) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#52525B' }} width={104} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: '#F4F4F5', radius: 4 }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    const color = (payload[0] as { fill?: string }).fill
+                    return (
+                      <div className="bg-white border border-[#E4E4E7] rounded-xl shadow-lg px-3 py-2.5">
+                        <p className="text-[11px] text-[#71717A] mb-1 font-medium">{label}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color ?? '#7C3AED' }} />
+                          <span className="text-sm font-bold text-[#18181B] tabular-nums">{formatCurrency(Number(payload[0]?.value ?? 0))}</span>
+                        </div>
+                      </div>
+                    )
+                  }}
+                />
+                <Bar dataKey="monto" radius={[0, 6, 6, 0]}>
+                  {categoryBarData.map((_, index) => (
+                    <Cell key={index} fill={dashboard.byCategory[index]?.category.color ?? '#7C3AED'} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Pie chart */}
+          {/* Donut chart */}
           <div className="card">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Distribución</h2>
+            <h2 className="text-base font-semibold text-[#27272A] mb-4">Distribución</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -353,14 +391,54 @@ export default function DashboardPage() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius={110}
+                  innerRadius={64}
+                  paddingAngle={2}
+                  strokeWidth={0}
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
+                  <Label
+                    content={({ viewBox }) => {
+                      const { cx, cy } = (viewBox ?? {}) as { cx: number; cy: number }
+                      return (
+                        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
+                          <tspan x={cx} dy="-0.5em" fontSize="15" fontWeight="700" fill="#18181B">
+                            {formatCurrency(dashboard.totalExpenses)}
+                          </tspan>
+                          <tspan x={cx} dy="1.6em" fontSize="11" fill="#A1A1AA">
+                            total gastos
+                          </tspan>
+                        </text>
+                      )
+                    }}
+                  />
                 </Pie>
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Legend />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const entry = payload[0]
+                    const pct = dashboard.totalExpenses > 0
+                      ? ((Number(entry?.value ?? 0) / dashboard.totalExpenses) * 100).toFixed(1)
+                      : '0'
+                    return (
+                      <div className="bg-white border border-[#E4E4E7] rounded-xl shadow-lg px-3 py-2.5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: (entry as { fill?: string }).fill ?? '#7C3AED' }} />
+                          <p className="text-[11px] text-[#71717A] font-medium">{entry?.name}</p>
+                        </div>
+                        <p className="text-sm font-bold text-[#18181B] tabular-nums">{formatCurrency(Number(entry?.value ?? 0))}</p>
+                        <p className="text-[11px] text-[#A1A1AA] mt-0.5">{pct}% del total</p>
+                      </div>
+                    )
+                  }}
+                />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 12, color: '#71717A' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -368,7 +446,7 @@ export default function DashboardPage() {
           {/* Account type breakdown */}
           {accountTypes.length > 0 && (
             <div className="card lg:col-span-2">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">Movimientos por Tipo de Cuenta</h2>
+              <h2 className="text-base font-semibold text-[#27272A] mb-4">Movimientos por Tipo de Cuenta</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                 {accountTypes.map((t) => {
                   const gastos = gastosPerType[t] ?? 0
@@ -376,26 +454,26 @@ export default function DashboardPage() {
                   const neto = gastos - abonos
                   const favorable = neto < 0
                   return (
-                    <div key={t} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                    <div key={t} className="bg-[#F4F4F5] rounded-xl p-3 space-y-2">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: TYPE_COLORS[t] ?? '#6b7280' }} />
-                        <p className="text-xs font-medium text-gray-600">{TYPE_LABELS[t] ?? t}</p>
+                        <p className="text-xs font-medium text-[#52525B]">{TYPE_LABELS[t] ?? t}</p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-400">Gastos</span>
-                          <span className="text-xs font-medium text-gray-700">{formatCurrency(gastos)}</span>
+                          <span className="text-xs text-[#A1A1AA]">Gastos</span>
+                          <span className="text-xs font-medium text-[#3F3F46]">{formatCurrency(gastos)}</span>
                         </div>
                         {abonos > 0 && (
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-400">Abonos</span>
+                            <span className="text-xs text-[#A1A1AA]">Abonos</span>
                             <span className="text-xs font-medium text-emerald-600">+{formatCurrency(abonos)}</span>
                           </div>
                         )}
                       </div>
-                      <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
-                        <span className="text-xs text-gray-500">Neto</span>
-                        <span className={`text-sm font-bold ${favorable ? 'text-emerald-600' : 'text-gray-900'}`}>
+                      <div className="border-t border-[#E4E4E7] pt-2 flex justify-between items-center">
+                        <span className="text-xs text-[#71717A]">Neto</span>
+                        <span className={`text-sm font-bold ${favorable ? 'text-emerald-600' : 'text-[#18181B]'}`}>
                           {favorable ? '+' : ''}{formatCurrency(Math.abs(neto))}{favorable ? ' a favor' : ''}
                         </span>
                       </div>
@@ -427,10 +505,10 @@ export default function DashboardPage() {
 
           {/* Breakdown table */}
           <div className="card lg:col-span-2">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Desglose por categoría</h2>
+            <h2 className="text-base font-semibold text-[#27272A] mb-4">Desglose por categoría</h2>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-[#71717A] border-b border-[#F4F4F5]">
                   <th className="pb-2 font-medium">Categoría</th>
                   <th className="pb-2 font-medium text-right">Gastos</th>
                   <th className="pb-2 font-medium text-right">Total</th>
@@ -438,7 +516,7 @@ export default function DashboardPage() {
                   {view === 'mensual' && <th className="pb-2 font-medium text-right">Límite mensual</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-[#FAFAFA]">
                 {dashboard.byCategory.map((item) => {
                   const budget = budgets[item.category.id]
                   const pct = budget ? Math.min((item.amount / budget) * 100, 100) : null
@@ -452,33 +530,33 @@ export default function DashboardPage() {
                           {item.category.name}
                         </div>
                       </td>
-                      <td className="py-2 text-right text-gray-600">{item.count}</td>
+                      <td className="py-2 text-right text-[#52525B]">{item.count}</td>
                       <td className={`py-2 text-right font-medium ${over ? 'text-red-600' : ''}`}>{formatCurrency(item.amount)}</td>
-                      <td className="py-2 text-right text-gray-500 hidden md:table-cell">
+                      <td className="py-2 text-right text-[#71717A] hidden md:table-cell">
                         {dashboard.totalAmount > 0 ? `${((item.amount / dashboard.totalAmount) * 100).toFixed(1)}%` : '—'}
                       </td>
                       {view === 'mensual' && (
                         <td className="py-2 text-right min-w-[120px]">
                           {budget != null ? (
                             <div className="flex flex-col items-end gap-1">
-                              <span className={`text-xs font-medium ${over ? 'text-red-600' : warn ? 'text-amber-600' : 'text-gray-500'}`}>
+                              <span className={`text-xs font-medium ${over ? 'text-red-600' : warn ? 'text-amber-600' : 'text-[#71717A]'}`}>
                                 {formatCurrency(budget)}
                                 {over && ' ⚠️'}
                               </span>
-                              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                              <div className="w-full bg-[#F4F4F5] rounded-full h-1.5">
                                 <div
                                   className={`h-1.5 rounded-full transition-all ${over ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-emerald-500'}`}
                                   style={{ width: `${pct}%` }}
                                 />
                               </div>
-                              <span className={`text-[10px] ${over ? 'text-red-500' : 'text-gray-400'}`}>
+                              <span className={`text-[10px] ${over ? 'text-red-500' : 'text-[#A1A1AA]'}`}>
                                 {over
                                   ? `+${formatCurrency(item.amount - budget)} excedido`
                                   : `${Math.round((item.amount / budget) * 100)}% usado`}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-300">—</span>
+                            <span className="text-xs text-[#D4D4D8]">—</span>
                           )}
                         </td>
                       )}

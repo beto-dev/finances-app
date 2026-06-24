@@ -1,41 +1,60 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
+import {
+  BarChart2, Plus, Upload, List, Hash, Users, ListChecks, Wallet,
+  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle,
+} from 'lucide-react'
 import { useAuth } from '../../features/auth/useAuth'
 import { useMyRole } from '../../features/family/useMyRole'
 import { useStatementNotifier } from '../../features/upload/useUpload'
 import { useMe, useUpdateMe } from '../../features/auth/useMe'
 
-// ── Sidebar nav (desktop) ────────────────────────────────────────────────────
-const topItems = [
-  { to: '/resumen',     label: '📊 Resumen' },
-  { to: '/nuevo-gasto', label: '➕ Nuevo Gasto' },
-  { to: '/cargar',      label: '📤 Subir Cartola' },
-  { to: '/gastos',      label: '📋 Gastos' },
-  { to: '/cuotas',      label: '🔢 Cuotas' },
+type NavItem = { to: string; label: string; icon: React.ElementType }
+
+const topItems: NavItem[] = [
+  { to: '/resumen',     label: 'Resumen',       icon: BarChart2  },
+  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus       },
+  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload     },
+  { to: '/gastos',      label: 'Gastos',         icon: List       },
+  { to: '/cuotas',      label: 'Cuotas',         icon: Hash       },
 ]
 
-const familyItems = [
-  { to: '/gastos-familia', label: '📋 Gastos' },
-  { to: '/aportes',        label: '💰 Aportes' },
+const familyItems: NavItem[] = [
+  { to: '/gastos-familia', label: 'Gastos Familia', icon: ListChecks },
+  { to: '/aportes',        label: 'Aportes',         icon: Wallet    },
 ]
 
-const familyRoutes = [...familyItems.map((i) => i.to), '/familia']
+const familyRoutes = [...familyItems.map((i) => i.to), '/familia', '/categorias']
 
-// ── Bottom tab bar (mobile) ──────────────────────────────────────────────────
-const tabItems = [
-  { to: '/resumen',        emoji: '📊', label: 'Resumen' },
-  { to: '/gastos',         emoji: '📋', label: 'Gastos'  },
-  { to: '/cargar',         emoji: '📤', label: 'Subir',   fab: true },
-  { to: '/gastos-familia', emoji: '👨‍👩‍👧', label: 'Familia' },
-  { to: '/aportes',        emoji: '💰', label: 'Aportes' },
+const mobileTabItems = [
+  { to: '/resumen',        icon: BarChart2, label: 'Resumen' },
+  { to: '/gastos',         icon: List,      label: 'Gastos'  },
+  { to: '/cargar',         icon: Upload,    label: 'Subir',  fab: true },
+  { to: '/gastos-familia', icon: Users,     label: 'Familia' },
+  { to: '/aportes',        icon: Wallet,    label: 'Aportes' },
 ]
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-    isActive
-      ? 'bg-brand-50 text-brand-700'
-      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-  }`
+function RailItem({ to, label, Icon }: { to: string; label: string; Icon: React.ElementType }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center h-10 w-full rounded-lg transition-colors duration-150 ${
+          isActive
+            ? 'bg-brand-600/20 text-brand-400'
+            : 'text-white/50 hover:bg-white/[0.07] hover:text-white/85'
+        }`
+      }
+    >
+      <span className="w-12 flex items-center justify-center shrink-0">
+        <Icon className="w-[18px] h-[18px]" />
+      </span>
+      <span className="text-sm font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 pr-4">
+        {label}
+      </span>
+    </NavLink>
+  )
+}
 
 export default function Layout() {
   const { user, logout } = useAuth()
@@ -45,7 +64,6 @@ export default function Layout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
-  // Auto-fetch full_name from API — no re-login needed
   useMe()
   const updateMe = useUpdateMe()
 
@@ -55,10 +73,7 @@ export default function Layout() {
   const [nameInput, setNameInput] = useState('')
   const { notification, clearNotification } = useStatementNotifier()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = () => { logout(); navigate('/login') }
 
   const handleSaveName = async () => {
     if (!nameInput.trim()) return
@@ -67,87 +82,98 @@ export default function Layout() {
     setProfileOpen(false)
   }
 
-  return (
-    <div className="flex h-screen bg-gray-50">
+  const initial = (user?.full_name ?? user?.email ?? '?')[0].toUpperCase()
 
-      {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex w-60 bg-white border-r border-gray-200 flex-col">
-        <div className="px-6 py-5 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-brand-700">Finanzas</h1>
+  return (
+    <div className="bg-[#FAFAFA] min-h-screen">
+
+      {/* ── Desktop sidebar rail ── */}
+      <aside className="group/sidebar hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-16 hover:w-56 transition-[width] duration-200 ease-in-out bg-[#111111] z-30 overflow-hidden">
+
+        {/* Logo */}
+        <div className="h-16 flex items-center shrink-0 border-b border-white/[0.07]">
+          <span className="w-12 flex items-center justify-center shrink-0">
+            <span className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">
+              F
+            </span>
+          </span>
+          <span className="text-white font-bold text-base whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 pr-4">
+            Finanzas
+          </span>
         </div>
-        <nav className="flex-1 py-4 px-3 space-y-1">
+
+        {/* Nav items */}
+        <nav className="flex-1 py-2 px-2 overflow-y-auto overflow-x-hidden space-y-0.5">
           {topItems.map((item) => (
-            <NavLink key={item.to} to={item.to} className={navLinkClass}>
-              {item.label}
-            </NavLink>
+            <RailItem key={item.to} to={item.to} label={item.label} Icon={item.icon} />
           ))}
 
           {/* Familia group */}
           <div>
             <button
               onClick={() => setFamilyOpen((o) => !o)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              className="flex items-center h-10 w-full rounded-lg text-white/50 hover:bg-white/[0.07] hover:text-white/85 transition-colors duration-150"
             >
-              <span>👨‍👩‍👧 Familia</span>
-              <svg
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                strokeLinecap="round" strokeLinejoin="round"
-                className={`w-3.5 h-3.5 transition-transform ${familyOpen ? 'rotate-180' : ''}`}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <span className="w-12 flex items-center justify-center shrink-0">
+                <Users className="w-[18px] h-[18px]" />
+              </span>
+              <span className="flex-1 text-sm font-medium whitespace-nowrap text-left opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150">
+                Familia
+              </span>
+              <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 pr-3">
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${familyOpen ? 'rotate-180' : ''}`} />
+              </span>
             </button>
 
             {familyOpen && (
-              <div className="mt-1 ml-3 pl-3 border-l border-gray-200 space-y-1">
+              <div className="mt-0.5 ml-10 pl-2 border-l border-white/[0.08] space-y-0.5">
                 {hasFamily && familyItems.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={navLinkClass}>
-                    {item.label}
-                  </NavLink>
+                  <RailItem key={item.to} to={item.to} label={item.label} Icon={item.icon} />
                 ))}
                 {roleData?.role !== 'member' && (
-                  <NavLink to="/familia" className={navLinkClass}>
-                    {isAdmin ? '👥 Miembros' : '🏠 Crear familia'}
-                  </NavLink>
+                  <RailItem
+                    to="/familia"
+                    label={isAdmin ? 'Miembros' : 'Crear familia'}
+                    Icon={isAdmin ? UserCog : Home}
+                  />
                 )}
                 {isAdmin && (
-                  <NavLink to="/categorias" className={navLinkClass}>
-                    🏷️ Categorías
-                  </NavLink>
+                  <RailItem to="/categorias" label="Categorías" Icon={Tag} />
                 )}
               </div>
             )}
           </div>
         </nav>
-        {/* User profile area */}
-        <div className="px-3 py-3 border-t border-gray-200 relative">
+
+        {/* User profile */}
+        <div className="border-t border-white/[0.07] px-2 py-2 shrink-0 relative">
           <button
             onClick={() => { setProfileOpen((o) => !o); setEditingName(false) }}
-            className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors text-left"
+            className="flex items-center h-12 w-full rounded-lg hover:bg-white/[0.07] transition-colors duration-150"
           >
-            <span className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold shrink-0">
-              {(user?.full_name ?? user?.email ?? '?')[0].toUpperCase()}
+            <span className="w-12 flex items-center justify-center shrink-0">
+              <span className="w-8 h-8 rounded-full bg-brand-600/25 text-brand-400 flex items-center justify-center text-sm font-semibold">
+                {initial}
+              </span>
             </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{user?.full_name ?? 'Mi perfil'}</p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+            <div className="flex-1 min-w-0 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 pr-3 text-left">
+              <p className="text-sm font-medium text-white/90 truncate">{user?.full_name ?? 'Mi perfil'}</p>
+              <p className="text-xs text-white/40 truncate">{user?.email}</p>
             </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-              className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${profileOpen ? 'rotate-180' : ''}`}>
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
           </button>
 
           {profileOpen && (
-            <div className="mt-1 border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
+            <div className="absolute bottom-full left-2 right-2 mb-2 bg-[#1C1C1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+              <div className="px-3 py-2.5 border-b border-white/[0.07]">
+                <p className="text-sm font-medium text-white/90 truncate">{user?.full_name ?? 'Sin nombre'}</p>
+                <p className="text-xs text-white/40 truncate">{user?.email}</p>
+              </div>
               {!editingName ? (
                 <button
                   onClick={() => { setNameInput(user?.full_name ?? ''); setEditingName(true) }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] hover:text-white/90 transition-colors"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-gray-400">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
+                  <Pencil className="w-4 h-4 shrink-0" />
                   Editar nombre
                 </button>
               ) : (
@@ -158,26 +184,26 @@ export default function Layout() {
                     onChange={(e) => setNameInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false) }}
                     placeholder="Tu nombre completo"
-                    className="w-full text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full text-sm bg-white/[0.08] border border-white/10 rounded-lg px-3 py-1.5 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                   <div className="flex gap-1.5">
-                    <button onClick={handleSaveName} disabled={updateMe.isPending} className="flex-1 text-xs py-1.5 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-60">
+                    <button onClick={handleSaveName} disabled={updateMe.isPending}
+                      className="flex-1 text-xs py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-60 transition-colors">
                       {updateMe.isPending ? '...' : 'Guardar'}
                     </button>
-                    <button onClick={() => setEditingName(false)} className="flex-1 text-xs py-1.5 border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50">
+                    <button onClick={() => setEditingName(false)}
+                      className="flex-1 text-xs py-1.5 border border-white/10 text-white/60 rounded-lg hover:bg-white/[0.06] transition-colors">
                       Cancelar
                     </button>
                   </div>
                 </div>
               )}
-              <div className="border-t border-gray-100">
+              <div className="border-t border-white/[0.07]">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
+                  <LogOut className="w-4 h-4 shrink-0" />
                   Cerrar sesión
                 </button>
               </div>
@@ -187,88 +213,97 @@ export default function Layout() {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-auto">
+      <div className="md:pl-16 flex flex-col min-h-screen">
+
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-10">
-          <h1 className="text-lg font-bold text-brand-700">Finanzas</h1>
+        <header className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-[#E4E4E7] sticky top-0 z-10">
+          <span className="text-base font-bold text-[#18181B]">Finanzas</span>
           <div className="relative">
             <button
               onClick={() => { setProfileOpen((o) => !o); setEditingName(false) }}
-              className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold"
+              className="w-9 h-9 rounded-full bg-brand-600/10 text-brand-600 flex items-center justify-center text-sm font-semibold"
             >
-              {(user?.full_name ?? user?.email ?? '?')[0].toUpperCase()}
+              {initial}
             </button>
             {profileOpen && (
-              <div className="absolute right-0 top-10 w-56 border border-gray-200 rounded-xl bg-white shadow-lg overflow-hidden z-50">
-                <div className="px-3 py-2.5 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-800 truncate">{user?.full_name ?? 'Sin nombre'}</p>
-                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <div className="absolute right-0 top-11 w-60 bg-white border border-[#E4E4E7] rounded-2xl shadow-xl overflow-hidden z-50">
+                <div className="px-4 py-3 border-b border-[#F4F4F5]">
+                  <p className="text-sm font-semibold text-[#18181B] truncate">{user?.full_name ?? 'Sin nombre'}</p>
+                  <p className="text-xs text-[#A1A1AA] truncate">{user?.email}</p>
                 </div>
                 {!editingName ? (
                   <button onClick={() => { setNameInput(user?.full_name ?? ''); setEditingName(true) }}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                    ✏️ Editar nombre
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#18181B] hover:bg-[#F4F4F5] transition-colors">
+                    <Pencil className="w-4 h-4 text-[#71717A]" /> Editar nombre
                   </button>
                 ) : (
-                  <div className="px-3 py-2.5 space-y-2">
-                    <input autoFocus value={nameInput} onChange={(e) => setNameInput(e.target.value)}
+                  <div className="px-4 py-3 space-y-2">
+                    <input autoFocus value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false) }}
                       placeholder="Tu nombre completo"
-                      className="w-full text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                      className="w-full text-sm border border-[#E4E4E7] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-600" />
                     <div className="flex gap-1.5">
-                      <button onClick={handleSaveName} disabled={updateMe.isPending} className="flex-1 text-xs py-1.5 bg-brand-600 text-white rounded-md disabled:opacity-60">
+                      <button onClick={handleSaveName} disabled={updateMe.isPending}
+                        className="flex-1 text-xs py-1.5 bg-brand-600 text-white rounded-lg disabled:opacity-60">
                         {updateMe.isPending ? '...' : 'Guardar'}
                       </button>
-                      <button onClick={() => setEditingName(false)} className="flex-1 text-xs py-1.5 border border-gray-200 text-gray-600 rounded-md">Cancelar</button>
+                      <button onClick={() => setEditingName(false)}
+                        className="flex-1 text-xs py-1.5 border border-[#E4E4E7] text-[#71717A] rounded-lg">
+                        Cancelar
+                      </button>
                     </div>
                   </div>
                 )}
-                <div className="border-t border-gray-100">
-                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                    🚪 Cerrar sesión
+                <div className="border-t border-[#F4F4F5]">
+                  <button onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                    <LogOut className="w-4 h-4" /> Cerrar sesión
                   </button>
                 </div>
               </div>
             )}
           </div>
-        </div>
+        </header>
 
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 pb-[calc(90px+env(safe-area-inset-bottom))] md:pb-8">
-          <Outlet />
-        </div>
-      </main>
+        <main className="flex-1">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 pb-[calc(90px+env(safe-area-inset-bottom))] md:pb-8">
+            <Outlet />
+          </div>
+        </main>
+      </div>
 
       {/* ── Mobile bottom tab bar ── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 flex items-end"
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E4E4E7] z-50 flex items-end"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {tabItems.map(({ to, emoji, label, fab }) => (
+        {mobileTabItems.map(({ to, icon: Icon, label, fab }) => (
           <NavLink
             key={to}
             to={to}
-            className={({ isActive }) =>
+            className={() =>
               fab
                 ? 'flex-1 flex flex-col items-center justify-center pb-3 pt-1'
-                : `flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-all active:scale-90 ${
-                    isActive ? 'opacity-100' : 'opacity-50'
-                  }`
+                : 'flex-1 flex flex-col items-center justify-center py-2 transition-all active:scale-90'
             }
           >
             {({ isActive }) =>
               fab ? (
-                <span className={`flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg transition-transform active:scale-95 text-2xl ${
+                <span className={`flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg transition-transform active:scale-95 ${
                   isActive ? 'bg-brand-700' : 'bg-brand-600'
                 }`}>
-                  {emoji}
+                  <Icon className="w-6 h-6 text-white" />
                 </span>
               ) : (
-                <>
-                  <span className="text-[22px] leading-none">{emoji}</span>
-                  <span className={`text-[11px] font-medium leading-none ${isActive ? 'text-brand-700' : 'text-gray-500'}`}>
+                <span className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors ${
+                  isActive ? 'bg-brand-50' : ''
+                }`}>
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-brand-600' : 'text-zinc-400'}`} />
+                  <span className={`text-[11px] font-medium leading-none ${isActive ? 'text-brand-600' : 'text-zinc-400'}`}>
                     {label}
                   </span>
-                </>
+                </span>
               )
             }
           </NavLink>
@@ -277,28 +312,33 @@ export default function Layout() {
 
       {/* ── Statement processing notification ── */}
       {notification && (
-        <div className={`fixed bottom-20 md:bottom-6 right-4 z-50 flex items-start gap-3 rounded-xl border shadow-xl px-4 py-3 max-w-sm animate-slide-up ${
+        <div className={`fixed bottom-20 md:bottom-6 right-4 z-50 flex items-start gap-3 rounded-2xl border shadow-xl px-4 py-3 max-w-sm animate-slide-up ${
           notification.type === 'success'
-            ? 'bg-green-50 border-green-300 text-green-900'
-            : 'bg-red-50 border-red-300 text-red-900'
+            ? 'bg-white border-emerald-200 text-[#18181B]'
+            : 'bg-white border-red-200 text-[#18181B]'
         }`}>
-          <span className="text-xl shrink-0">{notification.type === 'success' ? '✅' : '❌'}</span>
+          {notification.type === 'success'
+            ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+            : <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          }
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">
               {notification.type === 'success' ? 'Cartola procesada' : 'Error al procesar'}
             </p>
-            <p className="text-xs opacity-75 truncate mt-0.5">{notification.filename}</p>
+            <p className="text-xs text-[#71717A] truncate mt-0.5">{notification.filename}</p>
             {notification.type === 'success' && (
               <Link
                 to="/gastos"
                 onClick={clearNotification}
-                className="text-xs font-medium text-green-700 underline mt-1 inline-block"
+                className="text-xs font-medium text-brand-600 underline mt-1 inline-block"
               >
                 Ver gastos →
               </Link>
             )}
           </div>
-          <button onClick={clearNotification} className="text-lg leading-none opacity-50 hover:opacity-100 shrink-0">×</button>
+          <button onClick={clearNotification} className="text-[#A1A1AA] hover:text-[#18181B] transition-colors shrink-0">
+            <span className="text-lg leading-none">×</span>
+          </button>
         </div>
       )}
     </div>
