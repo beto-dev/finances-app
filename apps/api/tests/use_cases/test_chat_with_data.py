@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from application.use_cases.chat_with_data import ChatWithDataUseCase
+from application.use_cases.chat_with_data import _MAX_CHARGES_LIMIT, _MAX_MONTHS_BACK, ChatWithDataUseCase
 from tests.conftest import (
     TEST_USER_ID,
     MockCategoryRepo,
@@ -153,3 +153,22 @@ class TestChatWithDataUseCase:
         result_json = tool_result_message["content"][0]["content"]
         assert "Restaurante" in result_json
         assert "Uber" not in result_json
+
+    async def test_get_charges_clamps_limit_regardless_of_model_input(self) -> None:
+        charges = [make_charge(amount=Decimal(str(i + 1))) for i in range(_MAX_CHARGES_LIMIT + 10)]
+        uc = ChatWithDataUseCase(
+            MockChargeRepo(charges), MockCategoryRepo(), MockUserRepo(make_user()), _FakeAnthropicClient([])
+        )
+
+        result = await uc._get_charges({"limit": _MAX_CHARGES_LIMIT + 500}, TEST_USER_ID, {}, [])
+
+        assert len(result) == _MAX_CHARGES_LIMIT
+
+    async def test_get_trend_clamps_months_back_regardless_of_model_input(self) -> None:
+        uc = ChatWithDataUseCase(
+            MockChargeRepo(), MockCategoryRepo(), MockUserRepo(make_user()), _FakeAnthropicClient([])
+        )
+
+        result = await uc._trend({"months_back": _MAX_MONTHS_BACK + 500}, TEST_USER_ID)
+
+        assert len(result) == _MAX_MONTHS_BACK

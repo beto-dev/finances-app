@@ -10,14 +10,26 @@ from domain.repositories.category_repository import CategoryRepository
 from domain.repositories.charge_repository import ChargeRepository
 from domain.repositories.user_repository import UserRepository
 
-_SYSTEM_PROMPT = (
-    "Eres un asistente financiero personal para la app Finanzas. "
-    "Tienes acceso a los datos financieros reales del usuario a través de herramientas. "
-    "Responde siempre en español, de forma concisa y útil. "
-    "Usa las herramientas disponibles para obtener datos reales antes de responder. "
-    "Los montos están en pesos chilenos (CLP). "
-    "Montos positivos = gastos/débitos; negativos = ingresos/créditos."
-)
+_MAX_CHARGES_LIMIT = 50
+_MAX_MONTHS_BACK = 24
+
+# System prompt is identical on every call (including every round of a single
+# tool-calling loop) — cache it so repeat calls within the same conversation
+# only pay full price once every 5 minutes instead of on every round.
+_SYSTEM_PROMPT: list[dict[str, Any]] = [
+    {
+        "type": "text",
+        "text": (
+            "Eres un asistente financiero personal para la app Finanzas. "
+            "Tienes acceso a los datos financieros reales del usuario a través de herramientas. "
+            "Responde siempre en español, de forma concisa y útil. "
+            "Usa las herramientas disponibles para obtener datos reales antes de responder. "
+            "Los montos están en pesos chilenos (CLP). "
+            "Montos positivos = gastos/débitos; negativos = ingresos/créditos."
+        ),
+        "cache_control": {"type": "ephemeral"},
+    }
+]
 
 _TOOLS: list[dict[str, Any]] = [
     {
@@ -71,6 +83,8 @@ _TOOLS: list[dict[str, Any]] = [
             },
             "required": [],
         },
+        # Tools are also identical on every call — same cache breakpoint rationale as the system prompt.
+        "cache_control": {"type": "ephemeral"},
     },
 ]
 
@@ -190,7 +204,7 @@ class ChatWithDataUseCase:
         month: int | None = int(inputs["month"]) if "month" in inputs else None
         year: int | None = int(inputs["year"]) if "year" in inputs else None
         category_filter: str | None = str(inputs["category_name"]).lower() if "category_name" in inputs else None
-        limit: int = int(inputs.get("limit", 20))
+        limit: int = min(int(inputs.get("limit", 20)), _MAX_CHARGES_LIMIT)
 
         charges = await self._charges.get_personal(user_id, month, year)
 
@@ -239,7 +253,7 @@ class ChatWithDataUseCase:
         return sorted(results, key=lambda x: x["expenses"], reverse=True)
 
     async def _trend(self, inputs: dict[str, Any], user_id: UUID) -> list[dict[str, Any]]:
-        months_back: int = int(inputs.get("months_back", 6))
+        months_back: int = min(int(inputs.get("months_back", 6)), _MAX_MONTHS_BACK)
         all_charges = await self._charges.get_personal(user_id, None, None)
 
         today = date.today()
