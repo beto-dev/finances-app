@@ -118,6 +118,31 @@ apps/
 
 ---
 
+## Chat AI Agent
+
+Natural-language Q&A over the user's charges (`/chat`, roadmap 3.5). Key files: [chat_with_data.py](apps/api/application/use_cases/chat_with_data.py) (use case), [chat.py](apps/api/presentation/api/chat.py) (route), [useChat.ts](apps/web/src/features/chat/useChat.ts) (frontend state).
+
+### How it works
+
+- **Stateless — no training, no persistent memory.** Each request is a fresh prompt to Claude (`claude-haiku-4-5-20251001`). There's no conversation table, no fine-tuning, no vector store. "Memory" between messages is just the conversation history the frontend resends each time.
+- **Conversation history lives only in the browser.** `useChat.ts` keeps it in React state — lost on page reload or "Limpiar". Only the last 10 messages are sent as context per request (`MAX_HISTORY_MESSAGES`), so a long conversation doesn't keep growing the token cost per turn indefinitely.
+- **Tool-calling loop, not a single call.** One user message can trigger up to 5 rounds of Claude ↔ backend exchanges: Claude requests a tool (e.g. `get_monthly_summary`), the backend executes it against Postgres and returns the result, and Claude either asks for another tool or produces the final text reply. The round cap exists to prevent infinite loops if the model never settles.
+- **Available tools**: `get_monthly_summary` (totals + top 5 categories for a month), `get_charges` (filtered charge list, optionally by category), `get_category_breakdown` (expenses/income per category for a period), `get_trend` (monthly expenses/income over N months back).
+
+### Data scoping
+
+- All tools call `ChargeRepository.get_personal(user_id, ...)`, so a user can never see another family member's data — this is enforced at the query level, not by prompt instructions.
+- **Known limitation**: `get_personal` only returns charges from the synthetic "Gastos Manuales" statement (manual entries from `/nuevo-gasto`). It does **not** include the user's own uploaded bank statement charges (those live under `get_by_family(family_id, uploaded_by_filter=user_id)`, same as `/gastos` combines both — see [charges.py:35-41](apps/api/presentation/api/charges.py#L35-L41)), nor the family-shared pool (`get_confirmed_by_family`). In practice the chat currently can't answer about charges from uploaded statements — only manually-entered ones.
+
+### Cost guardrails
+
+- **Rate limit**: 30 requests/hour on `POST /api/chat`, keyed by IP (`slowapi`, same pattern as `auth`/`statements`) — not per-user, so it's a shared budget for anyone behind the same address.
+- **Capped tool inputs**: `get_charges`'s `limit` and `get_trend`'s `months_back` are clamped server-side (`_MAX_CHARGES_LIMIT = 50`, `_MAX_MONTHS_BACK = 24`) regardless of what the model requests, so a single tool call can't balloon the context.
+- **Prompt caching**: the system prompt and tool definitions are identical on every round, so both are marked with `cache_control: {"type": "ephemeral"}` — repeat calls within the same tool-calling loop (or within ~5 min) are billed at the cached rate instead of full price.
+- **Trimmed history**: see above — only the last 10 messages are resent per request.
+
+---
+
 ## Development Plan Status
 
 ### Phase 1 — Setup ✅ COMPLETE
