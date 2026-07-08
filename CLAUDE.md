@@ -65,6 +65,7 @@ apps/
 | `/api/statements/*` | statements.py | Upload + parse bank statements |
 | `/api/families/*` | families.py | Family management |
 | `/api/google/*` | google.py | Google Sheets OAuth + sync |
+| `/api/chat` | chat.py | Chat AI agent — natural-language Q&A over the user's charges (Claude tool-calling) |
 | `/api/debug/*` | debug.py | Debug endpoints (disabled in prod — 404 without `ENABLE_DEBUG_ENDPOINTS`) |
 
 ---
@@ -84,6 +85,7 @@ apps/
 | `/nuevo-gasto` | QuickExpensePage | Quick manual charge entry |
 | `/cuotas` | CuotasPage | Installment tracker (cuotas grupales) |
 | `/categorias` | CategoriesPage | Category management + budget limits (admin only) |
+| `/chat` | ChatPage | Chat AI agent — ask questions about your charges in natural language |
 | `/login` | LoginPage | Auth |
 | `/auth/callback` | AuthCallbackPage | OAuth callback |
 
@@ -99,6 +101,7 @@ apps/
 | `review_charges.py` | Update category, bulk confirm, learn rules |
 | `sync_to_sheets.py` | Push confirmed charges to Google Sheets |
 | `manage_family.py` | Invite members, manage roles |
+| `chat_with_data.py` | Chat AI agent — Claude tool-calling loop over monthly summary, charges, category breakdown, trend |
 
 ---
 
@@ -143,7 +146,7 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | 3.2 | Income support | ✅ Done — negative amounts = income; income categories (migration 0008); dashboard shows Gastos / Ingresos / Balance neto; charges page filter by type |
 | 3.3 | Bank combobox on upload | ✅ Done — searchable dropdown with 21 Chilean banks, no free text allowed |
 | 3.4 | Statement type required on upload | ✅ Done — no default; drop zone disabled until type is selected |
-| 3.5 | Chat agent UI | ⏳ Pending |
+| 3.5 | Chat agent UI | ✅ Done — natural-language Q&A over monthly summary, charges, category breakdown and trend via Claude tool-calling; nav entry desktop + mobile *(julio 2026)* |
 | 3.6 | Email ingestion | ⏳ Pending |
 | 3.7 | Multi-currency | ⏳ Pending |
 | 3.8 | Export & reports | ⏳ Pending |

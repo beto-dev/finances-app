@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   BarChart2, Plus, Upload, List, Hash, Users, ListChecks, Wallet,
-  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle,
+  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '../../features/auth/useAuth'
 import { useMyRole } from '../../features/family/useMyRole'
@@ -12,11 +12,12 @@ import { useMe, useUpdateMe } from '../../features/auth/useMe'
 type NavItem = { to: string; label: string; icon: React.ElementType }
 
 const topItems: NavItem[] = [
-  { to: '/resumen',     label: 'Resumen',       icon: BarChart2  },
-  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus       },
-  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload     },
-  { to: '/gastos',      label: 'Gastos',         icon: List       },
-  { to: '/cuotas',      label: 'Cuotas',         icon: Hash       },
+  { to: '/resumen',     label: 'Resumen',       icon: BarChart2      },
+  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus           },
+  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload         },
+  { to: '/gastos',      label: 'Gastos',         icon: List           },
+  { to: '/cuotas',      label: 'Cuotas',         icon: Hash           },
+  { to: '/chat',        label: 'Asistente',      icon: MessageCircle  },
 ]
 
 const familyItems: NavItem[] = [
@@ -27,11 +28,12 @@ const familyItems: NavItem[] = [
 const familyRoutes = [...familyItems.map((i) => i.to), '/familia', '/categorias']
 
 const mobileTabItems = [
-  { to: '/resumen',        icon: BarChart2, label: 'Resumen' },
-  { to: '/gastos',         icon: List,      label: 'Gastos'  },
-  { to: '/cargar',         icon: Upload,    label: 'Subir',  fab: true },
-  { to: '/gastos-familia', icon: Users,     label: 'Familia' },
-  { to: '/aportes',        icon: Wallet,    label: 'Aportes' },
+  { to: '/resumen',        icon: BarChart2,      label: 'Resumen' },
+  { to: '/gastos',         icon: List,           label: 'Gastos'  },
+  { to: '/cargar',         icon: Upload,         label: 'Subir',  fab: true },
+  { to: '/gastos-familia', icon: Users,          label: 'Familia' },
+  { to: '/aportes',        icon: Wallet,         label: 'Aportes' },
+  { to: '/chat',           icon: MessageCircle,  label: 'Chat'    },
 ]
 
 function RailItem({ to, label, Icon }: { to: string; label: string; Icon: React.ElementType }) {
