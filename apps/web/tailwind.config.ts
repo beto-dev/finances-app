@@ -23,9 +23,14 @@ const config: Config = {
           from: { transform: 'translateY(12px)', opacity: '0' },
           to: { transform: 'translateY(0)', opacity: '1' },
         },
+        'fab-pulse': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(124,58,237,0.35)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(124,58,237,0)' },
+        },
       },
       animation: {
         'slide-up': 'slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fab-pulse': 'fab-pulse 2.4s ease-in-out infinite',
       },
     },
   },
