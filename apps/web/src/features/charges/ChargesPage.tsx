@@ -150,7 +150,7 @@ function MobileChargeCard({
           <button
             onClick={() => !updateCategory.isPending && setSheetOpen(true)}
             disabled={updateCategory.isPending}
-            className="flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 border border-[#E4E4E7] active:bg-[#FAFAFA] transition-colors disabled:opacity-60 disabled:cursor-wait"
+            className="flex items-center gap-1.5 text-xs rounded-lg px-2.5 py-1.5 min-h-[44px] border border-[#E4E4E7] active:bg-[#FAFAFA] transition-colors disabled:opacity-60 disabled:cursor-wait"
             style={{ borderLeftColor: currentCat?.color ?? undefined, borderLeftWidth: currentCat?.color ? 3 : undefined }}
           >
             {updateCategory.isPending ? (
@@ -208,13 +208,13 @@ function MobileChargeCard({
             <button
               onClick={handleApplyToSimilar}
               disabled={applyToSimilar.isPending}
-              className="flex-1 py-2 text-sm font-medium bg-white text-brand-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="flex-1 py-2 min-h-[44px] text-sm font-medium bg-white text-brand-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               {applyToSimilar.isPending ? <Spinner size="sm" /> : 'Sí, aplicar a todos'}
             </button>
             <button
               onClick={handleDismissPrompt}
-              className="flex-1 py-2 text-sm font-medium border border-white/40 rounded-lg"
+              className="flex-1 py-2 min-h-[44px] text-sm font-medium border border-white/40 rounded-lg"
             >
               Solo este
             </button>
@@ -231,13 +231,13 @@ function MobileChargeCard({
             <button
               onClick={handleApplyShareToSimilar}
               disabled={shareSimilar.isPending}
-              className="flex-1 py-2 text-sm font-medium bg-white text-green-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="flex-1 py-2 min-h-[44px] text-sm font-medium bg-white text-green-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               {shareSimilar.isPending ? <Spinner size="sm" /> : 'Sí, compartir todos'}
             </button>
             <button
               onClick={() => setSimilarSharePrompt(null)}
-              className="flex-1 py-2 text-sm font-medium border border-white/40 rounded-lg"
+              className="flex-1 py-2 min-h-[44px] text-sm font-medium border border-white/40 rounded-lg"
             >
               Solo este
             </button>
@@ -556,7 +556,7 @@ export default function ChargesPage() {
                           <button
                             onClick={() => handleDeleteExtras(group)}
                             disabled={isDeleting}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-wait"
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 min-h-[44px] bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-wait"
                           >
                             {isDeleting ? (
                               <Spinner size="sm" />
@@ -572,7 +572,7 @@ export default function ChargesPage() {
                           <button
                             onClick={() => handleIgnoreDup(group.key)}
                             disabled={isDeleting}
-                            className="flex-1 py-2.5 px-3 border border-amber-300 text-amber-800 text-sm font-medium rounded-lg hover:bg-amber-100 active:bg-amber-200 transition-colors disabled:opacity-60"
+                            className="flex-1 py-2.5 px-3 min-h-[44px] border border-amber-300 text-amber-800 text-sm font-medium rounded-lg hover:bg-amber-100 active:bg-amber-200 transition-colors disabled:opacity-60"
                           >
                             Son gastos reales, ignorar
                           </button>
