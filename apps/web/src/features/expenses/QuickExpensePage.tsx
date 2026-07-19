@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Check, ChevronDown, PencilLine, CalendarDays, Wallet } from 'lucide-react'
 import { useCategories } from '../charges/useCharges'
 import client from '../../shared/api/client'
 import Toast from '../../shared/components/Toast'
@@ -28,17 +29,14 @@ function SuccessOverlay() {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-5">
-        <div className={`w-24 h-24 rounded-full bg-green-500 flex items-center justify-center transition-all duration-500 ease-out ${
+        <div className={`w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center transition-all duration-500 ease-out ${
           visible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
         }`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}
-            strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <Check className="w-12 h-12 text-white" strokeWidth={2.5} />
         </div>
-        <p className={`text-xl font-semibold text-gray-900 transition-all duration-300 delay-200 ${
+        <p className={`text-xl font-bold text-[#18181B] transition-all duration-300 delay-200 ${
           visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         }`}>
           ¡Gasto registrado!
@@ -113,38 +111,46 @@ export default function QuickExpensePage() {
     <div className="max-w-md mx-auto">
       {showSuccess && <SuccessOverlay />}
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Nuevo Gasto</h1>
+      <div className="flex items-center gap-2.5 mb-5">
+        <span className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+          <Wallet className="w-[18px] h-[18px] text-orange-500" />
+        </span>
+        <h1 className="text-2xl font-bold text-[#18181B]">Nuevo Gasto</h1>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Amount — live formatted display */}
         <div className="card p-6 text-center">
-          <p className="text-xs text-gray-500 uppercase tracking-widest font-medium mb-4">Monto (CLP)</p>
+          <p className="text-[10.5px] font-bold text-[#A1A1AA] uppercase tracking-widest mb-4">Monto (CLP)</p>
           <div className="flex items-center justify-center gap-1">
-            <span className={`text-4xl font-light transition-colors ${rawAmount ? 'text-gray-400' : 'text-gray-200'}`}>$</span>
+            <span className={`text-4xl font-light transition-colors ${rawAmount ? 'text-[#A1A1AA]' : 'text-[#D4D4D8]'}`}>$</span>
             <input
               type="text"
               inputMode="numeric"
               placeholder="0"
               value={displayAmount}
               onChange={handleAmountChange}
-              className="text-5xl font-bold text-gray-900 bg-transparent border-none outline-none w-full text-center focus:ring-0 placeholder-gray-300"
+              className="text-5xl font-bold text-[#18181B] bg-transparent border-none outline-none w-full text-center focus:ring-0 placeholder-[#D4D4D8]"
               autoFocus
             />
           </div>
-          <div className="mt-4 h-px bg-gray-200" />
+          <div className="mt-4 h-px bg-[#E4E4E7]" />
         </div>
 
         <div className="card p-4 space-y-4">
           <div>
             <label className="label">Descripción</label>
-            <input
-              type="text"
-              placeholder="¿En qué gastaste?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input"
-              required
-            />
+            <div className="relative">
+              <PencilLine className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="¿En qué gastaste?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="input pl-10"
+                required
+              />
+            </div>
           </div>
 
           <div>
@@ -152,41 +158,53 @@ export default function QuickExpensePage() {
             <button
               type="button"
               onClick={() => setCatSheetOpen(true)}
-              className="input flex items-center gap-2 text-left"
+              className="input flex items-center gap-2.5 text-left"
             >
               {currentCat ? (
                 <>
-                  <span className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: currentCat.color ?? '#9ca3af' }} />
-                  <span className="flex-1 text-gray-900">{currentCat.name}</span>
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                    style={{ backgroundColor: currentCat.color ?? '#9ca3af' }}
+                  >
+                    {currentCat.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="flex-1 text-[#18181B] truncate">{currentCat.name}</span>
                 </>
               ) : (
-                <span className="flex-1 text-gray-400">Sin categoría</span>
+                <>
+                  <span className="w-6 h-6 rounded-full bg-[#F4F4F5] shrink-0" />
+                  <span className="flex-1 text-[#A1A1AA]">Sin categoría</span>
+                </>
               )}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0 text-gray-400">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <ChevronDown className="w-4 h-4 shrink-0 text-[#A1A1AA]" />
             </button>
           </div>
 
           <div>
             <label className="label">Fecha</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="input"
-            />
+            <div className="relative">
+              <CalendarDays className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input pl-10"
+              />
+            </div>
           </div>
         </div>
 
         <button
           type="submit"
-          className="btn-primary w-full py-4 text-lg"
+          className="btn-primary w-full py-4 text-base gap-2"
           disabled={!canSubmit || mutation.isPending}
         >
-          {mutation.isPending ? <Spinner size="sm" /> : 'Registrar Gasto'}
+          {mutation.isPending ? <Spinner size="sm" /> : (
+            <>
+              <Check className="w-5 h-5" />
+              Registrar Gasto
+            </>
+          )}
         </button>
       </form>
 

@@ -23,9 +23,22 @@ const config: Config = {
           from: { transform: 'translateY(12px)', opacity: '0' },
           to: { transform: 'translateY(0)', opacity: '1' },
         },
+        'fab-pulse': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(124,58,237,0.35)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(124,58,237,0)' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '20%': { transform: 'translateX(-6px)' },
+          '40%': { transform: 'translateX(5px)' },
+          '60%': { transform: 'translateX(-4px)' },
+          '80%': { transform: 'translateX(3px)' },
+        },
       },
       animation: {
         'slide-up': 'slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fab-pulse': 'fab-pulse 2.4s ease-in-out infinite',
+        shake: 'shake 0.4s ease both',
       },
     },
   },
