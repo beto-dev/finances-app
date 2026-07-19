@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Pencil, ChevronRight, LogOut, UserCog, Home, Tag } from 'lucide-react'
+import { Pencil, ChevronRight, LogOut, UserCog, Home, Tag, Wallet, MessageCircle } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
 import { useMe, useUpdateMe } from '../auth/useMe'
 import { useMyRole } from '../family/useMyRole'
@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const { data: roleData } = useMyRole()
   const isAdmin = roleData?.role === 'admin'
+  const hasFamily = roleData?.role != null
   const canSeeFamily = roleData?.role != null && roleData.role !== 'member'
 
   useMe()
@@ -32,6 +33,10 @@ export default function ProfilePage() {
   }
 
   const menuItems = [
+    { label: 'Asistente', icon: MessageCircle, onClick: () => navigate('/chat') },
+    ...(hasFamily
+      ? [{ label: 'Aportes', icon: Wallet, onClick: () => navigate('/aportes') }]
+      : []),
     ...(canSeeFamily
       ? [{
           label: isAdmin ? 'Miembros de la familia' : 'Crear familia',

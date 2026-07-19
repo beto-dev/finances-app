@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   BarChart2, Plus, Upload, List, Hash, Users, ListChecks, Wallet,
-  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle, User,
+  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle, User, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '../../features/auth/useAuth'
 import { useMyRole, useFamily } from '../../features/family/useMyRole'
@@ -12,11 +12,12 @@ import { useMe, useUpdateMe } from '../../features/auth/useMe'
 type NavItem = { to: string; label: string; icon: React.ElementType }
 
 const topItems: NavItem[] = [
-  { to: '/resumen',     label: 'Resumen',       icon: BarChart2  },
-  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus       },
-  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload     },
-  { to: '/gastos',      label: 'Gastos',         icon: List       },
-  { to: '/cuotas',      label: 'Cuotas',         icon: Hash       },
+  { to: '/resumen',     label: 'Resumen',       icon: BarChart2      },
+  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus           },
+  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload         },
+  { to: '/gastos',      label: 'Gastos',         icon: List           },
+  { to: '/cuotas',      label: 'Cuotas',         icon: Hash           },
+  { to: '/chat',        label: 'Asistente',      icon: MessageCircle  },
 ]
 
 const familyItems: NavItem[] = [

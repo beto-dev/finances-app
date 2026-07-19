@@ -17,6 +17,8 @@ venv/
 node_modules/
 dist/
 .turbo/
+*.tsbuildinfo
+vite.config.d.ts
 
 # OS
 .DS_Store

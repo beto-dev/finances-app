@@ -17,6 +17,7 @@ from domain.entities.charge import Charge, ParsedCharge
 from domain.entities.user import User
 from domain.repositories.category_repository import CategoryRepository
 from domain.repositories.charge_repository import ChargeRepository
+from domain.repositories.user_repository import UserRepository
 from presentation.main import app
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -222,7 +223,7 @@ class MockCategoryRepo(CategoryRepository):
         self.categories = [c for c in self.categories if c.id != category_id]
 
 
-class MockUserRepo:
+class MockUserRepo(UserRepository):
     def __init__(self, user: User | None = None) -> None:
         self._user = user or make_user()
 
@@ -233,6 +234,13 @@ class MockUserRepo:
         return self._user if email == self._user.email else None
 
     async def create(self, email: str, hashed_password: str | None, family_id: UUID | None) -> User:
+        return self._user
+
+    async def update_family(self, user_id: UUID, family_id: UUID) -> User:
+        self._user.family_id = family_id
+        return self._user
+
+    async def update_name(self, user_id: UUID, full_name: str | None) -> User:
         return self._user
 
 
