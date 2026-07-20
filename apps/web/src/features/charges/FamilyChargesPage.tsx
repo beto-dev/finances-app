@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronDown, ArrowRight } from 'lucide-react'
 import { useFamilyCharges, useCategories, sortCharges, filterCharges, SortField, SortOrder } from './useCharges'
 import { Charge, FamilyMember } from '../../shared/types'
 import { NAME_BY_EMAIL } from '../../shared/utils/memberNames'
@@ -31,6 +32,23 @@ function useContributions() {
 
 function formatCLP(v: number) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v)
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+/** Small circular avatar with member initials — consistent brand tint across the page. */
+function MemberAvatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
+  const dims = size === 'md' ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[10px]'
+  return (
+    <span className={`shrink-0 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center ${dims}`}>
+      {getInitials(name)}
+    </span>
+  )
 }
 
 interface CollapsedCuota { description: string; count: number; totalAmount: number }
@@ -117,6 +135,32 @@ function settleDebts(balances: { userId: string; balance: number }[]) {
   return transfers
 }
 
+/** Groups already-sorted charges by calendar date for the mobile card list, mirroring ChargesPage. */
+function groupFamilyChargesByDate(charges: Charge[]) {
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+  const groups: { label: string; date: string; charges: Charge[]; total: number }[] = []
+  const seen = new Map<string, number>()
+
+  for (const charge of charges) {
+    const d = charge.date
+    if (!seen.has(d)) {
+      let label: string
+      if (d === today) label = 'Hoy'
+      else if (d === yesterday) label = 'Ayer'
+      else label = new Date(d + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })
+      seen.set(d, groups.length)
+      groups.push({ label, date: d, charges: [], total: 0 })
+    }
+    const idx = seen.get(d)!
+    groups[idx].charges.push(charge)
+    groups[idx].total += charge.amount
+  }
+
+  return groups
+}
+
 export default function FamilyChargesPage() {
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
@@ -178,7 +222,7 @@ export default function FamilyChargesPage() {
   }
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>
+    if (sortField !== field) return <span className="text-[#D4D4D8] ml-1">↕</span>
     return <span className="text-brand-600 ml-1 font-bold">{sortOrder === 'asc' ? '↑' : '↓'}</span>
   }
 
@@ -190,8 +234,8 @@ export default function FamilyChargesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gastos Familia</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Gastos confirmados por todos los miembros</p>
+        <h1 className="text-2xl font-bold text-[#18181B]">Gastos Familia</h1>
+        <p className="text-sm text-[#71717A] mt-0.5">Gastos confirmados por todos los miembros</p>
       </div>
 
       {/* Date filters */}
@@ -218,16 +262,16 @@ export default function FamilyChargesPage() {
 
       {/* Warnings panel */}
       {!isLoading && totalWarnings > 0 && (
-        <div className="mb-4 border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
+        <div className="mb-4 border border-amber-200 bg-amber-50 rounded-xl overflow-hidden shadow-sm">
           <button
             onClick={() => setWarningsOpen((o) => !o)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 min-h-[44px] text-sm font-semibold text-amber-800 hover:bg-amber-100/70 transition-colors"
           >
-            <span className="flex items-center gap-2">
-              <span>⚠️</span>
+            <span className="flex items-center gap-2 text-left">
+              <span className="text-base shrink-0">⚠️</span>
               <span>{totalWarnings} situación{totalWarnings !== 1 ? 'es' : ''} para revisar</span>
             </span>
-            <span className="text-amber-500 text-xs">{warningsOpen ? '▲ Ocultar' : '▼ Ver'}</span>
+            <ChevronDown className={`w-4 h-4 text-amber-500 shrink-0 transition-transform duration-200 ${warningsOpen ? 'rotate-180' : ''}`} />
           </button>
           {warningsOpen && (
             <div className="border-t border-amber-200 px-4 py-3 space-y-4">
@@ -276,16 +320,48 @@ export default function FamilyChargesPage() {
       {/* Settlement panel — only when there's data and contributions configured */}
       {totalExpense > 0 && memberStats.some((s) => s.pct > 0) && (
         <div className="card mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-800">Liquidación — {periodLabel}</h2>
-            <span className="text-sm font-semibold text-gray-900">{formatCLP(totalExpense)}</span>
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <h2 className="text-base font-semibold text-[#27272A]">Liquidación — {periodLabel}</h2>
+            <span className="text-sm font-semibold text-[#18181B] whitespace-nowrap">{formatCLP(totalExpense)}</span>
           </div>
 
-          {/* Per-member breakdown */}
-          <div className="overflow-x-auto mb-4">
+          {/* Mobile: stacked member cards */}
+          <div className="md:hidden space-y-2.5 mb-4">
+            {memberStats.map((s) => (
+              <div key={s.userId} className="rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] p-3">
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <MemberAvatar name={s.name} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#18181B] truncate">{s.name}</p>
+                    <p className="text-xs text-[#A1A1AA]">{s.pct.toFixed(1)}% de aporte</p>
+                  </div>
+                  {Math.abs(s.balance) <= 1 ? (
+                    <span className="text-xs font-medium text-[#A1A1AA] shrink-0">Al día</span>
+                  ) : s.balance > 0 ? (
+                    <span className="text-xs font-bold text-emerald-600 shrink-0 whitespace-nowrap">+{formatCLP(s.balance)}</span>
+                  ) : (
+                    <span className="text-xs font-bold text-red-500 shrink-0 whitespace-nowrap">{formatCLP(s.balance)}</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2.5 border-t border-[#E4E4E7]">
+                  <div>
+                    <p className="text-[#A1A1AA]">Debería pagar</p>
+                    <p className="font-medium text-[#3F3F46] tabular-nums">{formatCLP(s.expected)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[#A1A1AA]">Pagó (gastos)</p>
+                    <p className="font-medium text-[#3F3F46] tabular-nums">{formatCLP(s.actual)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block overflow-x-auto mb-4">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-xs text-[#71717A] border-b border-[#F4F4F5]">
                   <th className="pb-2 font-medium">Miembro</th>
                   <th className="pb-2 font-medium text-right">% aporte</th>
                   <th className="pb-2 font-medium text-right">Debería pagar</th>
@@ -293,18 +369,23 @@ export default function FamilyChargesPage() {
                   <th className="pb-2 font-medium text-right">Diferencia</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-[#FAFAFA]">
                 {memberStats.map((s) => (
                   <tr key={s.userId}>
-                    <td className="py-2.5 font-medium text-gray-800">{s.name}</td>
-                    <td className="py-2.5 text-right text-gray-500">{s.pct.toFixed(1)}%</td>
-                    <td className="py-2.5 text-right text-gray-700">{formatCLP(s.expected)}</td>
-                    <td className="py-2.5 text-right text-gray-700">{formatCLP(s.actual)}</td>
-                    <td className="py-2.5 text-right">
+                    <td className="py-2.5 font-medium text-[#27272A]">
+                      <div className="flex items-center gap-2">
+                        <MemberAvatar name={s.name} />
+                        {s.name}
+                      </div>
+                    </td>
+                    <td className="py-2.5 text-right text-[#71717A]">{s.pct.toFixed(1)}%</td>
+                    <td className="py-2.5 text-right text-[#3F3F46] tabular-nums">{formatCLP(s.expected)}</td>
+                    <td className="py-2.5 text-right text-[#3F3F46] tabular-nums">{formatCLP(s.actual)}</td>
+                    <td className="py-2.5 text-right tabular-nums">
                       {Math.abs(s.balance) <= 1 ? (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-[#A1A1AA]">—</span>
                       ) : s.balance > 0 ? (
-                        <span className="text-green-600 font-medium">+{formatCLP(s.balance)}</span>
+                        <span className="text-emerald-600 font-medium">+{formatCLP(s.balance)}</span>
                       ) : (
                         <span className="text-red-500 font-medium">{formatCLP(s.balance)}</span>
                       )}
@@ -317,21 +398,21 @@ export default function FamilyChargesPage() {
 
           {/* Transfer instructions */}
           {transfers.length > 0 && (
-            <div className="border-t border-gray-100 pt-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <div className="border-t border-[#F4F4F5] pt-4">
+              <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide mb-2">
                 Transferencias a realizar
               </p>
               <div className="space-y-2">
                 {transfers.map((t, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-                    <span className="text-sm font-medium text-gray-800">
+                  <div key={i} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 min-h-[44px]">
+                    <span className="text-sm font-medium text-[#27272A] truncate">
                       {memberNameById.get(t.from) ?? t.from}
                     </span>
-                    <span className="text-amber-600">→</span>
-                    <span className="text-sm font-medium text-gray-800">
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="text-sm font-medium text-[#27272A] truncate">
                       {memberNameById.get(t.to) ?? t.to}
                     </span>
-                    <span className="ml-auto text-sm font-bold text-amber-700">
+                    <span className="ml-auto text-sm font-bold text-amber-700 whitespace-nowrap shrink-0">
                       {formatCLP(t.amount)}
                     </span>
                   </div>
@@ -341,7 +422,7 @@ export default function FamilyChargesPage() {
           )}
 
           {transfers.length === 0 && memberStats.every((s) => Math.abs(s.balance) <= 1) && (
-            <div className="border-t border-gray-100 pt-3 text-sm text-green-600 font-medium">
+            <div className="border-t border-[#F4F4F5] pt-3 text-sm text-emerald-600 font-medium">
               ✓ Todos los miembros están al día
             </div>
           )}
@@ -349,7 +430,7 @@ export default function FamilyChargesPage() {
       )}
 
       {/* Search and filter */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
+      <div className="bg-[#FAFAFA] p-4 rounded-lg mb-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
             <label className="label text-xs">Buscar descripción</label>
@@ -392,51 +473,75 @@ export default function FamilyChargesPage() {
         {/* ── Mobile card list ── */}
         <div className="md:hidden">
           {isLoading ? (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#F4F4F5]">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="px-4 py-3.5 space-y-2">
-                  <div className="flex justify-between gap-2">
-                    <Skeleton className="h-4 w-44" />
-                    <Skeleton className="h-4 w-16 shrink-0" />
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                  <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex justify-between gap-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-16 shrink-0" />
+                    </div>
+                    <Skeleton className="h-3 w-32" />
                   </div>
-                  <Skeleton className="h-3 w-36" />
                 </div>
               ))}
             </div>
           ) : charges.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 px-4">
+            <div className="text-center py-12 text-[#A1A1AA] px-4">
               <p className="text-base">Sin gastos confirmados para este período</p>
               <p className="text-sm mt-1">Los gastos aparecen aquí cuando un miembro los confirma</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {charges.map((charge) => {
-                const cat = categories.find((c) => c.id === charge.category_id)
-                const memberName = charge.uploaded_by ? (memberNameById.get(charge.uploaded_by) ?? '—') : '—'
-                const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(charge.amount)
-                const formattedDate = new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-                return (
-                  <div key={charge.id} className="px-4 py-3.5 transition-all active:bg-gray-100">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">{charge.description}</p>
-                      <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formattedAmount}</p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-xs text-gray-400">{formattedDate}</span>
-                      <span className="text-xs text-gray-400">· {memberName}</span>
-                      {charge.bank_hint && charge.bank_hint !== 'manual' && (
-                        <BankBadge bank={charge.bank_hint} showName={false} />
-                      )}
-                      {cat && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>
-                          {cat.name}
-                        </span>
-                      )}
-                    </div>
+            <div>
+              <div className="px-4 py-2.5 bg-[#FAFAFA] border-b border-[#E4E4E7]">
+                <span className="text-xs text-[#71717A] font-medium">{charges.length} gastos</span>
+              </div>
+              {groupFamilyChargesByDate(charges).map((group) => (
+                <div key={group.date}>
+                  <div className="flex items-center justify-between px-4 py-2 bg-[#FAFAFA] border-b border-[#F4F4F5]">
+                    <span className="text-xs font-semibold text-[#71717A] uppercase tracking-wide">{group.label}</span>
+                    <span className="text-xs font-medium text-[#A1A1AA]">
+                      {formatCLP(group.total)}
+                    </span>
                   </div>
-                )
-              })}
+                  <div className="divide-y divide-[#F4F4F5]">
+                    {group.charges.map((charge) => {
+                      const cat = categories.find((c) => c.id === charge.category_id)
+                      const memberName = charge.uploaded_by ? (memberNameById.get(charge.uploaded_by) ?? '—') : '—'
+                      const isIncome = Number(charge.amount) < 0
+                      const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(Math.abs(charge.amount))
+                      const formattedDate = new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                      return (
+                        <div key={charge.id} className="flex items-center gap-3 px-4 py-3.5">
+                          <MemberAvatar name={memberName} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium text-[#18181B] line-clamp-2 break-words">{charge.description}</p>
+                              <p className={`text-sm font-semibold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-[#18181B]'}`}>
+                                {isIncome ? '+' : ''}{formattedAmount}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span className="text-xs text-[#A1A1AA]">{formattedDate}</span>
+                              <span className="text-xs text-[#A1A1AA] truncate max-w-[100px]">· {memberName}</span>
+                              {charge.bank_hint && charge.bank_hint !== 'manual' && (
+                                <BankBadge bank={charge.bank_hint} showName={false} />
+                              )}
+                              {cat && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                                  style={{ backgroundColor: cat.color ? `${cat.color}20` : '#F4F4F5', color: cat.color ?? '#374151' }}>
+                                  {cat.name}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -447,7 +552,7 @@ export default function FamilyChargesPage() {
             <table className="w-full">
               <tbody>
                 {[...Array(8)].map((_, i) => (
-                  <tr key={i} className="border-b border-gray-100">
+                  <tr key={i} className="border-b border-[#F4F4F5]">
                     <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
                     <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
                     <td className="px-4 py-3 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
@@ -458,43 +563,51 @@ export default function FamilyChargesPage() {
               </tbody>
             </table>
           ) : charges.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-[#A1A1AA]">
               <p className="text-lg">Sin gastos confirmados para este período</p>
               <p className="text-sm mt-1">Los gastos aparecen aquí cuando un miembro los confirma en "Gastos"</p>
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[#FAFAFA] border-b border-[#E4E4E7]">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('date')}>Fecha <SortIcon field="date" /></th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Banco</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Miembro</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('date')}>Fecha <SortIcon field="date" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('description')}>Descripción <SortIcon field="description" /></th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('amount')}>Monto <SortIcon field="amount" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide cursor-pointer hover:bg-[#F4F4F5]" onClick={() => handleSort('category')}>Categoría <SortIcon field="category" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide">Banco</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#71717A] uppercase tracking-wide">Miembro</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[#F4F4F5]">
                 {charges.map((charge) => {
                   const cat = categories.find((c) => c.id === charge.category_id)
                   const memberName = charge.uploaded_by ? (memberNameById.get(charge.uploaded_by) ?? '—') : '—'
-                  const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(charge.amount)
+                  const isIncome = Number(charge.amount) < 0
+                  const formattedAmount = new Intl.NumberFormat('es-CL', { style: 'currency', currency: charge.currency || 'CLP', maximumFractionDigits: 0 }).format(Math.abs(charge.amount))
                   return (
-                    <tr key={charge.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES')}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">{charge.description}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">{formattedAmount}</td>
+                    <tr key={charge.id} className="hover:bg-[#FAFAFA]">
+                      <td className="px-4 py-3 text-sm text-[#52525B] whitespace-nowrap">{new Date(charge.date + 'T00:00:00').toLocaleDateString('es-ES')}</td>
+                      <td className="px-4 py-3 text-sm text-[#18181B] max-w-xs truncate">{charge.description}</td>
+                      <td className={`px-4 py-3 text-sm font-medium text-right whitespace-nowrap tabular-nums ${isIncome ? 'text-emerald-600' : 'text-[#18181B]'}`}>
+                        {isIncome ? '+' : ''}{formattedAmount}
+                      </td>
                       <td className="px-4 py-3">
                         {cat ? (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: cat.color ? `${cat.color}20` : '#f3f4f6', color: cat.color ?? '#374151' }}>{cat.name}</span>
-                        ) : <span className="text-xs text-gray-400">—</span>}
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: cat.color ? `${cat.color}20` : '#F4F4F5', color: cat.color ?? '#374151' }}>{cat.name}</span>
+                        ) : <span className="text-xs text-[#A1A1AA]">—</span>}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {charge.bank_hint && charge.bank_hint !== 'manual'
                           ? <BankBadge bank={charge.bank_hint} />
-                          : <span className="text-gray-300">—</span>}
+                          : <span className="text-[#D4D4D8]">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{memberName}</td>
+                      <td className="px-4 py-3 text-sm text-[#52525B]">
+                        <div className="flex items-center gap-2">
+                          <MemberAvatar name={memberName} />
+                          {memberName}
+                        </div>
+                      </td>
                     </tr>
                   )
                 })}

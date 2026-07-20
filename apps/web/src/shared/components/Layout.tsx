@@ -2,21 +2,22 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   BarChart2, Plus, Upload, List, Hash, Users, ListChecks, Wallet,
-  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle,
+  UserCog, Home, Tag, LogOut, Pencil, ChevronDown, CheckCircle, XCircle, User, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '../../features/auth/useAuth'
-import { useMyRole } from '../../features/family/useMyRole'
+import { useMyRole, useFamily } from '../../features/family/useMyRole'
 import { useStatementNotifier } from '../../features/upload/useUpload'
 import { useMe, useUpdateMe } from '../../features/auth/useMe'
 
 type NavItem = { to: string; label: string; icon: React.ElementType }
 
 const topItems: NavItem[] = [
-  { to: '/resumen',     label: 'Resumen',       icon: BarChart2  },
-  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus       },
-  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload     },
-  { to: '/gastos',      label: 'Gastos',         icon: List       },
-  { to: '/cuotas',      label: 'Cuotas',         icon: Hash       },
+  { to: '/resumen',     label: 'Resumen',       icon: BarChart2      },
+  { to: '/nuevo-gasto', label: 'Nuevo Gasto',    icon: Plus           },
+  { to: '/cargar',      label: 'Subir Cartola',  icon: Upload         },
+  { to: '/gastos',      label: 'Gastos',         icon: List           },
+  { to: '/cuotas',      label: 'Cuotas',         icon: Hash           },
+  { to: '/chat',        label: 'Asistente',      icon: MessageCircle  },
 ]
 
 const familyItems: NavItem[] = [
@@ -26,12 +27,14 @@ const familyItems: NavItem[] = [
 
 const familyRoutes = [...familyItems.map((i) => i.to), '/familia', '/categorias']
 
-const mobileTabItems = [
+type MobileTabItem = { to?: string; icon: React.ElementType; label: string; fab?: boolean }
+
+const mobileTabItems: MobileTabItem[] = [
   { to: '/resumen',        icon: BarChart2, label: 'Resumen' },
   { to: '/gastos',         icon: List,      label: 'Gastos'  },
-  { to: '/cargar',         icon: Upload,    label: 'Subir',  fab: true },
+  { fab: true,             icon: Plus,      label: 'Agregar' },
   { to: '/gastos-familia', icon: Users,     label: 'Familia' },
-  { to: '/aportes',        icon: Wallet,    label: 'Aportes' },
+  { to: '/perfil',         icon: User,      label: 'Perfil'  },
 ]
 
 function RailItem({ to, label, Icon }: { to: string; label: string; Icon: React.ElementType }) {
@@ -59,6 +62,7 @@ function RailItem({ to, label, Icon }: { to: string; label: string; Icon: React.
 export default function Layout() {
   const { user, logout } = useAuth()
   const { data: roleData } = useMyRole()
+  const { data: family } = useFamily()
   const isAdmin = roleData?.role === 'admin'
   const hasFamily = roleData?.role != null
   const navigate = useNavigate()
@@ -71,6 +75,7 @@ export default function Layout() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
+  const [addSheetOpen, setAddSheetOpen] = useState(false)
   const { notification, clearNotification } = useStatementNotifier()
 
   const handleLogout = () => { logout(); navigate('/login') }
@@ -217,7 +222,14 @@ export default function Layout() {
 
         {/* Mobile top bar */}
         <header className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-[#E4E4E7] sticky top-0 z-10">
-          <span className="text-base font-bold text-[#18181B]">Finanzas</span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-[#A1A1AA] leading-none">
+              Hola{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}
+            </p>
+            <p className="text-sm font-bold text-[#18181B] leading-tight truncate mt-0.5">
+              {family?.name ?? 'Finanzas'}
+            </p>
+          </div>
           <div className="relative">
             <button
               onClick={() => { setProfileOpen((o) => !o); setEditingName(false) }}
@@ -278,37 +290,74 @@ export default function Layout() {
         className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E4E4E7] z-50 flex items-end"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {mobileTabItems.map(({ to, icon: Icon, label, fab }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={() =>
-              fab
-                ? 'flex-1 flex flex-col items-center justify-center pb-3 pt-1'
-                : 'flex-1 flex flex-col items-center justify-center py-2 transition-all active:scale-90'
-            }
-          >
-            {({ isActive }) =>
-              fab ? (
-                <span className={`flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg transition-transform active:scale-95 ${
-                  isActive ? 'bg-brand-700' : 'bg-brand-600'
-                }`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </span>
-              ) : (
+        {mobileTabItems.map((item) =>
+          item.fab ? (
+            <button
+              key="fab"
+              onClick={() => setAddSheetOpen(true)}
+              className="flex-1 flex flex-col items-center justify-center pb-3 pt-1"
+            >
+              <span className="flex items-center justify-center w-[52px] h-[52px] rounded-[18px] bg-brand-600 shadow-lg shadow-brand-600/35 transition-transform active:scale-95 animate-fab-pulse -mt-3.5">
+                <item.icon className="w-6 h-6 text-white" />
+              </span>
+            </button>
+          ) : (
+            <NavLink
+              key={item.to}
+              to={item.to!}
+              className="flex-1 flex flex-col items-center justify-center py-2 transition-all active:scale-90"
+            >
+              {({ isActive }) => (
                 <span className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors ${
                   isActive ? 'bg-brand-50' : ''
                 }`}>
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-brand-600' : 'text-zinc-400'}`} />
+                  <item.icon className={`w-5 h-5 ${isActive ? 'text-brand-600' : 'text-zinc-400'}`} />
                   <span className={`text-[11px] font-medium leading-none ${isActive ? 'text-brand-600' : 'text-zinc-400'}`}>
-                    {label}
+                    {item.label}
                   </span>
                 </span>
-              )
-            }
-          </NavLink>
-        ))}
+              )}
+            </NavLink>
+          )
+        )}
       </nav>
+
+      {/* ── Mobile "Agregar gasto" bottom sheet ── */}
+      {addSheetOpen && (
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end">
+          <div
+            className="absolute inset-0 bg-black/45"
+            onClick={() => setAddSheetOpen(false)}
+          />
+          <div
+            className="relative bg-white rounded-t-3xl px-[18px] pt-3.5 pb-7 shadow-2xl animate-slide-up"
+            style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom))' }}
+          >
+            <div className="w-9 h-1 rounded-full bg-[#E4E4E7] mx-auto mb-4" />
+            <p className="text-[15px] font-extrabold text-[#18181B] text-center mb-3.5">Agregar gasto</p>
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => { setAddSheetOpen(false); navigate('/cargar') }}
+                className="flex-1 flex flex-col items-center gap-2 bg-brand-50 rounded-2xl py-[18px] px-2.5"
+              >
+                <span className="w-11 h-11 rounded-2xl bg-brand-600 flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-white" />
+                </span>
+                <span className="text-[12.5px] font-bold text-[#27272A] text-center">Subir cartola</span>
+              </button>
+              <button
+                onClick={() => { setAddSheetOpen(false); navigate('/nuevo-gasto') }}
+                className="flex-1 flex flex-col items-center gap-2 bg-orange-50 rounded-2xl py-[18px] px-2.5"
+              >
+                <span className="w-11 h-11 rounded-2xl bg-orange-500 flex items-center justify-center">
+                  <Wallet className="w-5 h-5 text-white" />
+                </span>
+                <span className="text-[12.5px] font-bold text-[#27272A] text-center">Registrar efectivo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Statement processing notification ── */}
       {notification && (

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, Label,
@@ -224,29 +225,29 @@ export default function DashboardPage() {
 
       {/* Summary cards + charts */}
       {!isLoading && !isError && (<>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="rounded-2xl border border-rose-100 bg-rose-50 shadow-sm p-4 overflow-hidden">
+      <div className="flex overflow-x-auto gap-3 pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-5 md:gap-4 mb-8">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50 shadow-sm p-4 overflow-hidden shrink-0 w-[150px] md:w-auto">
           <p className="text-xs font-semibold uppercase tracking-wider text-rose-400 truncate">{view === 'mensual' ? 'Gastos' : 'Gastos del año'}</p>
           <p className="text-xl font-bold text-rose-900 mt-2 tabular-nums leading-none truncate">{formatCurrency(dashboard.totalExpenses)}</p>
           <p className="text-xs text-rose-300 mt-2 truncate">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 shadow-sm p-4 overflow-hidden">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 shadow-sm p-4 overflow-hidden shrink-0 w-[150px] md:w-auto">
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 truncate">{view === 'mensual' ? 'Ingresos' : 'Ingresos del año'}</p>
           <p className="text-xl font-bold text-emerald-800 mt-2 tabular-nums leading-none truncate">{formatCurrency(dashboard.totalIncome)}</p>
           <p className="text-xs text-emerald-400 mt-2 truncate">
             {view === 'mensual' ? `${MONTHS[month - 1]} ${year}` : `Año ${year}`}
           </p>
         </div>
-        <div className="rounded-2xl border border-orange-100 bg-orange-50 shadow-sm p-4 overflow-hidden">
+        <div className="rounded-2xl border border-orange-100 bg-orange-50 shadow-sm p-4 overflow-hidden shrink-0 w-[150px] md:w-auto">
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-400 truncate">Créditos/mes</p>
           <p className="text-xl font-bold text-orange-800 mt-2 tabular-nums leading-none truncate">{formatCurrency(dashboard.totalCredits)}</p>
           <p className="text-xs text-orange-300 mt-2 truncate">
             {dashboard.totalDebt > 0 ? `${formatCurrency(dashboard.totalDebt)} total` : 'cuotas y créditos activos'}
           </p>
         </div>
-        <div className="rounded-2xl border border-violet-100 bg-violet-50 shadow-sm p-4 overflow-hidden">
+        <div className="rounded-2xl border border-violet-100 bg-violet-50 shadow-sm p-4 overflow-hidden shrink-0 w-[150px] md:w-auto">
           <p className="text-xs font-semibold uppercase tracking-wider text-violet-400 truncate">Balance neto</p>
           {(() => {
             const net = dashboard.totalIncome - dashboard.totalExpenses - dashboard.totalCredits
@@ -260,7 +261,7 @@ export default function DashboardPage() {
             )
           })()}
         </div>
-        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm p-4 overflow-hidden">
+        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm p-4 overflow-hidden shrink-0 w-[150px] md:w-auto">
           {view === 'mensual' ? (
             <>
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 truncate">Categorías activas</p>
@@ -284,7 +285,7 @@ export default function DashboardPage() {
           ? Math.round(((dashboard.totalOriginalDebt - dashboard.totalDebt) / dashboard.totalOriginalDebt) * 100)
           : 0
         return (
-          <div className="card mb-6">
+          <Link to="/cuotas" className="card mb-6 block hover:border-brand-300 transition-colors">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
                 <h2 className="text-base font-semibold text-[#27272A]">Deuda Total</h2>
@@ -303,7 +304,7 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs text-[#A1A1AA] shrink-0 w-10 text-right">{paidPct}%</span>
             </div>
-          </div>
+          </Link>
         )
       })()}
 

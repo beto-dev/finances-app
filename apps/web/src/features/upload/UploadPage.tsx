@@ -1,7 +1,9 @@
 import { useState, DragEvent, ChangeEvent, useRef, useEffect } from 'react'
+import { Upload, Pencil, X, Check } from 'lucide-react'
 import { useStatements, useUploadStatement, useDeleteAllStatements, useUpdateStatement, useStatementsSummary } from './useUpload'
 import Spinner from '../../shared/components/Spinner'
 import Toast from '../../shared/components/Toast'
+import BankBadge from '../../shared/components/BankBadge'
 import { Statement } from '../../shared/types'
 
 const CHILEAN_BANKS = [
@@ -27,6 +29,8 @@ const CHILEAN_BANKS = [
   'Global66',
   'Prepago Los Héroes',
 ]
+
+const QUICK_BANKS = CHILEAN_BANKS.slice(0, 5)
 
 function BankCombobox({ value, onChange, disabled }: {
   value: string
@@ -74,7 +78,7 @@ function BankCombobox({ value, onChange, disabled }: {
       <div className="relative">
         <input
           type="text"
-          className="input pr-8"
+          className="input pr-8 text-xs py-1.5"
           placeholder="Buscar banco..."
           value={query}
           disabled={disabled}
@@ -121,6 +125,12 @@ const TYPE_LABELS: Record<string, string> = {
   credit_line: 'Línea de crédito',
 }
 
+const TYPE_LABELS_SHORT: Record<string, string> = {
+  checking: 'Cta. corriente',
+  credit_card: 'Tarjeta credito',
+  credit_line: 'Linea credito',
+}
+
 type FileStatus = 'waiting' | 'uploading' | 'done' | 'duplicate' | 'error'
 
 interface FileItem {
@@ -132,14 +142,14 @@ interface FileItem {
 
 type DisplayStatus = 'waiting' | 'uploading' | 'processing' | 'done' | 'upload-error' | 'parse-error' | 'duplicate'
 
-const DISPLAY_CONFIG: Record<DisplayStatus, { label: string; color: string; spinner?: boolean }> = {
-  waiting:        { label: 'En cola',          color: 'bg-gray-100 text-gray-500' },
-  uploading:      { label: 'Subiendo...',       color: 'bg-blue-100 text-blue-700', spinner: true },
-  processing:     { label: 'Procesando...',     color: 'bg-brand-100 text-brand-700', spinner: true },
-  done:           { label: 'Listo',             color: 'bg-green-100 text-green-700' },
-  'upload-error': { label: 'Error al subir',    color: 'bg-red-100 text-red-700' },
-  'parse-error':  { label: 'Error al procesar', color: 'bg-red-100 text-red-700' },
-  duplicate:      { label: 'Duplicada',         color: 'bg-yellow-100 text-yellow-700' },
+const DISPLAY_CONFIG: Record<DisplayStatus, { label: string; pill: string; spinner?: boolean; barColor?: string }> = {
+  waiting:        { label: 'En cola',          pill: 'bg-[#F4F4F5] text-[#71717A]' },
+  uploading:      { label: 'Subiendo',         pill: 'bg-blue-50 text-blue-700',   spinner: true, barColor: '#3B82F6' },
+  processing:     { label: 'Procesando',       pill: 'bg-brand-50 text-brand-700', spinner: true, barColor: '#8B5CF6' },
+  done:           { label: 'Listo',            pill: 'bg-emerald-50 text-emerald-700' },
+  'upload-error': { label: 'Error al subir',   pill: 'bg-red-50 text-red-700' },
+  'parse-error':  { label: 'Error al procesar', pill: 'bg-red-50 text-red-700' },
+  duplicate:      { label: 'Duplicada',        pill: 'bg-amber-50 text-amber-700' },
 }
 
 function itemDisplayStatus(item: FileItem, stmt: Statement | undefined): DisplayStatus {
@@ -172,6 +182,9 @@ export default function UploadPage() {
   const [bankHint, setBankHint] = useState('')
   const [queue, setQueue] = useState<FileItem[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [bankSheetOpen, setBankSheetOpen] = useState(false)
+  const [bankQuery, setBankQuery] = useState('')
+  const [shake, setShake] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: statements, isLoading } = useStatements()
@@ -232,9 +245,15 @@ export default function UploadPage() {
     setIsUploading(false)
   }
 
+  const triggerShake = () => {
+    setShake(true)
+    setTimeout(() => setShake(false), 420)
+  }
+
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return
     if (!statementType) {
+      triggerShake()
       setToast({ message: 'Selecciona el tipo de cuenta antes de subir', type: 'error' })
       return
     }
@@ -271,6 +290,16 @@ export default function UploadPage() {
   const onDragOver = (e: DragEvent) => { e.preventDefault(); if (statementType) setIsDragging(true) }
   const onDragLeave = () => setIsDragging(false)
 
+  const openPicker = () => {
+    if (!statementType) { triggerShake(); return }
+    fileInputRef.current?.click()
+  }
+
+  const selectQuickBank = (bank: string) => setBankHint((prev) => (prev === bank ? '' : bank))
+  const filteredSheetBanks = bankQuery.trim()
+    ? CHILEAN_BANKS.filter((b) => b.toLowerCase().includes(bankQuery.toLowerCase()))
+    : CHILEAN_BANKS
+
   // IDs uploaded in the current session (to avoid double-showing in the list)
   const sessionStatementIds = new Set(queue.filter(q => q.statementId).map(q => q.statementId!))
 
@@ -287,221 +316,299 @@ export default function UploadPage() {
   const hasAnyItems = queue.length > 0 || pastStatements.length > 0
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Subir Cartola</h1>
+    <div className="max-w-md mx-auto">
+      <h1 className="text-2xl font-bold text-[#18181B] mb-5">Subir Cartola</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Options + Drop zone */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="card">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Opciones</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">Tipo de cuenta <span className="text-red-500">*</span></label>
-                <select
-                  className={`input ${!statementType ? 'border-red-300 text-gray-400' : ''}`}
-                  value={statementType}
-                  onChange={(e) => setStatementType(e.target.value)}
-                  disabled={isUploading}
-                  required
-                >
-                  <option value="" disabled>Selecciona un tipo...</option>
-                  {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">Banco (opcional)</label>
-                <BankCombobox value={bankHint} onChange={setBankHint} disabled={isUploading} />
-              </div>
-            </div>
-          </div>
-
-          <div
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onClick={() => !isUploading && statementType && fileInputRef.current?.click()}
-            className={`rounded-xl border-2 border-dashed p-12 text-center transition-colors ${
-              isUploading || !statementType
-                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                : isDragging
-                ? 'border-brand-500 bg-brand-50 cursor-pointer'
-                : 'border-gray-300 hover:border-brand-400 hover:bg-gray-50 cursor-pointer'
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.csv,.xlsx,.xls"
-              multiple
-              className="hidden"
-              onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
-            />
-            <div className="text-4xl mb-3">📁</div>
-            {isUploading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-gray-600">Subiendo archivos...</span>
-              </div>
-            ) : !statementType ? (
-              <p className="text-sm text-gray-400">Selecciona primero el tipo de cuenta</p>
-            ) : (
-              <>
-                <p className="text-base font-medium text-gray-700">
-                  Arrastra uno o más archivos aquí, o haz clic para seleccionar
-                </p>
-                <p className="text-sm text-gray-400 mt-1">PDF, CSV, Excel (.xlsx, .xls) · Múltiples archivos permitidos</p>
-              </>
-            )}
-          </div>
+      <div
+        className={`card mb-5 ${shake ? 'animate-shake' : ''}`}
+      >
+        <p className="text-sm font-bold text-[#27272A] mb-2.5">1. Tipo de cuenta</p>
+        <div className="flex gap-2 mb-5">
+          {Object.entries(TYPE_LABELS_SHORT).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              disabled={isUploading}
+              onClick={() => setStatementType(value)}
+              className={`flex-1 rounded-[14px] px-1 py-2.5 text-xs font-bold min-h-[44px] transition-colors ${
+                statementType === value
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white border border-[#E4E4E7] text-[#52525B]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Right: Unified cartolas panel */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-700">Cartolas</h2>
-            {statements && statements.length > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm('¿Borrar todas las cartolas y sus gastos?')) {
-                    deleteAll.mutate(statements.map((s) => s.id))
-                    setQueue([])
-                  }
-                }}
-                disabled={deleteAll.isPending}
-                className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50"
-              >
-                {deleteAll.isPending ? 'Borrando...' : 'Borrar todo'}
-              </button>
-            )}
-          </div>
+        <p className="text-sm font-bold text-[#27272A] mb-2.5">
+          2. Banco <span className="text-[#D4D4D8] font-medium">(opcional)</span>
+        </p>
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-5">
+          {QUICK_BANKS.map((bank) => (
+            <button
+              key={bank}
+              type="button"
+              onClick={() => selectQuickBank(bank)}
+              className={`shrink-0 flex items-center justify-center rounded-[14px] px-2.5 min-h-[40px] transition-colors ${
+                bankHint === bank ? 'bg-brand-50 border border-brand-600' : 'bg-white border border-[#E4E4E7]'
+              }`}
+            >
+              <span className="w-9 h-6 rounded-md overflow-hidden flex items-center justify-center">
+                <BankBadge bank={bank} showName={false} />
+              </span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setBankSheetOpen(true)}
+            className="shrink-0 flex items-center gap-1 rounded-full px-3 min-h-[36px] self-center text-xs font-semibold bg-[#F4F4F5] border border-[#ECECEF] text-[#52525B]"
+          >
+            Ver todos →
+          </button>
+        </div>
 
-          {isLoading && queue.length === 0 ? (
-            <div className="flex justify-center py-4"><Spinner /></div>
-          ) : !hasAnyItems ? (
-            <p className="text-sm text-gray-400 text-center py-4">Sin archivos subidos</p>
+        <p className="text-sm font-bold text-[#27272A] mb-2.5">3. Sube tu cartola</p>
+        <div
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onClick={openPicker}
+          className={`rounded-2xl border-[1.5px] border-dashed py-7 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
+            !statementType
+              ? 'border-[#E4E4E7] bg-[#FAFAFA]'
+              : isDragging
+              ? 'border-brand-600 bg-brand-50'
+              : 'border-brand-300 bg-brand-50/60'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.csv,.xlsx,.xls"
+            multiple
+            className="hidden"
+            onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
+          />
+          {isUploading ? (
+            <>
+              <Spinner size="sm" />
+              <span className="text-xs font-bold text-[#71717A]">Subiendo archivos...</span>
+            </>
           ) : (
-            <ul className="space-y-2">
-              {/* Current session items */}
-              {queue.map((item, i) => {
-                const stmt = item.statementId ? statements?.find(s => s.id === item.statementId) : undefined
-                const ds = itemDisplayStatus(item, stmt)
-                const cfg = DISPLAY_CONFIG[ds]
-                const canRemove = item.status === 'duplicate' || item.status === 'error'
-                return (
-                  <li key={`q-${i}`} className="text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium text-gray-800 truncate min-w-0">{item.file.name}</p>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
-                          {cfg.spinner && <Spinner size="sm" />}
-                          {cfg.label}
-                        </span>
-                        {canRemove && (
-                          <button
-                            onClick={() => setQueue((prev) => prev.filter((_, idx) => idx !== i))}
-                            className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
-                            title="Quitar de la lista"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {item.status === 'error' && item.error && (
-                      <p className="text-xs text-red-500 mt-0.5 truncate">{item.error}</p>
-                    )}
-                    {ds === 'parse-error' && stmt && (
-                      <p className="text-xs text-red-500 mt-0.5">Error al procesar</p>
-                    )}
-                  </li>
-                )
-              })}
-
-              {/* Separator between current session and past */}
-              {queue.length > 0 && pastStatements.length > 0 && (
-                <li><hr className="border-gray-100 my-1" /></li>
-              )}
-
-              {/* Past statements */}
-              {pastStatements.map((s) => {
-                const ds = stmtDisplayStatus(s)
-                const cfg = DISPLAY_CONFIG[ds]
-                const summary = summaries?.find(sm => sm.id === s.id)
-                return (
-                  <li key={s.id} className="text-sm">
-                    {editingId === s.id ? (
-                      <div className="bg-gray-50 rounded-lg p-2 space-y-2">
-                        <p className="text-xs font-medium text-gray-600 truncate">{s.filename}</p>
-                        <select
-                          className="input text-xs py-1"
-                          value={editType}
-                          onChange={(e) => setEditType(e.target.value)}
-                        >
-                          {Object.entries(TYPE_LABELS).map(([v, l]) => (
-                            <option key={v} value={v}>{l}</option>
-                          ))}
-                        </select>
-                        <BankCombobox value={editBank} onChange={setEditBank} />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={saveEdit}
-                            disabled={updateStatement.isPending}
-                            className="btn-primary text-xs py-1 px-3 flex items-center gap-1"
-                          >
-                            {updateStatement.isPending ? <Spinner size="sm" /> : 'Guardar'}
-                          </button>
-                          <button onClick={cancelEdit} className="btn-secondary text-xs py-1 px-3">Cancelar</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-800 truncate">{s.filename}</p>
-                          <p className="text-gray-400 text-xs">
-                            {TYPE_LABELS[s.type]}{s.bank_hint ? ` · ${s.bank_hint}` : ''}
-                            {summary && ds === 'done' && (
-                              <span className={summary.total_charges === 0 ? 'text-red-400 font-medium' : 'text-gray-400'}>
-                                {' · '}{summary.total_charges} gastos
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
-                            {cfg.spinner && <Spinner size="sm" />}
-                            {cfg.label}
-                          </span>
-                          <button
-                            onClick={() => startEdit(s.id, s.type, s.bank_hint ?? '')}
-                            className="text-gray-300 hover:text-blue-400 transition-colors p-0.5 text-base"
-                            title="Editar tipo de cuenta"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => {
-                              const ids = statements!.filter((o) => o.filename === s.filename).map((o) => o.id)
-                              deleteAll.mutate(ids)
-                            }}
-                            disabled={deleteAll.isPending}
-                            className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
-                            title="Eliminar cartola"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <>
+              <Upload className={`w-6 h-6 ${statementType ? 'text-brand-600' : 'text-[#D4D4D8]'}`} />
+              <span className={`text-xs font-bold text-center px-4 ${statementType ? 'text-brand-800' : 'text-[#D4D4D8]'}`}>
+                {statementType ? 'Arrastra o toca para elegir archivo' : 'Selecciona el tipo de cuenta primero'}
+              </span>
+              <span className="text-[10.5px] text-[#A1A1AA]">PDF, CSV, Excel (.xlsx, .xls)</span>
+            </>
           )}
         </div>
+        {!statementType && (
+          <p className="mt-2 text-[11.5px] text-rose-500 font-semibold text-center">
+            Selecciona el tipo de cuenta primero
+          </p>
+        )}
       </div>
+
+      {/* ── Files feed ── */}
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="text-sm font-bold text-[#27272A]">Cartolas</p>
+        <div className="flex items-center gap-3">
+          {statements && statements.length > 0 && (
+            <button
+              onClick={() => {
+                if (confirm('¿Borrar todas las cartolas y sus gastos?')) {
+                  deleteAll.mutate(statements.map((s) => s.id))
+                  setQueue([])
+                }
+              }}
+              disabled={deleteAll.isPending}
+              className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 font-medium"
+            >
+              {deleteAll.isPending ? 'Borrando...' : 'Borrar todo'}
+            </button>
+          )}
+          <span className="text-xs text-[#A1A1AA] font-semibold">
+            {(statements?.length ?? 0)} {(statements?.length ?? 0) === 1 ? 'archivo' : 'archivos'}
+          </span>
+        </div>
+      </div>
+
+      {isLoading && queue.length === 0 ? (
+        <div className="flex justify-center py-4"><Spinner /></div>
+      ) : !hasAnyItems ? (
+        <p className="text-sm text-[#A1A1AA] text-center py-6">Sin archivos subidos</p>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {/* Current session items */}
+          {queue.map((item, i) => {
+            const stmt = item.statementId ? statements?.find(s => s.id === item.statementId) : undefined
+            const ds = itemDisplayStatus(item, stmt)
+            const cfg = DISPLAY_CONFIG[ds]
+            const canRemove = item.status === 'duplicate' || item.status === 'error'
+            const showProgress = ds === 'uploading' || ds === 'processing'
+            return (
+              <div key={`q-${i}`} className="bg-white border border-[#ECECEF] rounded-2xl p-3 flex flex-col gap-2 animate-slide-up">
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0 ${
+                    ds === 'done' ? 'bg-emerald-50' : 'bg-brand-50'
+                  }`}>
+                    {ds === 'done'
+                      ? <Check className="w-[18px] h-[18px] text-emerald-600" />
+                      : <Upload className="w-[18px] h-[18px] text-brand-600" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13.5px] font-bold text-[#18181B] truncate">{item.file.name}</p>
+                    <p className="text-[11.5px] text-[#A1A1AA] truncate">
+                      {TYPE_LABELS[statementType] ?? ''}{bankHint ? ` · ${bankHint}` : ''}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 flex items-center gap-1 ${cfg.pill}`}>
+                    {cfg.spinner && <Spinner size="sm" />}
+                    {cfg.label}
+                  </span>
+                  {canRemove && (
+                    <button
+                      onClick={() => setQueue((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="text-[#D4D4D8] hover:text-red-400 transition-colors shrink-0"
+                      title="Quitar de la lista"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {showProgress && (
+                  <div className="w-full h-[5px] bg-[#F4F4F5] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: ds === 'processing' ? '70%' : '45%', backgroundColor: cfg.barColor }}
+                    />
+                  </div>
+                )}
+                {item.status === 'error' && item.error && (
+                  <p className="text-xs text-red-500">{item.error}</p>
+                )}
+                {ds === 'parse-error' && stmt && (
+                  <p className="text-xs text-red-500">Error al procesar</p>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Past statements */}
+          {pastStatements.map((s) => {
+            const ds = stmtDisplayStatus(s)
+            const cfg = DISPLAY_CONFIG[ds]
+            const summary = summaries?.find(sm => sm.id === s.id)
+            return (
+              <div key={s.id} className="bg-white border border-[#ECECEF] rounded-2xl p-3">
+                {editingId === s.id ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-[#52525B] truncate">{s.filename}</p>
+                    <select
+                      className="input text-xs py-1.5"
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                    >
+                      {Object.entries(TYPE_LABELS).map(([v, l]) => (
+                        <option key={v} value={v}>{l}</option>
+                      ))}
+                    </select>
+                    <BankCombobox value={editBank} onChange={setEditBank} />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveEdit}
+                        disabled={updateStatement.isPending}
+                        className="btn-primary text-xs py-1.5 px-3 min-h-0 flex items-center gap-1"
+                      >
+                        {updateStatement.isPending ? <Spinner size="sm" /> : 'Guardar'}
+                      </button>
+                      <button onClick={cancelEdit} className="btn-secondary text-xs py-1.5 px-3 min-h-0">Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0 ${
+                      ds === 'done' ? 'bg-emerald-50' : ds === 'parse-error' ? 'bg-red-50' : 'bg-brand-50'
+                    }`}>
+                      {ds === 'done'
+                        ? <Check className="w-[18px] h-[18px] text-emerald-600" />
+                        : <Upload className="w-[18px] h-[18px] text-brand-600" />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-bold text-[#18181B] truncate">{s.filename}</p>
+                      <p className="text-[11.5px] text-[#A1A1AA] truncate">
+                        {TYPE_LABELS[s.type]}{s.bank_hint ? ` · ${s.bank_hint}` : ''}
+                        {summary && ds === 'done' && (
+                          <span className={summary.total_charges === 0 ? 'text-red-400 font-semibold' : ''}>
+                            {' · '}{summary.total_charges} gastos
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 flex items-center gap-1 ${cfg.pill}`}>
+                      {cfg.spinner && <Spinner size="sm" />}
+                      {cfg.label}
+                    </span>
+                    <button
+                      onClick={() => startEdit(s.id, s.type, s.bank_hint ?? '')}
+                      className="text-[#D4D4D8] hover:text-brand-600 transition-colors shrink-0"
+                      title="Editar tipo de cuenta"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const ids = statements!.filter((o) => o.filename === s.filename).map((o) => o.id)
+                        deleteAll.mutate(ids)
+                      }}
+                      disabled={deleteAll.isPending}
+                      className="text-[#D4D4D8] hover:text-red-400 transition-colors shrink-0"
+                      title="Eliminar cartola"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Bank picker bottom sheet ── */}
+      {bankSheetOpen && (
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/45" onClick={() => setBankSheetOpen(false)} />
+          <div className="relative bg-white rounded-t-3xl px-[18px] pt-3.5 pb-6 shadow-2xl animate-slide-up max-h-[70%] flex flex-col">
+            <div className="w-9 h-1 rounded-full bg-[#E4E4E7] mx-auto mb-3.5 shrink-0" />
+            <p className="text-[15px] font-extrabold text-[#18181B] mb-2.5 shrink-0">Elige tu banco</p>
+            <input
+              autoFocus
+              value={bankQuery}
+              onChange={(e) => setBankQuery(e.target.value)}
+              placeholder="Buscar banco..."
+              className="input mb-2.5 shrink-0"
+            />
+            <div className="overflow-y-auto flex flex-col gap-0.5">
+              {filteredSheetBanks.map((bank) => (
+                <button
+                  key={bank}
+                  onClick={() => { selectQuickBank(bank); setBankSheetOpen(false); setBankQuery('') }}
+                  className="flex items-center gap-2.5 bg-transparent border-none px-1.5 py-2.5 rounded-xl text-left hover:bg-[#FAFAFA] transition-colors"
+                >
+                  <BankBadge bank={bank} showName />
+                </button>
+              ))}
+              {filteredSheetBanks.length === 0 && (
+                <p className="text-sm text-[#A1A1AA] text-center py-4">Sin resultados</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
