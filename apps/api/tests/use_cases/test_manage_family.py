@@ -68,8 +68,19 @@ class MockUserRepo(UserRepository):
     async def get_by_email(self, email: str) -> User | None:
         return next((u for u in self._users if u.email == email), None)
 
+    async def get_by_supabase_user_id(self, supabase_user_id: uuid.UUID) -> User | None:
+        return next((u for u in self._users if u.supabase_user_id == supabase_user_id), None)
+
     async def create(self, email: str, hashed_password: str | None, family_id: uuid.UUID | None) -> User:
         return self._users[0]
+
+    async def create_from_supabase(self, email: str, supabase_user_id: uuid.UUID, full_name: str | None) -> User:
+        return self._users[0]
+
+    async def link_supabase_user_id(self, user_id: uuid.UUID, supabase_user_id: uuid.UUID) -> User:
+        user = next(u for u in self._users if u.id == user_id)
+        user.supabase_user_id = supabase_user_id
+        return user
 
     async def update_family(self, user_id: uuid.UUID, family_id: uuid.UUID) -> User:
         self.update_family_calls.append((user_id, family_id))
