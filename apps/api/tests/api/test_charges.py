@@ -59,6 +59,48 @@ def _clear_overrides():
     app.dependency_overrides.clear()
 
 
+# ── GET /api/charges/summary ──────────────────────────────────────────────────
+class TestMonthlySummary:
+    async def test_returns_aggregated_summary(self):
+        charges = [
+            make_charge(amount=Decimal("10000")),
+            make_charge(amount=Decimal("-5000")),
+        ]
+        with (
+            patch("presentation.api.charges.SQLChargeRepository") as mock_charge_repo_cls,
+            patch("presentation.api.charges.SQLCategoryRepository") as mock_cat_repo_cls,
+            patch("presentation.api.charges.SQLUserRepository") as mock_user_repo_cls,
+        ):
+            mock_charge_repo_cls.return_value.get_personal = AsyncMock(return_value=charges)
+            mock_cat_repo_cls.return_value.get_all = AsyncMock(return_value=[])
+            mock_user_repo_cls.return_value.get_by_id = AsyncMock(return_value=make_user())
+
+            app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+            app.dependency_overrides[get_db] = _mock_db_dependency()
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+                resp = await c.get("/api/charges/summary", headers=_headers(), params={"month": 3, "year": 2026})
+        _clear_overrides()
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_expenses"] == 10000.0
+        assert data["total_income"] == 5000.0
+        assert data["balance"] == -5000.0
+        assert data["charge_count"] == 2
+
+    async def test_unauthenticated_returns_401(self):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            resp = await c.get("/api/charges/summary", params={"month": 3, "year": 2026})
+        assert resp.status_code == 401
+
+    async def test_missing_query_params_returns_422(self):
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            resp = await c.get("/api/charges/summary", headers=_headers())
+        _clear_overrides()
+        assert resp.status_code == 422
+
+
 # ── GET /api/charges/ ──────────────────────────────────────────────────────────
 class TestListCharges:
     async def test_returns_personal_charges(self):
