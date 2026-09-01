@@ -54,9 +54,6 @@ class FamilyModel(Base):
 
     members: Mapped[list["FamilyMemberModel"]] = relationship("FamilyMemberModel", back_populates="family")
     statements: Mapped[list["StatementModel"]] = relationship("StatementModel", back_populates="family")
-    sheet_config: Mapped["GoogleSheetConfigModel | None"] = relationship(
-        "GoogleSheetConfigModel", back_populates="family", uselist=False
-    )
 
 
 class FamilyMemberModel(Base):
@@ -201,21 +198,3 @@ class CreditModel(Base):
     cuota_numero: Mapped[int] = mapped_column(nullable=False, default=1)
     cuota_total: Mapped[int] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-
-class GoogleSheetConfigModel(Base):
-    __tablename__ = "google_sheet_configs"
-
-    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    family_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("families.id", ondelete="CASCADE"), nullable=False, unique=True
-    )
-    spreadsheet_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    spreadsheet_url: Mapped[str] = mapped_column(String(500), nullable=False)
-    access_token: Mapped[str | None] = mapped_column(Text)
-    refresh_token: Mapped[str | None] = mapped_column(Text)
-    token_expiry: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-    family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="sheet_config")

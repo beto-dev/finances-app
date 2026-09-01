@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Finances** — A family personal finance organizer. Users upload bank statements (PDF/Excel/CSV), the app parses and AI-categorizes charges, and syncs results to a shared Google Spreadsheet. Currently in **private beta**.
+**Finances** — A family personal finance organizer. Users upload bank statements (PDF/Excel/CSV), the app parses and AI-categorizes charges. Currently in **private beta**.
 
 ---
 
@@ -46,7 +46,6 @@ apps/
         dashboard/   # monthly summary
         expenses/    # quick expense entry
         family/      # family management (owner only)
-        sheets/      # Google Sheets sync UI
         upload/      # file upload
       app/           # router, App.tsx
       shared/        # Layout, ProtectedRoute, Spinner, etc.
@@ -64,7 +63,6 @@ apps/
 | `/api/charges/*` | charges.py | Charges CRUD, bulk confirm/unshare, categories |
 | `/api/statements/*` | statements.py | Upload + parse bank statements |
 | `/api/families/*` | families.py | Family management |
-| `/api/google/*` | google.py | Google Sheets OAuth + sync |
 | `/api/chat` | chat.py | Chat AI agent — natural-language Q&A over the user's charges (Claude tool-calling) |
 | `/api/debug/*` | debug.py | Debug endpoints (disabled in prod — 404 without `ENABLE_DEBUG_ENDPOINTS`) |
 
@@ -81,7 +79,6 @@ apps/
 | `/gastos-familia` | FamilyChargesPage | Shared family charges |
 | `/aportes` | ContributionsPage | Contributions view |
 | `/familia` | FamilyPage | Family management (owner only, redirects members) |
-| `/hojas` | SheetsPage | Google Sheets sync |
 | `/nuevo-gasto` | QuickExpensePage | Quick manual charge entry |
 | `/cuotas` | CuotasPage | Installment tracker (cuotas grupales) |
 | `/categorias` | CategoriesPage | Category management + budget limits (admin only) |
@@ -99,7 +96,6 @@ apps/
 | `parse_statement.py` | Parse PDF/Excel/CSV → list of Charge records |
 | `categorize_charges.py` | Claude API categorization |
 | `review_charges.py` | Update category, bulk confirm, learn rules |
-| `sync_to_sheets.py` | Push confirmed charges to Google Sheets |
 | `manage_family.py` | Invite members, manage roles |
 | `chat_with_data.py` | Chat AI agent — Claude tool-calling loop over monthly summary, charges, category breakdown, trend |
 
@@ -107,11 +103,11 @@ apps/
 
 ## Key Domain Concepts
 
-- **Family**: Top-level grouping. All data is family-scoped. One Google Sheet per family.
+- **Family**: Top-level grouping. All data is family-scoped.
 - **Statement**: An uploaded file. Has type (checking / credit_card / credit_line / manual). Type is required at upload — no default. Bank is optional (selected from a fixed list of 21 Chilean banks, no free text).
 - **Charge**: A single line item. Fields: date, description, amount, currency, category_id, `is_shared` (was `is_confirmed` — renamed).
 - **amount sign convention**: positive = expense / debit / charge; negative = income / credit (salary, deposit, incoming transfer, refund). The parser enforces this; the UI displays income in green with `+` prefix.
-- **is_shared**: Whether a charge is visible to the whole family in the family view and Google Sheets sync. Manual charges default to `is_shared=False`.
+- **is_shared**: Whether a charge is visible to the whole family in the family view. Manual charges default to `is_shared=False`.
 - **Category**: AI-suggested or user-confirmed label. System categories include both expense categories (Alimentación, Transporte, etc.) and income categories (Remuneración, Abono, Transferencia recibida, Devolución / Reembolso — added in migration 0008).
 - **CategoryRule**: Persisted description→category mapping per family (auto-apply on future uploads). Pattern is extracted by stripping trailing noise tokens (IDs, numbers, codes) from the description — e.g. "UBER TRIP A1B2C" → "UBER TRIP". Matching uses PostgreSQL `ILIKE`.
 - **Credit (Crédito Bancario)**: A bank loan or credit being tracked manually. Fields: description, bank, cuota_monto, cuota_numero, cuota_total. Visible on the dashboard with progress and amount already paid.
@@ -134,7 +130,7 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 | 2.4 | AI categorization | ✅ Done |
 | 2.5 | MCP server | ⏳ Pending |
 | 2.6 | Charge review UI | ✅ Done |
-| 2.7 | Google Sheets integration | ✅ Done |
+| 2.7 | Google Sheets integration | 🗑️ Removed — not migrated to Coolify, feature not in use |
 | 2.8 | Family workspace | ✅ Done |
 | 2.9 | Monthly dashboard | ✅ Done |
 
@@ -246,7 +242,6 @@ gh pr create --base main --head beta --title "Release: <descripción>"
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | production project | beta project |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ | ✅ same value |
 | `GOOGLE_LOGIN_REDIRECT_URI` | Koyeb callback URL | Railway callback URL |
-| `GOOGLE_REDIRECT_URI` | ✅ | ✅ |
 | `JWT_SECRET` | ✅ | ✅ same value |
 | `FRONTEND_URL` | `https://finances-app-pi.vercel.app` | Vercel beta preview URL |
 | `ALLOWED_EMAILS` | production list | staging list |
