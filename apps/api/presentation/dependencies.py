@@ -12,8 +12,6 @@ from infrastructure.ai.groq_categorizer import GroqCategorizer
 from infrastructure.ai.openrouter_categorizer import OpenRouterCategorizer
 from infrastructure.auth.supabase_middleware import get_current_user_id
 from infrastructure.database.connection import get_db
-from infrastructure.google.oauth_client import GoogleOAuthClient
-from infrastructure.google.sheets_client import SheetsClient
 from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
 from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
 from infrastructure.repositories.sql_family_repository import SQLFamilyRepository
@@ -58,12 +56,6 @@ def get_categorizer() -> ChargeCategorizerProtocol:
     if groq.is_available:
         return groq
     return ClaudeCategorizer()
-
-def get_google_oauth() -> GoogleOAuthClient:
-    return GoogleOAuthClient()
-
-def get_sheets_client() -> SheetsClient:
-    return SheetsClient()
 
 def get_parser_service() -> ParserService:
     return ParserService()
