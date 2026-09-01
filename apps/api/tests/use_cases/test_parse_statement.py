@@ -95,7 +95,7 @@ class MockChargeRepo(ChargeRepository):
         return []
 
     async def get_by_family(
-        self, family_id: uuid.UUID, month: int | None, year: int | None
+        self, family_id: uuid.UUID, month: int | None, year: int | None, uploaded_by_filter: uuid.UUID | None = None
     ) -> list[Charge]:
         return []
 

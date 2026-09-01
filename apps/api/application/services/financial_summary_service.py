@@ -25,7 +25,16 @@ class FinancialSummaryService:
         categories = await self._categories.get_all(family_id)
         cat_by_id: dict[UUID, str] = {c.id: c.name for c in categories}
 
-        charges = await self._charges.get_personal(user_id, month, year)
+        # Mirrors list_charges: get_personal only returns statements with no family_id,
+        # so a real family member's own charges (family-scoped, as they all are once a
+        # family exists) need the get_by_family half too, or this silently sums to zero.
+        personal = await self._charges.get_personal(user_id, month, year)
+        family_charges = (
+            await self._charges.get_by_family(family_id, month, year, uploaded_by_filter=user_id)
+            if family_id
+            else []
+        )
+        charges = personal + family_charges
 
         expenses = sum((c.amount for c in charges if c.amount > 0), Decimal(0))
         income = sum((-c.amount for c in charges if c.amount < 0), Decimal(0))
