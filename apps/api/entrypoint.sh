@@ -15,4 +15,5 @@ _run_migrations() {
 }
 
 _run_migrations
+echo "Coolify webhook auto-deploy verification: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 exec uvicorn presentation.main:app --host 0.0.0.0 --port "${PORT:-8000}"
