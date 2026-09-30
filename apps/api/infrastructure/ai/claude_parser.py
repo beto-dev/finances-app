@@ -181,9 +181,11 @@ Bank statement (file: {filename or "unknown"}):
                     if _re.match(r'^\d{1,3}(\.\d{3})+$', raw_str):
                         raw_str = raw_str.replace(".", "")
                     amount = Decimal(raw_str)
-                cuota_numero = int(item["cuota_numero"]) if item.get("cuota_numero") else None
-                cuota_total = int(item["cuota_total"]) if item.get("cuota_total") else None
-                cuota_monto = Decimal(str(item["cuota_monto"])) if item.get("cuota_monto") else None
+                # item.get(...) truthy checks would drop a legitimate cuota_numero of 0
+                # (a brand-new installment not yet billed shows as "00/X" on the statement).
+                cuota_numero = int(item["cuota_numero"]) if item.get("cuota_numero") is not None else None
+                cuota_total = int(item["cuota_total"]) if item.get("cuota_total") is not None else None
+                cuota_monto = Decimal(str(item["cuota_monto"])) if item.get("cuota_monto") is not None else None
                 charges.append(ParsedCharge(
                     date=parsed_date, description=description, amount=amount,
                     cuota_numero=cuota_numero, cuota_total=cuota_total, cuota_monto=cuota_monto,
