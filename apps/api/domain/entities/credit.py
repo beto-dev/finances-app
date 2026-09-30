@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 
@@ -13,3 +14,4 @@ class Credit:
     cuota_total: int
     created_at: datetime
     bank: str | None = None
+    saldo_insoluto: Decimal | None = None

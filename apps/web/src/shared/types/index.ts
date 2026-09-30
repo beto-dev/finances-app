@@ -66,6 +66,9 @@ export interface Credit {
   cuota_monto: number
   cuota_numero: number
   cuota_total: number
+  saldo_insoluto: number | null
+  monthly_interest: number | null
+  monthly_capital: number | null
   created_at: string
 }
 

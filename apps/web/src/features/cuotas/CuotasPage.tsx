@@ -21,7 +21,7 @@ function ProgressBar({ value, total }: { value: number; total: number }) {
   )
 }
 
-const EMPTY_FORM = { description: '', bank: '', cuota_monto: '', cuota_numero: '1', cuota_total: '' }
+const EMPTY_FORM = { description: '', bank: '', cuota_monto: '', cuota_numero: '1', cuota_total: '', saldo_insoluto: '' }
 
 function CreditFormRow({
   initial,
@@ -60,6 +60,12 @@ function CreditFormRow({
         <div>
           <label className="label">Total cuotas</label>
           <input className="input" placeholder="ej: 48" type="number" min="1" value={v.cuota_total} onChange={set('cuota_total')} />
+        </div>
+        <div className="col-span-2">
+          <label className="label">
+            Saldo insoluto <span className="text-[#D4D4D8] font-medium">(opcional — el "monto pendiente" que muestra tu banco)</span>
+          </label>
+          <input className="input" placeholder="$" type="number" min="0" value={v.saldo_insoluto} onChange={set('saldo_insoluto')} />
         </div>
       </div>
       <div className="flex gap-2 justify-end pt-2">
@@ -116,14 +122,29 @@ export default function CuotasPage() {
 
   const handleCreate = (v: typeof EMPTY_FORM) => {
     createCredit.mutate(
-      { description: v.description.trim(), bank: v.bank.trim() || null, cuota_monto: Number(v.cuota_monto), cuota_numero: Number(v.cuota_numero), cuota_total: Number(v.cuota_total) },
+      {
+        description: v.description.trim(),
+        bank: v.bank.trim() || null,
+        cuota_monto: Number(v.cuota_monto),
+        cuota_numero: Number(v.cuota_numero),
+        cuota_total: Number(v.cuota_total),
+        saldo_insoluto: v.saldo_insoluto ? Number(v.saldo_insoluto) : null,
+      },
       { onSuccess: () => setShowForm(false) },
     )
   }
 
   const handleUpdate = (credit: Credit, v: typeof EMPTY_FORM) => {
     updateCredit.mutate(
-      { id: credit.id, description: v.description.trim(), bank: v.bank.trim() || null, cuota_monto: Number(v.cuota_monto), cuota_numero: Number(v.cuota_numero), cuota_total: Number(v.cuota_total) },
+      {
+        id: credit.id,
+        description: v.description.trim(),
+        bank: v.bank.trim() || null,
+        cuota_monto: Number(v.cuota_monto),
+        cuota_numero: Number(v.cuota_numero),
+        cuota_total: Number(v.cuota_total),
+        saldo_insoluto: v.saldo_insoluto ? Number(v.saldo_insoluto) : null,
+      },
       { onSuccess: () => setEditingId(null) },
     )
   }
@@ -139,7 +160,7 @@ export default function CuotasPage() {
   const totalActiveCount = activeCredits.length + active.length
   const totalMonthly = activeCredits.reduce((s, c) => s + c.cuota_monto, 0) + active.reduce((s, g) => s + g.cuota_monto, 0)
   const totalRemaining =
-    activeCredits.reduce((s, c) => s + (c.cuota_total - c.cuota_numero) * c.cuota_monto, 0) +
+    activeCredits.reduce((s, c) => s + (c.saldo_insoluto ?? (c.cuota_total - c.cuota_numero) * c.cuota_monto), 0) +
     active.reduce((s, g) => s + (g.cuota_total - g.cuota_numero) * g.cuota_monto, 0)
   const totalOriginal =
     activeCredits.reduce((s, c) => s + c.cuota_total * c.cuota_monto, 0) +
@@ -226,13 +247,20 @@ export default function CuotasPage() {
                   </div>
                 </div>
                 <div className="flex items-baseline gap-1.5 mt-2.5 flex-wrap">
-                  <span className="text-base font-bold text-orange-600">{fmt((c.cuota_total - c.cuota_numero) * c.cuota_monto)}</span>
+                  <span className="text-base font-bold text-orange-600">{fmt(c.saldo_insoluto ?? (c.cuota_total - c.cuota_numero) * c.cuota_monto)}</span>
                   <span className="text-xs text-[#71717A]">restantes</span>
                   <span className="text-[#E4E4E7] mx-0.5">·</span>
                   <span className="text-xs text-[#71717A]">{c.cuota_total - c.cuota_numero} cuotas</span>
                   <span className="text-[#E4E4E7] mx-0.5">·</span>
                   <span className="text-xs text-[#71717A]">{fmt(c.cuota_monto)}/mes</span>
                 </div>
+                {c.saldo_insoluto != null && c.monthly_interest != null && c.monthly_capital != null && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-[#A1A1AA]">
+                    <span>Saldo insoluto: {fmt(c.saldo_insoluto)}</span>
+                    <span className="text-[#E4E4E7]">·</span>
+                    <span>de esta cuota, <span className="text-red-500 font-medium">{fmt(c.monthly_interest)} interés</span> + <span className="text-emerald-600 font-medium">{fmt(c.monthly_capital)} capital</span></span>
+                  </div>
+                )}
                 <ProgressBar value={c.cuota_numero} total={c.cuota_total} />
               </div>
             ))}
@@ -391,6 +419,7 @@ export default function CuotasPage() {
                     cuota_monto: String(editingCredit.cuota_monto),
                     cuota_numero: String(editingCredit.cuota_numero),
                     cuota_total: String(editingCredit.cuota_total),
+                    saldo_insoluto: editingCredit.saldo_insoluto != null ? String(editingCredit.saldo_insoluto) : '',
                   }
                 : EMPTY_FORM
             }
