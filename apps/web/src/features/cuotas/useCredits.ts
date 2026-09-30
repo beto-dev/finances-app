@@ -12,10 +12,12 @@ export function useCredits() {
   })
 }
 
+type CreditInput = Pick<Credit, 'description' | 'bank' | 'cuota_monto' | 'cuota_numero' | 'cuota_total' | 'saldo_insoluto'>
+
 export function useCreateCredit() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (body: Omit<Credit, 'id' | 'user_id' | 'created_at'>) => {
+    mutationFn: async (body: CreditInput) => {
       const res = await client.post('/api/credits/', body)
       return res.data as Credit
     },
@@ -26,7 +28,7 @@ export function useCreateCredit() {
 export function useUpdateCredit() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...body }: Omit<Credit, 'user_id' | 'created_at'>) => {
+    mutationFn: async ({ id, ...body }: CreditInput & { id: string }) => {
       const res = await client.patch(`/api/credits/${id}`, body)
       return res.data as Credit
     },

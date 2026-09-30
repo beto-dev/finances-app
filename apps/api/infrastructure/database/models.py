@@ -199,6 +199,7 @@ class CreditModel(Base):
     cuota_monto: Mapped[int] = mapped_column(nullable=False)
     cuota_numero: Mapped[int] = mapped_column(nullable=False, default=1)
     cuota_total: Mapped[int] = mapped_column(nullable=False)
+    saldo_insoluto: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

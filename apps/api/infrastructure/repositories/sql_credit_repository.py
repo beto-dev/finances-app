@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
@@ -16,6 +17,7 @@ def _to_entity(m: CreditModel) -> Credit:
         cuota_monto=m.cuota_monto,
         cuota_numero=m.cuota_numero,
         cuota_total=m.cuota_total,
+        saldo_insoluto=m.saldo_insoluto,
         created_at=m.created_at,
     )
 
@@ -47,6 +49,7 @@ class SQLCreditRepository:
         cuota_monto: int,
         cuota_numero: int,
         cuota_total: int,
+        saldo_insoluto: Decimal | None = None,
     ) -> Credit:
         import uuid as _uuid
         m = CreditModel(
@@ -57,6 +60,7 @@ class SQLCreditRepository:
             cuota_monto=cuota_monto,
             cuota_numero=cuota_numero,
             cuota_total=cuota_total,
+            saldo_insoluto=saldo_insoluto,
         )
         self._session.add(m)
         await self._session.commit()
@@ -71,6 +75,7 @@ class SQLCreditRepository:
         cuota_monto: int,
         cuota_numero: int,
         cuota_total: int,
+        saldo_insoluto: Decimal | None = None,
     ) -> Credit:
         result = await self._session.execute(
             select(CreditModel).where(CreditModel.id == credit_id)
@@ -81,6 +86,7 @@ class SQLCreditRepository:
         m.cuota_monto = cuota_monto
         m.cuota_numero = cuota_numero
         m.cuota_total = cuota_total
+        m.saldo_insoluto = saldo_insoluto
         await self._session.commit()
         await self._session.refresh(m)
         return _to_entity(m)

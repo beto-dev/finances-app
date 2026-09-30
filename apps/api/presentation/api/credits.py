@@ -1,7 +1,9 @@
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
+from application.services.amortization_service import monthly_breakdown
 from infrastructure.repositories.sql_credit_repository import SQLCreditRepository
 from presentation.dependencies import CurrentUserId, DbSession
 from presentation.schemas.credit import CreditCreate, CreditResponse, CreditUpdate
@@ -16,6 +18,15 @@ def _get_repo(db: DbSession) -> SQLCreditRepository:
 def _to_response(c: object) -> CreditResponse:
     from domain.entities.credit import Credit
     assert isinstance(c, Credit)
+
+    monthly_interest: int | None = None
+    monthly_capital: int | None = None
+    remaining = c.cuota_total - c.cuota_numero
+    if c.saldo_insoluto is not None and remaining > 0:
+        breakdown = monthly_breakdown(c.saldo_insoluto, Decimal(c.cuota_monto), remaining)
+        monthly_interest = int(breakdown["interest"])
+        monthly_capital = int(breakdown["capital"])
+
     return CreditResponse(
         id=c.id,
         user_id=c.user_id,
@@ -24,6 +35,9 @@ def _to_response(c: object) -> CreditResponse:
         cuota_monto=c.cuota_monto,
         cuota_numero=c.cuota_numero,
         cuota_total=c.cuota_total,
+        saldo_insoluto=c.saldo_insoluto,
+        monthly_interest=monthly_interest,
+        monthly_capital=monthly_capital,
         created_at=c.created_at,
     )
 
@@ -54,6 +68,7 @@ async def create_credit(
         cuota_monto=body.cuota_monto,
         cuota_numero=body.cuota_numero,
         cuota_total=body.cuota_total,
+        saldo_insoluto=body.saldo_insoluto,
     )
     return _to_response(credit)
 
@@ -80,6 +95,7 @@ async def update_credit(
         cuota_monto=body.cuota_monto,
         cuota_numero=body.cuota_numero,
         cuota_total=body.cuota_total,
+        saldo_insoluto=body.saldo_insoluto,
     )
     return _to_response(credit)
 
