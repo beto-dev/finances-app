@@ -1,5 +1,6 @@
 import json
 import os
+from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -14,6 +15,12 @@ log = structlog.get_logger()
 # can produce ~50 transactions per page × 40 tokens each, so 3 pages ≈ 6000 tokens
 # of output — safely within the limit. 15 pages was too many for long statements.
 _PAGE_CHUNK = 3
+
+# Chars of page 1 re-sent with every later chunk. Statements like Itaú's show
+# dates as DD/MM and print the period (and thus the year) only in the page-1
+# header — without it, later chunks made Claude guess the year (it guessed 2024
+# for a 2026 cartola, dropping half the month from the dashboard).
+_HEADER_CHARS = 1500
 
 
 class ClaudeParser:
@@ -46,14 +53,20 @@ class ClaudeParser:
         if not self._client or not any(p.strip() for p in pages):
             return []
 
-        all_charges: list[ParsedCharge] = []
+        header = pages[0][:_HEADER_CHARS]
+        chunks: list[list[ParsedCharge]] = []
         # Process in chunks so large PDFs don't exceed context limits
         for i in range(0, len(pages), _PAGE_CHUNK):
             chunk_text = "\n\n--- PAGE BREAK ---\n\n".join(pages[i : i + _PAGE_CHUNK])
-            charges = await self._call_claude(chunk_text, filename)
-            all_charges.extend(charges)
+            if i > 0:
+                chunk_text = (
+                    "Statement header from page 1 — context only (period/year), "
+                    "do NOT extract transactions from it:\n"
+                    f"{header}\n\n--- END OF HEADER CONTEXT ---\n\n{chunk_text}"
+                )
+            chunks.append(await self._call_claude(chunk_text, filename))
 
-        return all_charges
+        return [c for chunk in self._harmonize_chunk_years(chunks) for c in chunk]
 
     async def parse_tabular(self, rows: list[list], filename: str = "") -> list[ParsedCharge]:
         """Extract transactions from tabular data (CSV/Excel rows)."""
@@ -69,6 +82,47 @@ class ClaudeParser:
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _harmonize_chunk_years(chunks: list[list[ParsedCharge]]) -> list[list[ParsedCharge]]:
+        """Fix a later chunk whose whole year disagrees with the first chunk's.
+
+        The first chunk carries the period header, so its year is trusted. A later
+        chunk is shifted to that year only when it looks like a mis-guessed year
+        rather than real older data: none of its rows are installments (old cuota
+        purchases legitimately carry prior-year dates), all its rows share one year
+        absent from the first chunk, and its months all fall within the first
+        chunk's months (same statement period).
+        """
+        if len(chunks) < 2:
+            return chunks
+        ref = [c for c in chunks[0] if c.cuota_numero is None]
+        ref_years = {c.date.year for c in ref}
+        if len(ref_years) != 1:
+            return chunks
+        ref_year = ref_years.pop()
+        ref_months = {c.date.month for c in ref}
+
+        result = [chunks[0]]
+        for idx, chunk in enumerate(chunks[1:], start=1):
+            years = {c.date.year for c in chunk}
+            if (
+                chunk
+                and all(c.cuota_numero is None for c in chunk)
+                and len(years) == 1
+                and ref_year not in years
+                and {c.date.month for c in chunk} <= ref_months
+            ):
+                wrong_year = years.pop()
+                try:
+                    chunk = [replace(c, date=c.date.replace(year=ref_year)) for c in chunk]
+                except ValueError:  # Feb 29 into a non-leap year — leave the chunk as parsed
+                    result.append(chunk)
+                    continue
+                log.warning("claude_parser_chunk_year_fixed", chunk=idx, from_year=wrong_year,
+                            to_year=ref_year, charges=len(chunk))
+            result.append(chunk)
+        return result
 
     @staticmethod
     def _extract_year_from_filename(filename: str) -> int | None:
