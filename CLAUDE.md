@@ -19,8 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Database | PostgreSQL + Alembic migrations |
 | Auth + Storage | Supabase (Auth + Storage) |
 | AI | Claude API (charge categorization) |
-| Infra | Docker + docker-compose (dev) |
-| Deploy | Vercel (frontend) + Koyeb (API prod) + Railway (API staging) |
+| Infra | Docker + docker-compose (dev); Coolify (self-hosted VPS) for staging |
+| Deploy | **Staging**: Coolify, internal-only services, no public domain (called by [Núcleo](https://github.com/beto-dev/nucleo) server-to-server). **Production**: still Vercel (frontend) + Koyeb (API) — frozen, no auto-deploy, migration to Coolify in progress (see Deployment section) |
 | CI | GitHub Actions |
 
 Architecture: **Clean Architecture** — `domain/` → `application/` → `infrastructure/` → `presentation/`
@@ -156,9 +156,9 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 | # | Task | Status |
 |---|---|---|
-| 4.1 | Production deployment | ✅ Done — Vercel (frontend) + Koyeb (API) + Supabase production |
-| 4.1b | Staging environment | ✅ Done — Vercel Preview (frontend) + **Railway** (API) + Supabase beta project. `VITE_DEV_AUTO_LOGIN=true` bypasses login in staging. |
-| 4.2 | Monitoring | ⏳ Pending |
+| 4.1 | Production deployment | 🟡 Frozen — Vercel (frontend) + Koyeb (API) + standalone Supabase project, no auto-deploy since 2026-09-01; receives manual redeploys only. Being migrated to Coolify (internal-only, same as staging), see Deployment section. |
+| 4.1b | Staging environment | ✅ Done — migrated from Railway to **Coolify** (internal services, no public domain) on 2026-08-27; Núcleo is the only public frontend, calling this API server-to-server. `VITE_DEV_AUTO_LOGIN` no longer applies (no standalone frontend in staging). |
+| 4.2 | Monitoring | ⏳ Pending — would have caught two Supabase auto-pause outages (2026-10-15, 2026-11-23) sooner |
 | 4.3–4.5 | Mobile (React Native) | ⏳ Pending |
 
 ### Backlog — High Priority
@@ -180,15 +180,16 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ## Authentication
 
-- **Google OAuth**: primary login method. OAuth app is published (External, no test user restriction). Authorized redirect URIs in Google Console include production (Koyeb) and staging (Railway) callback URLs.
-- **Email/password**: secondary login, available via hidden link on the login page ("Iniciar sesión con email"). Useful for staging where Google OAuth redirect URI is environment-specific.
+- **Being retired in favor of Supabase Auth.** This API's own login (`/api/auth/register`, `/login`, `/google`, `/google/callback`) is deprecated — Núcleo + Supabase Auth (Google OAuth, JWKS/ES256) is the real login path now. This API verifies Supabase JWTs directly (`infrastructure/auth/supabase_middleware.py`), with its own legacy HS256 verification kept only as a fallback while `apps/web` (this repo's standalone React frontend) is still in use. The whole `auth.py` login surface gets deleted once `apps/web` is retired — not before, since active sessions there still depend on it.
+- **Google OAuth** (legacy, `apps/web` only): OAuth app is published (External, no test user restriction). Authorized redirect URIs in Google Console include the production (Koyeb) callback URL; the old staging (Railway) callback URL is stale and should be cleaned up.
+- **Email/password** (legacy, `apps/web` only): secondary login, available via hidden link on the login page.
 - **`ALLOWED_EMAILS`**: backend env var that restricts which emails can log in regardless of auth method.
 
 ---
 
 ## CI / Quality
 
-- **GitHub Actions** runs on every push to `main` and `beta`
+- **GitHub Actions** runs on every push to `main` and `staging`
 - Jobs: API lint (ruff), API type check (mypy), API tests (pytest), Web build, Web type check + lint, E2E tests (Playwright), Security audit
 - **Ruff** config: `line-length = 120`, rules E/F/I/N/W/UP, `known-first-party` includes all local packages
 - **Mypy**: `check_untyped_defs = true`, `warn_unused_ignores = true` — this means any unnecessary `# type: ignore` will cause CI to fail
@@ -198,51 +199,44 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ## Deployment
 
+> 🚧 **Mid-migration.** Staging is fully cut over to Coolify. Production is not yet — it's still Vercel+Koyeb, frozen (no auto-deploy) and kept alive with occasional manual redeploys, pending a delta data migration and a dedicated Coolify `production` environment. Status tracked in the Obsidian vault: `Núcleo/Status — migración a Núcleo (VPS).md`.
+
 ### Branch strategy
 
 ```
-feature/* ──PR──▶ beta ──auto-deploy──▶ staging (Railway API + Vercel Preview)
+feature/* ──PR──▶ staging ──auto-deploy──▶ Coolify (finances-app-api, internal only)
                       │
-                      └──(PR manual)──▶ main ──auto-deploy──▶ producción (Koyeb + Vercel)
+                      └──(PR manual)──▶ main ──(manual redeploy, not automatic)──▶ Koyeb + Vercel
 ```
 
-- **`beta` branch** → staging — auto-deploy on push
-- **`main` branch** → production — auto-deploy, triggered manually by merging `beta` → `main` via PR
-
-### Promoting to production
-
-```bash
-gh pr create --base main --head beta --title "Release: <descripción>"
-# Review, approve, merge → production auto-deploys
-```
+- **`staging` branch** → Coolify — auto-deploy on push (verified end-to-end via webhook)
+- **`main` branch** → the old Vercel+Koyeb production — no longer auto-deploys; requires a manual "Redeploy" in each platform's dashboard after merging
 
 ### Platform config
 
-| Component | Staging | Production |
+| Component | Staging (Coolify, internal) | Production (old, frozen) |
 |-----------|---------|------------|
-| Frontend | Vercel Preview (`finances-app-git-beta-*.vercel.app`) | Vercel (`finances-app-pi.vercel.app`) |
-| API | Railway (`finances-app-production-f04d.up.railway.app`) | Koyeb (`annoyed-janice-beto-dev-org-80e2dfa8.koyeb.app`) |
-| Database | Supabase beta project | Supabase production project |
+| Frontend | none — Núcleo (`nucleo-staging.alberto-tejos.cl`) is the only frontend, calls this API server-to-server | Vercel (`finances-app-pi.vercel.app`), this repo's `apps/web` |
+| API | `finances-app-api` Coolify service, no public domain | Koyeb (`annoyed-janice-beto-dev-org-80e2dfa8.koyeb.app`) |
+| Database | Supabase shared project `sexqvaebanfvrknsmbmr` (`finances-app-beta`), shared with Núcleo | standalone Supabase project `cittnwuoacvipjyillsr` — on the free plan, auto-pauses after ~7 days idle; has caused two production outages (2026-10-15, 2026-11-23) |
 
-- **`ALLOWED_EMAILS`** controls who can log in (set separately in Railway and Koyeb)
+- **`ALLOWED_EMAILS`** controls who can log in (set separately per environment)
 - **`ENABLE_DEBUG_ENDPOINTS`** must NOT be set in production (debug routes return 404 without it)
-- **Google OAuth redirect URI** for staging: `https://finances-app-production-f04d.up.railway.app/api/auth/google/callback` — registered in Google Cloud Console
-- **Railway note**: uses `PORT=8080` env var injected automatically; Dockerfile builder must be set explicitly (not Railpack); build context must be repo root (not `apps/api`)
-- **Supabase staging DB**: use Session pooler URL (`aws-1-us-east-2.pooler.supabase.com:5432`) — Railway doesn't support IPv6 (Direct connection resolves to IPv6)
+- Both Supabase projects are on the free plan — the standalone one pausing from inactivity is a known, recurring failure mode until the production cutover happens and it can be deleted
+- **RLS is enabled** on all 12 tables in the shared Supabase project
 
 ---
 
 ## Environment Variables
 
-| Variable | Production (Koyeb) | Staging (Railway) |
+| Variable | Production (Koyeb, frozen) | Staging (Coolify) |
 |---|---|---|
-| `VITE_API_URL` | Vercel (Production env) | Vercel (Preview env) |
-| `VITE_DEV_AUTO_LOGIN` | — (not set) | `true` — bypasses login screen for testing |
+| `VITE_API_URL` | Vercel (Production env) | n/a — no standalone frontend; Núcleo reaches this API via internal Docker network |
 | `APP_ANTHROPIC_API_KEY` | ✅ | ✅ same value |
-| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | production project | beta project |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ | ✅ same value |
-| `GOOGLE_LOGIN_REDIRECT_URI` | Koyeb callback URL | Railway callback URL |
-| `JWT_SECRET` | ✅ | ✅ same value |
-| `FRONTEND_URL` | `https://finances-app-pi.vercel.app` | Vercel beta preview URL |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | standalone project (`cittnwuoacvipjyillsr`) | shared project (`sexqvaebanfvrknsmbmr`) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ (legacy login, `apps/web` only) | ✅ same value |
+| `GOOGLE_LOGIN_REDIRECT_URI` | Koyeb callback URL | n/a |
+| `JWT_SECRET` | ✅ (legacy HS256 fallback) | ✅ same value |
+| `FRONTEND_URL` | `https://finances-app-pi.vercel.app` | n/a |
 | `ALLOWED_EMAILS` | production list | staging list |
-| `DATABASE_URL` | Supabase production (Session pooler) | Supabase beta (Session pooler) |
+| `DATABASE_URL` | standalone Supabase (Session pooler) | shared Supabase (Session pooler) |
