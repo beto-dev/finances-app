@@ -17,6 +17,7 @@ def _to_entity(m: UserModel) -> User:
         updated_at=m.updated_at,
         hashed_password=m.hashed_password,
         full_name=m.full_name,
+        supabase_user_id=m.supabase_user_id,
     )
 
 
@@ -34,9 +35,31 @@ class SQLUserRepository(UserRepository):
         m = result.scalar_one_or_none()
         return _to_entity(m) if m else None
 
+    async def get_by_supabase_user_id(self, supabase_user_id: UUID) -> User | None:
+        result = await self._session.execute(
+            select(UserModel).where(UserModel.supabase_user_id == supabase_user_id)
+        )
+        m = result.scalar_one_or_none()
+        return _to_entity(m) if m else None
+
     async def create(self, email: str, hashed_password: str | None, family_id: UUID | None) -> User:
         m = UserModel(email=email, hashed_password=hashed_password, family_id=family_id)
         self._session.add(m)
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_entity(m)
+
+    async def create_from_supabase(self, email: str, supabase_user_id: UUID, full_name: str | None) -> User:
+        m = UserModel(email=email, supabase_user_id=supabase_user_id, full_name=full_name)
+        self._session.add(m)
+        await self._session.commit()
+        await self._session.refresh(m)
+        return _to_entity(m)
+
+    async def link_supabase_user_id(self, user_id: UUID, supabase_user_id: UUID) -> User:
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
+        m = result.scalar_one()
+        m.supabase_user_id = supabase_user_id
         await self._session.commit()
         await self._session.refresh(m)
         return _to_entity(m)

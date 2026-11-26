@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from application.services.financial_summary_service import FinancialSummaryService
 from domain.entities.category import Category
 from domain.repositories.category_repository import CategoryRepository
 from domain.repositories.charge_repository import ChargeRepository
@@ -101,6 +102,7 @@ class ChatWithDataUseCase:
         self._categories = category_repo
         self._users = user_repo
         self._client = anthropic_client
+        self._summary_service = FinancialSummaryService(charge_repo, category_repo, user_repo)
 
     async def execute(self, message: str, history: list[dict[str, str]], user_id: UUID) -> str:
         user = await self._users.get_by_id(user_id)
@@ -172,27 +174,7 @@ class ChatWithDataUseCase:
     ) -> dict[str, Any]:
         month: int = int(inputs["month"])
         year: int = int(inputs["year"])
-        charges = await self._charges.get_personal(user_id, month, year)
-
-        expenses = sum((c.amount for c in charges if c.amount > 0), Decimal(0))
-        income = sum((-c.amount for c in charges if c.amount < 0), Decimal(0))
-
-        cat_totals: dict[str, Decimal] = defaultdict(Decimal)
-        for c in charges:
-            if c.amount > 0 and c.category_id:
-                cat_totals[cat_by_id.get(c.category_id, "Sin categoría")] += c.amount
-
-        top_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)[:5]
-
-        return {
-            "month": month,
-            "year": year,
-            "total_expenses": float(expenses),
-            "total_income": float(income),
-            "balance": float(income - expenses),
-            "charge_count": len(charges),
-            "top_categories": [{"name": n, "amount": float(a)} for n, a in top_cats],
-        }
+        return await self._summary_service.monthly_summary(user_id, month, year)
 
     async def _get_charges(
         self,

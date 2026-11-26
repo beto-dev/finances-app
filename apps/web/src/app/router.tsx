@@ -9,7 +9,6 @@ import UploadPage from '../features/upload/UploadPage'
 import ChargesPage from '../features/charges/ChargesPage'
 import DashboardPage from '../features/dashboard/DashboardPage'
 import FamilyPage from '../features/family/FamilyPage'
-import SheetsPage from '../features/sheets/SheetsPage'
 import FamilyChargesPage from '../features/charges/FamilyChargesPage'
 import ContributionsPage from '../features/contributions/ContributionsPage'
 import QuickExpensePage from '../features/expenses/QuickExpensePage'
@@ -45,7 +44,6 @@ export default function AppRouter() {
             <Route path="/familia" element={<FamilyPage />} />
             <Route path="/categorias" element={<CategoriesPage />} />
           </Route>
-          <Route path="/hojas" element={<SheetsPage />} />
           <Route path="/nuevo-gasto" element={<QuickExpensePage />} />
           <Route path="/cuotas" element={<CuotasPage />} />
           <Route path="/perfil" element={<ProfilePage />} />

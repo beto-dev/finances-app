@@ -58,12 +58,6 @@ export interface FamilyMember {
   joined_at: string
 }
 
-export interface GoogleAuthStatus {
-  connected: boolean
-  spreadsheet_url: string | null
-  last_sync_at: string | null
-}
-
 export interface Credit {
   id: string
   user_id: string
