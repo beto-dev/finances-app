@@ -2,7 +2,6 @@ import os
 
 import structlog
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -20,20 +19,6 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-
-# Allow the configured frontend URL plus all Vercel preview/production URLs
-_allow_origins = [frontend_url, "http://localhost:5173", "http://localhost:3000"]
-_allow_origin_regex = r"https://.*\.vercel\.app"
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_allow_origins,
-    allow_origin_regex=_allow_origin_regex,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
-)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 app.state.limiter = limiter

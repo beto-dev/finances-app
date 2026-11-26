@@ -33,14 +33,9 @@ services:
       ANTHROPIC_API_KEY: ${APP_ANTHROPIC_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your-google-client-id}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-your-google-client-secret}
-      GOOGLE_LOGIN_REDIRECT_URI: ${GOOGLE_LOGIN_REDIRECT_URI:-http://localhost:8000/api/auth/google/callback}
       ALLOWED_EMAILS: ${ALLOWED_EMAILS:-}
       JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
-      BACKEND_URL: ${BACKEND_URL:-http://localhost:8000}
     depends_on:
       db:
         condition: service_healthy
@@ -51,22 +46,6 @@ services:
         alembic upgrade head &&
         uvicorn presentation.main:app --host 0.0.0.0 --port 8000 --reload
       "
-
-  web:
-    build:
-      context: ./apps/web
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_URL: ${BACKEND_URL:-http://localhost:8000}
-    depends_on:
-      - api
-    volumes:
-      - ./apps/web:/app
-      - /app/node_modules
-    command: npm run dev -- --host
 
 volumes:
   postgres_data:
