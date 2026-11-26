@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Deploy | **Staging** and **Production**: both Coolify, internal-only services, no public domain (called by [Núcleo](https://github.com/beto-dev/nucleo) server-to-server) |
 | CI | GitHub Actions |
 
-> **No standalone frontend.** `apps/web` (the original React app) was retired 2026-11-26 — [Núcleo](https://github.com/beto-dev/nucleo) is the only frontend now, calling this API server-to-server over the internal Docker network. Vercel + Koyeb (the old hosting for `apps/web` + this API) are being decommissioned.
+> **No standalone frontend.** `apps/web` (the original React app) was retired 2026-11-26 — [Núcleo](https://github.com/beto-dev/nucleo) is the only frontend now, calling this API server-to-server over the internal Docker network. Vercel + Koyeb (the old hosting for `apps/web` + this API) were fully decommissioned the same day — both projects deleted outright (not just paused), and the stale Koyeb/Vercel/Railway redirect URIs removed from the Google OAuth client, leaving only the one Supabase's own login flow uses. The standalone Supabase project (`cittnwuoacvipjyillsr`) is separate and still exists — see the Obsidian vault for that decommission step.
 
 Architecture: **Clean Architecture** — `domain/` → `application/` → `infrastructure/` → `presentation/`
 
@@ -169,7 +169,7 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ## Deployment
 
-> ✅ **Both environments on Coolify.** `staging` and `main` were reconciled 2026-11-26 (PR #25: staging's 17-commit lead merged into `main`, including the one real migration-revision collision — see `apps/api/alembic/versions/`). `main` now has its own dedicated Coolify `production` environment for `finances-app-api`, cloned from the staging resource (same internal-only pattern, no public domain). The old Vercel+Koyeb production is still reachable but redundant — pending decommission. Status tracked in the Obsidian vault: `Núcleo/Status — migración a Núcleo (VPS).md`.
+> ✅ **Both environments on Coolify — Vercel and Koyeb are gone.** `staging` and `main` were reconciled 2026-11-26 (PR #25: staging's 17-commit lead merged into `main`, including the one real migration-revision collision — see `apps/api/alembic/versions/`). `main` now has its own dedicated Coolify `production` environment for `finances-app-api`, cloned from the staging resource (same internal-only pattern, no public domain). Vercel and Koyeb were deleted outright the same day, once `apps/web` and this API's own legacy login were retired (PR #26). Status tracked in the Obsidian vault: `Núcleo/Status — migración a Núcleo (VPS).md`.
 
 ### Branch strategy
 
@@ -180,8 +180,8 @@ feature/* ──PR──▶ staging ──auto-deploy──▶ Coolify "staging"
 ```
 
 - **`staging` branch** → Coolify `staging` environment — auto-deploy on push
-- **`main` branch** → Coolify `production` environment — auto-deploy on push (verified via the PR #25 merge, which triggered the webhook and deployed cleanly)
-- Vercel + Koyeb (old production) → no longer auto-deploy; manual redeploy only, kept alive only until decommissioned
+- **`main` branch** → Coolify `production` environment — auto-deploy on push (verified via the PR #25 and #26 merges, both deployed cleanly)
+- Vercel + Koyeb — **deleted outright 2026-11-26**, not just disconnected. There is no fallback deploy target anymore; `main` → Coolify `production` is the only path.
 
 ### Platform config
 
@@ -191,7 +191,7 @@ feature/* ──PR──▶ staging ──auto-deploy──▶ Coolify "staging"
 | API | `finances-app-api` Coolify service, internal network alias `finances-app-api-staging`, no public domain | `finances-app-api` Coolify service, internal network alias `finances-app-api`, no public domain |
 | Database | Supabase shared project `sexqvaebanfvrknsmbmr` (`finances-app-beta`), shared with Núcleo | same shared project `sexqvaebanfvrknsmbmr` |
 
-Vercel (old `apps/web` hosting) and Koyeb (old API hosting) and the standalone Supabase project (`cittnwuoacvipjyillsr`) are being decommissioned — see the Obsidian vault (`Núcleo/Status — migración a Núcleo (VPS).md`) for the cutover log.
+Vercel (old `apps/web` hosting) and Koyeb (old API hosting) were deleted outright 2026-11-26 — not paused, not disconnected, gone. The standalone Supabase project (`cittnwuoacvipjyillsr`) is a separate, still-pending step (deleting it is irreversible, so it's gated behind its own explicit confirmation) — see the Obsidian vault (`Núcleo/Status — migración a Núcleo (VPS).md`) for the cutover log and what's left.
 
 - **`ALLOWED_EMAILS`** controls who can log in — enforced in `supabase_middleware.py` (see Authentication), set separately per Coolify environment
 - **`ENABLE_DEBUG_ENDPOINTS`** and **`DEV_USER_EMAIL`** must NOT be set in production (debug routes return 404 without `ENABLE_DEBUG_ENDPOINTS`)
