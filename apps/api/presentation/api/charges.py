@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from application.services.financial_summary_service import FinancialSummaryService
 from application.use_cases.review_charges import ReviewChargesUseCase
 from infrastructure.repositories.sql_category_repository import SQLCategoryRepository
 from infrastructure.repositories.sql_charge_repository import SQLChargeRepository
@@ -19,8 +20,24 @@ from presentation.schemas.charge import (
     ManualChargeRequest,
     ShareSimilarRequest,
 )
+from presentation.schemas.summary import MonthlySummaryResponse
 
 router = APIRouter(prefix="/api/charges", tags=["charges"])
+
+
+@router.get("/summary", response_model=MonthlySummaryResponse)
+async def get_monthly_summary(
+    current_user_id: CurrentUserId,
+    db: DbSession,
+    month: int = Query(..., ge=1, le=12),
+    year: int = Query(..., ge=2000),
+):
+    service = FinancialSummaryService(
+        charge_repo=SQLChargeRepository(db),
+        category_repo=SQLCategoryRepository(db),
+        user_repo=SQLUserRepository(db),
+    )
+    return await service.monthly_summary(current_user_id, month, year)
 
 
 @router.get("/", response_model=list[ChargeResponse])

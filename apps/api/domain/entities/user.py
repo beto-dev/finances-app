@@ -12,3 +12,4 @@ class User:
     updated_at: datetime
     hashed_password: str | None = field(default=None, repr=False)
     full_name: str | None = None
+    supabase_user_id: UUID | None = None
