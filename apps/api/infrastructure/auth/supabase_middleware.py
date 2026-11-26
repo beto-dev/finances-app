@@ -45,6 +45,13 @@ def _decode_legacy_jwt(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
+def _check_allowed_email(email: str | None) -> None:
+    allowed_raw = os.environ.get("ALLOWED_EMAILS", "")
+    allowed = {e.strip().lower() for e in allowed_raw.split(",") if e.strip()}
+    if allowed and (not email or email.lower() not in allowed):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email no autorizado")
+
+
 async def _resolve_supabase_user(payload: dict, db: AsyncSession) -> UUID:
     """Map a verified Supabase JWT payload to finances-app's local users.id.
 
@@ -57,6 +64,7 @@ async def _resolve_supabase_user(payload: dict, db: AsyncSession) -> UUID:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalido")
     supabase_uid = UUID(supabase_uid_raw)
     email = payload.get("email")
+    _check_allowed_email(email)
 
     repo = SQLUserRepository(db)
 

@@ -14,14 +14,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Layer | Choice |
 |---|---|
-| Backend | Python + FastAPI (Clean Architecture) |
-| Frontend | React + TypeScript + Vite + Tailwind CSS |
+| Backend | Python + FastAPI (Clean Architecture) — **this repo has no frontend of its own anymore** (see note below) |
 | Database | PostgreSQL + Alembic migrations |
 | Auth + Storage | Supabase (Auth + Storage) |
 | AI | Claude API (charge categorization) |
-| Infra | Docker + docker-compose (dev); Coolify (self-hosted VPS) for staging |
-| Deploy | **Staging**: Coolify, internal-only services, no public domain (called by [Núcleo](https://github.com/beto-dev/nucleo) server-to-server). **Production**: still Vercel (frontend) + Koyeb (API) — frozen, no auto-deploy, migration to Coolify in progress (see Deployment section) |
+| Infra | Docker + docker-compose (dev); Coolify (self-hosted VPS) for both staging and production |
+| Deploy | **Staging** and **Production**: both Coolify, internal-only services, no public domain (called by [Núcleo](https://github.com/beto-dev/nucleo) server-to-server) |
 | CI | GitHub Actions |
+
+> **No standalone frontend.** `apps/web` (the original React app) was retired 2026-11-26 — [Núcleo](https://github.com/beto-dev/nucleo) is the only frontend now, calling this API server-to-server over the internal Docker network. Vercel + Koyeb (the old hosting for `apps/web` + this API) are being decommissioned.
 
 Architecture: **Clean Architecture** — `domain/` → `application/` → `infrastructure/` → `presentation/`
 
@@ -31,26 +32,15 @@ Architecture: **Clean Architecture** — `domain/` → `application/` → `infra
 
 ```
 apps/
-  api/        # Python FastAPI backend
+  api/        # Python FastAPI backend — the only app in this repo
     domain/          # entities + repository interfaces (ABCs)
     application/     # use cases
-    infrastructure/  # SQLAlchemy repos, AI, parsers, Google, Supabase
+    infrastructure/  # SQLAlchemy repos, AI, parsers, Supabase
     presentation/    # FastAPI routes + dependencies
     tests/           # pytest unit + integration tests
-  web/        # React + TypeScript frontend
-    src/
-      features/
-        auth/        # login, register, OAuth callback
-        charges/     # personal charges + family charges views
-        contributions/ # contributions view
-        dashboard/   # monthly summary
-        expenses/    # quick expense entry
-        family/      # family management (owner only)
-        upload/      # file upload
-      app/           # router, App.tsx
-      shared/        # Layout, ProtectedRoute, Spinner, etc.
-  e2e/        # Playwright E2E tests
 ```
+
+`apps/web` and `apps/e2e` (the original React frontend and its Playwright suite) were deleted 2026-11-26 — see the Authentication and Deployment sections below. Equivalent functionality lives in [Núcleo](https://github.com/beto-dev/nucleo) (`src/app/(app)/finanzas/`), a separate repo.
 
 ---
 
@@ -59,32 +49,12 @@ apps/
 | Route | File | Description |
 |---|---|---|
 | `/api/health` | health.py | Health check |
-| `/api/auth/*` | auth.py | Login, register, Google OAuth |
+| `/api/auth/me` | auth.py | Current user's id/email/full_name — the only surviving route in this file; called by Núcleo's Familia pages. `register`/`login`/`google`/`google/callback` were deleted 2026-11-26 along with `apps/web` (the only thing that used them) |
 | `/api/charges/*` | charges.py | Charges CRUD, bulk confirm/unshare, categories |
 | `/api/statements/*` | statements.py | Upload + parse bank statements |
 | `/api/families/*` | families.py | Family management |
 | `/api/chat` | chat.py | Chat AI agent — natural-language Q&A over the user's charges (Claude tool-calling) |
 | `/api/debug/*` | debug.py | Debug endpoints (disabled in prod — 404 without `ENABLE_DEBUG_ENDPOINTS`) |
-
----
-
-## Frontend Routes
-
-| Path | Component | Notes |
-|---|---|---|
-| `/` | → `/resumen` | Redirect |
-| `/resumen` | DashboardPage | Monthly summary |
-| `/cargar` | UploadPage | Upload bank statement |
-| `/gastos` | ChargesPage | Personal charges |
-| `/gastos-familia` | FamilyChargesPage | Shared family charges |
-| `/aportes` | ContributionsPage | Contributions view |
-| `/familia` | FamilyPage | Family management (owner only, redirects members) |
-| `/nuevo-gasto` | QuickExpensePage | Quick manual charge entry |
-| `/cuotas` | CuotasPage | Installment tracker (cuotas grupales) |
-| `/categorias` | CategoriesPage | Category management + budget limits (admin only) |
-| `/chat` | ChatPage | Chat AI agent — ask questions about your charges in natural language |
-| `/login` | LoginPage | Auth |
-| `/auth/callback` | AuthCallbackPage | OAuth callback |
 
 ---
 
@@ -156,7 +126,7 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 | # | Task | Status |
 |---|---|---|
-| 4.1 | Production deployment | 🟡 Frozen — Vercel (frontend) + Koyeb (API) + standalone Supabase project, no auto-deploy since 2026-09-01; receives manual redeploys only. Being migrated to Coolify (internal-only, same as staging), see Deployment section. |
+| 4.1 | Production deployment | ✅ Done (2026-11-26) — dedicated `production` environment in Coolify for `finances-app-api`, internal-only, deploying from `main` (now reconciled with `staging`, see Deployment section). Data fully migrated to the shared Supabase project. Old Vercel+Koyeb production is redundant, pending decommission. |
 | 4.1b | Staging environment | ✅ Done — migrated from Railway to **Coolify** (internal services, no public domain) on 2026-08-27; Núcleo is the only public frontend, calling this API server-to-server. `VITE_DEV_AUTO_LOGIN` no longer applies (no standalone frontend in staging). |
 | 4.2 | Monitoring | ⏳ Pending — would have caught two Supabase auto-pause outages (2026-10-15, 2026-11-23) sooner |
 | 4.3–4.5 | Mobile (React Native) | ⏳ Pending |
@@ -180,17 +150,17 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ## Authentication
 
-- **Being retired in favor of Supabase Auth.** This API's own login (`/api/auth/register`, `/login`, `/google`, `/google/callback`) is deprecated — Núcleo + Supabase Auth (Google OAuth, JWKS/ES256) is the real login path now. This API verifies Supabase JWTs directly (`infrastructure/auth/supabase_middleware.py`), with its own legacy HS256 verification kept only as a fallback while `apps/web` (this repo's standalone React frontend) is still in use. The whole `auth.py` login surface gets deleted once `apps/web` is retired — not before, since active sessions there still depend on it.
-- **Google OAuth** (legacy, `apps/web` only): OAuth app is published (External, no test user restriction). Authorized redirect URIs in Google Console include the production (Koyeb) callback URL; the old staging (Railway) callback URL is stale and should be cleaned up.
-- **Email/password** (legacy, `apps/web` only): secondary login, available via hidden link on the login page.
-- **`ALLOWED_EMAILS`**: backend env var that restricts which emails can log in regardless of auth method.
+- **Supabase Auth only, via Núcleo.** Núcleo (the frontend) handles login entirely through `supabase.auth.signInWithOAuth({provider: "google"})` — a single fixed callback (`https://<shared-supabase-project>.supabase.co/auth/v1/callback`) that Supabase manages in its own dashboard, not in this repo. This API verifies the resulting Supabase JWTs directly (`infrastructure/auth/supabase_middleware.py`, JWKS/ES256).
+- **This API's own login is gone** (2026-11-26, along with `apps/web`): `register`, `login`, `google`, `google/callback` in `auth.py` were deleted — they were only ever used by the now-retired standalone React frontend. `GET /api/auth/me` survives because Núcleo itself calls it (`getMe()` in its `src/lib/finances/client.ts`, used by the Familia pages).
+- The legacy HS256 JWT fallback in `supabase_middleware.py` is kept only because `/api/debug/dev-login` (disabled in prod) still uses `create_access_token` for local/staging convenience.
+- **`ALLOWED_EMAILS`**: backend env var that restricts which emails can reach the API, set per Coolify environment. Enforced in `_check_allowed_email` (`infrastructure/auth/supabase_middleware.py`), called from `_resolve_supabase_user` for every Supabase-verified request — **this is new as of 2026-11-26**. The check previously only existed inside the now-deleted `google_callback`, which only ever gated `apps/web`'s own login; the real Núcleo/Supabase-JWT path had no email gate at all until now. Empty env var = allow any authenticated email (same fallback behavior as before).
 
 ---
 
 ## CI / Quality
 
 - **GitHub Actions** runs on every push to `main` and `staging`
-- Jobs: API lint (ruff), API type check (mypy), API tests (pytest), Web build, Web type check + lint, E2E tests (Playwright), Security audit
+- Jobs: API lint (ruff), API type check (mypy), API tests (pytest), Security audit (pip-audit + bandit) — the `web-*` jobs (type-check+lint, build, E2E/Playwright) were removed 2026-11-26 along with `apps/web`
 - **Ruff** config: `line-length = 120`, rules E/F/I/N/W/UP, `known-first-party` includes all local packages
 - **Mypy**: `check_untyped_defs = true`, `warn_unused_ignores = true` — this means any unnecessary `# type: ignore` will cause CI to fail
 - Mock repos in tests inherit from the ABC interfaces — do not add untyped mocks
@@ -199,44 +169,47 @@ All tasks done: monorepo, backend skeleton, frontend skeleton, database, auth, d
 
 ## Deployment
 
-> 🚧 **Mid-migration.** Staging is fully cut over to Coolify. Production is not yet — it's still Vercel+Koyeb, frozen (no auto-deploy) and kept alive with occasional manual redeploys, pending a delta data migration and a dedicated Coolify `production` environment. Status tracked in the Obsidian vault: `Núcleo/Status — migración a Núcleo (VPS).md`.
+> ✅ **Both environments on Coolify.** `staging` and `main` were reconciled 2026-11-26 (PR #25: staging's 17-commit lead merged into `main`, including the one real migration-revision collision — see `apps/api/alembic/versions/`). `main` now has its own dedicated Coolify `production` environment for `finances-app-api`, cloned from the staging resource (same internal-only pattern, no public domain). The old Vercel+Koyeb production is still reachable but redundant — pending decommission. Status tracked in the Obsidian vault: `Núcleo/Status — migración a Núcleo (VPS).md`.
 
 ### Branch strategy
 
 ```
-feature/* ──PR──▶ staging ──auto-deploy──▶ Coolify (finances-app-api, internal only)
+feature/* ──PR──▶ staging ──auto-deploy──▶ Coolify "staging" env (finances-app-api, internal only)
                       │
-                      └──(PR manual)──▶ main ──(manual redeploy, not automatic)──▶ Koyeb + Vercel
+                      └──PR──▶ main ──auto-deploy──▶ Coolify "production" env (finances-app-api, internal only)
 ```
 
-- **`staging` branch** → Coolify — auto-deploy on push (verified end-to-end via webhook)
-- **`main` branch** → the old Vercel+Koyeb production — no longer auto-deploys; requires a manual "Redeploy" in each platform's dashboard after merging
+- **`staging` branch** → Coolify `staging` environment — auto-deploy on push
+- **`main` branch** → Coolify `production` environment — auto-deploy on push (verified via the PR #25 merge, which triggered the webhook and deployed cleanly)
+- Vercel + Koyeb (old production) → no longer auto-deploy; manual redeploy only, kept alive only until decommissioned
 
 ### Platform config
 
-| Component | Staging (Coolify, internal) | Production (old, frozen) |
-|-----------|---------|------------|
-| Frontend | none — Núcleo (`nucleo-staging.alberto-tejos.cl`) is the only frontend, calls this API server-to-server | Vercel (`finances-app-pi.vercel.app`), this repo's `apps/web` |
-| API | `finances-app-api` Coolify service, no public domain | Koyeb (`annoyed-janice-beto-dev-org-80e2dfa8.koyeb.app`) |
-| Database | Supabase shared project `sexqvaebanfvrknsmbmr` (`finances-app-beta`), shared with Núcleo | standalone Supabase project `cittnwuoacvipjyillsr` — on the free plan, auto-pauses after ~7 days idle; has caused two production outages (2026-10-15, 2026-11-23) |
+| Component | Staging (Coolify) | Production (Coolify) |
+|-----------|---------|---|
+| Frontend | none — Núcleo (`nucleo-staging.alberto-tejos.cl`) is the only frontend, calls this API server-to-server | none — Núcleo (`nucleo.alberto-tejos.cl`) calls this API server-to-server |
+| API | `finances-app-api` Coolify service, internal network alias `finances-app-api-staging`, no public domain | `finances-app-api` Coolify service, internal network alias `finances-app-api`, no public domain |
+| Database | Supabase shared project `sexqvaebanfvrknsmbmr` (`finances-app-beta`), shared with Núcleo | same shared project `sexqvaebanfvrknsmbmr` |
 
-- **`ALLOWED_EMAILS`** controls who can log in (set separately per environment)
-- **`ENABLE_DEBUG_ENDPOINTS`** must NOT be set in production (debug routes return 404 without it)
-- Both Supabase projects are on the free plan — the standalone one pausing from inactivity is a known, recurring failure mode until the production cutover happens and it can be deleted
-- **RLS is enabled** on all 12 tables in the shared Supabase project
+Vercel (old `apps/web` hosting) and Koyeb (old API hosting) and the standalone Supabase project (`cittnwuoacvipjyillsr`) are being decommissioned — see the Obsidian vault (`Núcleo/Status — migración a Núcleo (VPS).md`) for the cutover log.
+
+- **`ALLOWED_EMAILS`** controls who can log in — enforced in `supabase_middleware.py` (see Authentication), set separately per Coolify environment
+- **`ENABLE_DEBUG_ENDPOINTS`** and **`DEV_USER_EMAIL`** must NOT be set in production (debug routes return 404 without `ENABLE_DEBUG_ENDPOINTS`)
+- The shared Supabase project is on the free plan — a `pg_cron` keep-alive job (added 2026-11-25) prevents it auto-pausing from inactivity
+- **RLS is enabled** on all tables in the shared Supabase project
+- Known cosmetic issue: the `production` Coolify resource for `finances-app-api` had an auto-generated public `*.sslip.io` domain left over from cloning it from staging — removed 2026-11-26 via the Coolify REST API (the web form for clearing a domain didn't persist the change; a known, previously-documented Coolify UI bug)
 
 ---
 
 ## Environment Variables
 
-| Variable | Production (Koyeb, frozen) | Staging (Coolify) |
+| Variable | Staging (Coolify) | Production (Coolify) |
 |---|---|---|
-| `VITE_API_URL` | Vercel (Production env) | n/a — no standalone frontend; Núcleo reaches this API via internal Docker network |
 | `APP_ANTHROPIC_API_KEY` | ✅ | ✅ same value |
-| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | standalone project (`cittnwuoacvipjyillsr`) | shared project (`sexqvaebanfvrknsmbmr`) |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ (legacy login, `apps/web` only) | ✅ same value |
-| `GOOGLE_LOGIN_REDIRECT_URI` | Koyeb callback URL | n/a |
-| `JWT_SECRET` | ✅ (legacy HS256 fallback) | ✅ same value |
-| `FRONTEND_URL` | `https://finances-app-pi.vercel.app` | n/a |
-| `ALLOWED_EMAILS` | production list | staging list |
-| `DATABASE_URL` | standalone Supabase (Session pooler) | shared Supabase (Session pooler) |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` | shared project (`sexqvaebanfvrknsmbmr`) | shared project (`sexqvaebanfvrknsmbmr`) |
+| `JWT_SECRET` | ✅ (legacy HS256 fallback, only reachable via `/api/debug/dev-login`) | ✅ same value |
+| `ALLOWED_EMAILS` | staging list | production list — must cover every real Núcleo user, now actually enforced (see Authentication) |
+| `ENABLE_DEBUG_ENDPOINTS`, `DEV_USER_EMAIL` | set (dev convenience) | unset |
+| `DATABASE_URL` | shared Supabase (Session pooler) | shared Supabase (Session pooler) |
+
+`VITE_API_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_LOGIN_REDIRECT_URI`, `FRONTEND_URL`, `BACKEND_URL` were all removed 2026-11-26 — they only existed for `apps/web` and the legacy login flow, both now deleted.

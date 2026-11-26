@@ -159,6 +159,64 @@ class TestDualVerification:
         assert exc_info.value.status_code == 401
 
 
+# ── ALLOWED_EMAILS gate, enforced for every Supabase-verified request ───────────
+class TestAllowedEmailGate:
+    async def test_empty_allowlist_allows_any_email(self, monkeypatch):
+        monkeypatch.setenv("ALLOWED_EMAILS", "")
+        existing = make_user()
+        payload = {"sub": str(SUPABASE_UID), "email": existing.email}
+        with (
+            patch.object(supabase_middleware, "_decode_supabase_jwt", return_value=payload),
+            _patch_repo() as mock_repo_cls,
+        ):
+            mock_repo = mock_repo_cls.return_value
+            mock_repo.get_by_supabase_user_id = AsyncMock(return_value=existing)
+
+            result = await get_current_user_id(_credentials(), db=FAKE_DB)
+
+        assert result == existing.id
+
+    async def test_email_in_allowlist_passes_case_insensitively(self, monkeypatch):
+        monkeypatch.setenv("ALLOWED_EMAILS", "Someone@Example.com, other@example.com")
+        existing = make_user()
+        existing.email = "someone@example.com"
+        payload = {"sub": str(SUPABASE_UID), "email": existing.email}
+        with (
+            patch.object(supabase_middleware, "_decode_supabase_jwt", return_value=payload),
+            _patch_repo() as mock_repo_cls,
+        ):
+            mock_repo = mock_repo_cls.return_value
+            mock_repo.get_by_supabase_user_id = AsyncMock(return_value=existing)
+
+            result = await get_current_user_id(_credentials(), db=FAKE_DB)
+
+        assert result == existing.id
+
+    async def test_email_not_in_allowlist_raises_403(self, monkeypatch):
+        monkeypatch.setenv("ALLOWED_EMAILS", "allowed@example.com")
+        payload = {"sub": str(SUPABASE_UID), "email": "stranger@example.com"}
+        with (
+            patch.object(supabase_middleware, "_decode_supabase_jwt", return_value=payload),
+            _patch_repo(),
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user_id(_credentials(), db=FAKE_DB)
+
+        assert exc_info.value.status_code == 403
+
+    async def test_missing_email_with_nonempty_allowlist_raises_403(self, monkeypatch):
+        monkeypatch.setenv("ALLOWED_EMAILS", "allowed@example.com")
+        payload = {"sub": str(SUPABASE_UID)}
+        with (
+            patch.object(supabase_middleware, "_decode_supabase_jwt", return_value=payload),
+            _patch_repo(),
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user_id(_credentials(), db=FAKE_DB)
+
+        assert exc_info.value.status_code == 403
+
+
 # ── create_access_token (legacy issuance, unchanged) ────────────────────────────
 class TestCreateAccessToken:
     def test_round_trips_through_legacy_decode(self):
